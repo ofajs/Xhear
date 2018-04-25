@@ -15,8 +15,15 @@
     <div id="aa"></div>
     <br><br><br>
 
-    <test sv-ele id="b" kaka="111111">我是内容</test>
+    <test sv-ele id="b" kaka="111111">
+        <div>我是内容1</div>
+        <div>我是内容2</div>
+        <div>我是内容3</div>
+    </test>
 
+    <br><br><br>
+    <div id="c"></div>
+    <br><br><br>
 </body>
 <script>
     shear.register({
@@ -56,6 +63,9 @@
         },
         detached: (tar) => {
             console.log('detached tar => ', tar);
+        },
+        childChange(tar, obs) {
+            console.log('childChange => ', tar, obs);
         }
     });
 
@@ -73,6 +83,9 @@
         tar.a = "改变标题";
 
         $('#aa').append(tar2);
+
+        // 直接填入
+        $('body').append('<div><test sv-ele kaka="后来的">houlai</test></div>');
     }, 1000);
 </script>
 

@@ -49,11 +49,14 @@
     // 获取旧的主体
     let _$ = glo.$;
 
-    let shearInitPrototype = create(_$.fn);
+    // 主体原型链
+    let $fn = _$.fn;
+
+    let shearInitPrototype = create($fn);
 
     // 生成普通继承的$实例
     const createShear$ = (() => {
-        if (_$.fn.splice) {
+        if ($fn.splice) {
             return arr => {
                 let reObj = create(shearInitPrototype);
                 reObj.splice(-1, 0, ...arr);
@@ -69,8 +72,10 @@
             }
         }
     })();
+
     // 生成专用shear对象
-    const createShearObject = (obj, ele) => {
+    const createShearObject = (ele) => {
+        let obj = ele._svData;
         let e = create(obj);
         e.push(ele);
         return e;
@@ -150,6 +155,7 @@
         return tagDatabase[tagname];
     }
 
+    // 渲染 sv元素
     const renderEle = (ele) => {
         // 判断是否属于sv-ele元素
         if (hasAttr(ele, 'sv-ele')) {
@@ -265,7 +271,7 @@
                 for (let kName in watchObj) {
                     // 绑定值
                     oriWatch(shearData, kName, (...args) => {
-                        let fun = () => watchObj[kName].apply(createShearObject(shearData, ele), args);
+                        let fun = () => watchObj[kName].apply(createShearObject(ele), args);
                         if (isRenderOK) {
                             fun();
                         } else {
@@ -286,12 +292,36 @@
             if (val) {
                 defineProperty(ele, "value", {
                     get() {
-                        return val.get && val.get.call(createShearObject(shearData, ele));
+                        return val.get && val.get.call(createShearObject(ele));
                     },
                     set(d) {
-                        return val.set && val.set.call(createShearObject(shearData, ele), d);
+                        return val.set && val.set.call(createShearObject(ele), d);
                     }
                 });
+            }
+
+            // 判断是否监听子节点变动
+            if (tagdata.childChange && $content[0]) {
+                let observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        let { addedNodes, removedNodes } = mutation;
+                        let obsEvent = {};
+                        (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
+                        (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
+                        tagdata.childChange(createShearObject(ele), obsEvent);
+                    });
+                });
+
+                // 监听节点
+                observer.observe($content[0], {
+                    attributes: false,
+                    childList: true,
+                    characterData: false,
+                    subtree: false,
+                });
+
+                // 设置监听属性
+                shearData._obs = observer;
             }
 
             // 设置已经渲染
@@ -299,11 +329,11 @@
             ele.svRender = 1;
 
             // 触发渲染完成后的事件
-            tagdata.rendered && tagdata.rendered(createShearObject(shearData, ele));
+            tagdata.rendered && tagdata.rendered(createShearObject(ele));
 
             // 如果是在document上，直接触发 attached 事件
             if (ele.getRootNode() == document) {
-                tagdata.attached && tagdata.attached(createShearObject(shearData, ele));
+                tagdata.attached && tagdata.attached(createShearObject(ele));
             }
 
             // 设置渲染完成
@@ -419,8 +449,7 @@
         let _svData = (reObj.length == 1) && (reObj[0]._svData);
         if (_svData) {
             // 初始化当前对象
-            // reObj = _svData.sInit(reObj[0]);
-            reObj = createShearObject(_svData, reObj[0])
+            reObj = createShearObject(reObj[0])
         } else {
             reObj = createShear$(reObj);
         }
@@ -428,14 +457,17 @@
         return reObj;
     };
     assign($, _$);
-    $.prototype = $.fn = _$.fn;
+    $.prototype = $.fn = $fn;
 
         // 修正其他节点操控的方法
-    // console.log('operation22');
-
-    shearInitPrototype.asd = () => {
-        console.log('asdasd');
-    };
+    assign(shearInitPrototype, {
+        asd() {
+            console.log('asdasd');
+        },
+        // append() {
+            
+        // }
+    });
 
     // ready
     // 页面进入之后，进行一次渲染操作
@@ -448,7 +480,7 @@
         // 对sv元素进行操作
         const svDomFunc = (ele, fName, otherFunc) => {
             let tagdata = getTagData(ele);
-            tagdata[fName] && tagdata[fName](createShearObject(ele._svData, ele));
+            tagdata[fName] && tagdata[fName](createShearObject(ele));
             otherFunc && otherFunc(ele, tagdata);
         };
 
@@ -458,7 +490,7 @@
                 each(Array.from(eArr), (ele) => {
                     // 判断自身是否sv-ele
                     if (ele.svRender) {
-                        svDomFunc(ele, fName);
+                        svDomFunc(ele, fName, otherFunc);
                     }
 
                     // 判断子元素是否有 sv-render
@@ -476,9 +508,18 @@
                 domModifyFunc('attached', e.addedNodes);
                 domModifyFunc('detached', e.removedNodes, (ele) => {
                     // 防止内存不回收
+                    // 清除svParent
                     _$('[sv-content]', ele).each((i, e) => {
                         delete e.svParent;
                     });
+
+                    // 清空observer属性
+                    let { _svData } = ele;
+                    if (_svData) {
+                        _svData._obs && _svData._obs.disconnect();
+                        delete _svData._obs;
+                        delete ele._svData;
+                    }
                 });
             });
         });
