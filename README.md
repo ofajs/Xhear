@@ -7,3 +7,5 @@
 ## 与shear.js的区别
 
 Xhear.js 可以使用第三方 `$` 库（jQuery、zepto和smartJQ等）； shear.js 是基于 smartJQ开发，不能替换成第三方的 `$` 库；
+
+相比 shear.js，Xhear.js的Bug会少很多 
