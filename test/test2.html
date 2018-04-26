@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="jquery-3.2.1.js"></script>
+    <!-- <script src="smartjq-recommend.js"></script> -->
+    <script src="../dist/shear.js"></script>
+    <style>
+        #test_area {
+            background-color: #fff;
+            color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="test_area">
+        <test sv-ele id="a" kaka="111111">
+            <div>我是内容1</div>
+            <div>我是内容2</div>
+            <div>我是内容3</div>
+            <test sv-ele id="a2" kaka="2222222">
+                <div>我是内容2-1</div>
+                <div>我是内容2-2</div>
+                <div>我是内容2-3</div>
+            </test>
+        </test>
+        <br><br>
+        <test2 sv-ele id="b">bbb</test2>
+
+        <div id="c"></div>
+        <br><br>
+    </div>
+</body>
+<script>
+    setTimeout(() => {
+        shear.register({
+            tag: "test",
+            temp: `
+            <div class="title2" style="color:green;font-size:12px;">{{a}}--{{a}}</div>
+            <div class="title3" style="color:blue;font-size:12px;">我是kaka => {{kaka}}</div>
+            <input sv-module="kaka" />
+            <div sv-content style="font-size:12px;"></div>
+        `,
+            data: {
+                a: "我是副标题"
+            },
+            attrs: ['kaka'],
+            proto: {
+                haha() {
+                    console.log(this, 'ni ma si');
+                }
+            },
+            val: {
+                get() {
+                    return this.a;
+                }
+            },
+            watch: {
+                // 监听 a 的改动
+                a(val, beforeVal) {
+                    console.log('initWatch', val, beforeVal, this);
+                }
+            },
+            rendered: (tar) => {
+                console.log('rendered tar => ', tar);
+            },
+            attached: (tar) => {
+                console.log('attached tar => ', tar);
+            },
+            detached: (tar) => {
+                console.log('detached tar => ', tar);
+            },
+        });
+    }, 500);
+
+    setTimeout(() => {
+        shear.register({
+            tag: "test2",
+            temp: `
+                <div>test2</div>
+                <test sv-tar="testEle" sv-ele kaka="i am test2">
+                    test2-content
+                </test>
+            `,
+            data: {
+                a: "test2aaaa"
+            }
+        });
+    }, 1000);
+</script>
+
+</html>

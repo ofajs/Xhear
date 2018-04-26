@@ -9,21 +9,29 @@
     <script src="jquery-3.2.1.js"></script>
     <!-- <script src="smartjq-recommend.js"></script> -->
     <script src="../dist/shear.js"></script>
+    <style>
+        #test_area {
+            background-color: #fff;
+            color: black;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="aa"></div>
-    <br><br><br>
+    <div id="test_area">
+        <div id="aa"></div>
+        <br><br>
 
-    <test sv-ele id="b" kaka="111111">
-        <div>我是内容1</div>
-        <div>我是内容2</div>
-        <div>我是内容3</div>
-    </test>
+        <test sv-ele id="b" kaka="111111">
+            <div>我是内容1</div>
+            <div>我是内容2</div>
+            <div>我是内容3</div>
+        </test>
 
-    <br><br><br>
-    <div id="c"></div>
-    <br><br><br>
+        <br><br>
+        <div id="c"></div>
+        <br><br>
+    </div>
 </body>
 <script>
     shear.register({
@@ -69,24 +77,28 @@
         }
     });
 
-    let tar = $('#b');
-    console.log(tar);
+    let ele_b = $('#b');
+    console.log('ele_b => ', ele_b);
 
-    let tar2 = $('<div><test sv-ele kaka="woshikakaka">hahatest</test></div>');
+    // let after_ele = $('<div><test sv-ele kaka="woshikakaka">hahatest</test></div>');
 
     // 兼容值变动
-    tar.watch('kaka', (val, oldVal) => {
+    ele_b.watch('kaka', (val, oldVal) => {
         console.log('watch => ', val, oldVal);
     });
     setTimeout(() => {
-        tar.kaka = 'kakakakakakakakakaka';
-        tar.a = "改变标题";
+        ele_b.kaka = 'kakakakakakakakakaka';
+        ele_b.a = "改变标题";
 
-        $('#aa').append(tar2);
+        // $('#aa').append(after_ele);
 
         // 直接填入
-        $('body').append('<div><test sv-ele kaka="后来的">houlai</test></div>');
+        $('#test_area').append('<div><test sv-ele kaka="后来的">houlai</test></div>');
     }, 1000);
+
+    $('#aa').append((...args) => {
+        return `<test sv-ele id="b" kaka="function +"></test>`
+    })
 </script>
 
 </html>

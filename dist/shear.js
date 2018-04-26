@@ -81,6 +81,20 @@
         return e;
     }
 
+    const renderAllSvEle = ($ele) => {
+        // 自己是不是sv-ele
+        $ele.each((i, e) => {
+            if (hasAttr(e, 'sv-ele')) {
+                renderEle(e);
+            }
+        });
+
+        // 查找有没有 sv-ele
+        $ele.find('[sv-ele]').each((i, e) => {
+            renderEle(e);
+        });
+    }
+
     // Shear class 的原型对象
     let ShearFn = assign(create(shearInitPrototype), {
         // 设置数据变化
@@ -146,6 +160,10 @@
         }
     };
 
+    // 获取类型
+    let objectToString = Object.prototype.toString;
+    const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
+
     const each = (arr, func) => {
         arr.forEach(func);
     };
@@ -200,11 +218,12 @@
 
             // 写入 $content
             let $content = _$('[sv-content]', ele);
-            if (0 in $content) {
+            if ($content[0]) {
                 defineProperty(shearData, '$content', {
                     enumerable: true,
                     get() {
-                        return _$('[sv-content]', ele);
+                        // return _$('[sv-content]', ele);
+                        return createShear$(_$('[sv-content]', ele));
                     }
                 });
                 // 把东西还原回content
@@ -212,6 +231,30 @@
 
                 // 设置父节点
                 $content.prop('svParent', ele);
+
+                // 判断是否监听子节点变动
+                if (tagdata.childChange) {
+                    let observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            let { addedNodes, removedNodes } = mutation;
+                            let obsEvent = {};
+                            (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
+                            (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
+                            tagdata.childChange(createShearObject(ele), obsEvent);
+                        });
+                    });
+
+                    // 监听节点
+                    observer.observe($content[0], {
+                        attributes: false,
+                        childList: true,
+                        characterData: false,
+                        subtree: false,
+                    });
+
+                    // 设置监听属性
+                    shearData._obs = observer;
+                }
             }
 
             // 写入其他定义节点
@@ -220,7 +263,11 @@
                 defineProperty(shearData, '$' + eName, {
                     enumerable: true,
                     get() {
-                        return _$(e);
+                        if (!e._svData) {
+                            return createShear$([e]);
+                        } else {
+                            return createShearObject(e);
+                        }
                     }
                 });
             });
@@ -266,12 +313,12 @@
             });
 
             // watch监听
-            let watchObj = tagdata.watch;
-            if (watchObj) {
-                for (let kName in watchObj) {
+            let needWatchObj = tagdata.watch;
+            if (needWatchObj) {
+                for (let kName in needWatchObj) {
                     // 绑定值
                     oriWatch(shearData, kName, (...args) => {
-                        let fun = () => watchObj[kName].apply(createShearObject(ele), args);
+                        let fun = () => needWatchObj[kName].apply(createShearObject(ele), args);
                         if (isRenderOK) {
                             fun();
                         } else {
@@ -300,30 +347,6 @@
                 });
             }
 
-            // 判断是否监听子节点变动
-            if (tagdata.childChange && $content[0]) {
-                let observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        let { addedNodes, removedNodes } = mutation;
-                        let obsEvent = {};
-                        (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
-                        (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
-                        tagdata.childChange(createShearObject(ele), obsEvent);
-                    });
-                });
-
-                // 监听节点
-                observer.observe($content[0], {
-                    attributes: false,
-                    childList: true,
-                    characterData: false,
-                    subtree: false,
-                });
-
-                // 设置监听属性
-                shearData._obs = observer;
-            }
-
             // 设置已经渲染
             $ele.removeAttr('sv-ele').attr('sv-render', 1);
             ele.svRender = 1;
@@ -332,7 +355,7 @@
             tagdata.rendered && tagdata.rendered(createShearObject(ele));
 
             // 如果是在document上，直接触发 attached 事件
-            if (ele.getRootNode() == document) {
+            if (ele.getRootNode() === document) {
                 tagdata.attached && tagdata.attached(createShearObject(ele));
             }
 
@@ -370,7 +393,7 @@
             // detached: emptyFun,
             // 子节点被修改后出发的callback
             // sv-content内的一代元素的删除或添加
-            childChange: emptyFun
+            // childChange: emptyFun
         };
         // 合并选项
         assign(defaults, options);
@@ -433,17 +456,7 @@
     glo.$ = function(...args) {
         let reObj = _$(...args);
 
-        // 自己是不是sv-ele
-        reObj.each((i, e) => {
-            if (hasAttr(e, 'sv-ele')) {
-                renderEle(e);
-            }
-        });
-
-        // 查找有没有 sv-ele
-        reObj.find('[sv-ele]').each((i, e) => {
-            renderEle(e);
-        });
+        renderAllSvEle(reObj);
 
         // 判断只有一个的情况下，返回shear对象
         let _svData = (reObj.length == 1) && (reObj[0]._svData);
@@ -461,12 +474,48 @@
 
         // 修正其他节点操控的方法
     assign(shearInitPrototype, {
-        asd() {
-            console.log('asdasd');
-        },
-        // append() {
-            
-        // }
+        aaa: "shearjs",
+        clone() {
+
+        }
+    });
+
+    // 替换旧式方法
+    each(['append', 'prepend'], kName => {
+        let oldFunc = $fn[kName];
+        oldFunc && (shearInitPrototype[kName] = function(content) {
+            // 需要返回的对象
+            let reObj = this;
+
+            // 判断是否字符串类型
+            let contentType = getType(content);
+
+            reObj.each(function(i, e) {
+                // 目标元素
+                let tar = _$(e);
+
+                // 要添加的内容
+                let $con = content;
+
+                // 判断当前是不是svData
+                let svData = e._svData;
+                if (svData) {
+                    tar = svData.$content;
+                }
+                if (contentType == "string" && content.search('<') > -1) {
+                    $con = _$(content);
+                } else if (contentType == "function") {
+                    $con = _$(content(i));
+                }
+                renderAllSvEle($con);
+
+                // 执行方法
+                oldFunc.call(tar, $con);
+            });
+
+            // 返回对象
+            return reObj;
+        });
     });
 
     // ready
@@ -478,49 +527,108 @@
         });
 
         // 对sv元素进行操作
-        const svDomFunc = (ele, fName, otherFunc) => {
+        // const svDomFunc = (ele, fName, otherFunc) => {
+        //     let tagdata = getTagData(ele);
+        //     tagdata[fName] && tagdata[fName](createShearObject(ele));
+        //     otherFunc && otherFunc(ele, tagdata);
+        // };
+
+        // // 触发元素事件函数
+        // const domModifyFunc = (fName, eArr, otherFunc) => {
+        //     if (eArr && 0 in eArr) {
+        //         each(Array.from(eArr), (ele) => {
+        //             // 判断自身是否sv-ele
+        //             if (ele.svRender) {
+        //                 svDomFunc(ele, fName, otherFunc);
+        //             }
+
+        //             // 判断子元素是否有 sv-render
+        //             _$('[sv-render]', ele).each((i, e) => {
+        //                 svDomFunc(e, fName, otherFunc);
+        //             });
+        //         });
+        //     }
+        // };
+
+        const attachedFun = (ele) => {
             let tagdata = getTagData(ele);
-            tagdata[fName] && tagdata[fName](createShearObject(ele));
-            otherFunc && otherFunc(ele, tagdata);
-        };
+            tagdata.attached && tagdata.attached(createShearObject(ele));
+        }
 
-        // 触发元素事件函数
-        const domModifyFunc = (fName, eArr, otherFunc) => {
-            if (eArr && 0 in eArr) {
-                each(Array.from(eArr), (ele) => {
-                    // 判断自身是否sv-ele
-                    if (ele.svRender) {
-                        svDomFunc(ele, fName, otherFunc);
-                    }
+        const detachedFunc = (ele) => {
+            let tagdata = getTagData(ele);
+            tagdata.detached && tagdata.detached(createShearObject(ele));
 
-                    // 判断子元素是否有 sv-render
-                    _$('[sv-render]', ele).each((i, e) => {
-                        svDomFunc(e, fName, otherFunc);
-                    });
+            // 确认是移出 document 的元素
+            if (ele.getRootNode() != document) {
+                // 防止内存不回收
+                // 清除svParent
+                _$('[sv-content]', ele).each((i, e) => {
+                    delete e.svParent;
                 });
+
+                // 清空observer属性
+                let { _svData } = ele;
+                if (_svData) {
+                    _svData._obs && _svData._obs.disconnect();
+                    delete _svData._obs;
+                    delete ele._svData;
+                }
             }
-        };
+        }
 
         // attached detached 监听
-        var observer = new MutationObserver((mutations) => {
+        let observer = new MutationObserver((mutations) => {
             mutations.forEach((e) => {
-                // 改动监听
-                domModifyFunc('attached', e.addedNodes);
-                domModifyFunc('detached', e.removedNodes, (ele) => {
-                    // 防止内存不回收
-                    // 清除svParent
-                    _$('[sv-content]', ele).each((i, e) => {
-                        delete e.svParent;
-                    });
+                let { addedNodes, removedNodes } = e;
 
-                    // 清空observer属性
-                    let { _svData } = ele;
-                    if (_svData) {
-                        _svData._obs && _svData._obs.disconnect();
-                        delete _svData._obs;
-                        delete ele._svData;
-                    }
-                });
+                // 监听新增元素
+                if (addedNodes && 0 in addedNodes) {
+                    each(Array.from(addedNodes), (ele) => {
+                        if (ele.svRender) {
+                            attachedFun(ele);
+                        }
+
+                        _$('[sv-render]', ele).each((i, e) => {
+                            attachedFun(e);
+                        });
+                    });
+                }
+
+                // 监听去除元素
+                if (removedNodes && 0 in removedNodes) {
+                    each(Array.from(removedNodes), (ele) => {
+                        if (ele.svRender) {
+                            detachedFunc(ele);
+                        }
+
+                        _$('[sv-render]', ele).each((i, e) => {
+                            detachedFunc(e);
+                        });
+                    });
+                }
+
+
+                // 改动监听
+                // domModifyFunc('attached', e.addedNodes);
+                // domModifyFunc('detached', e.removedNodes, (ele) => {
+                //     // 确认是移出 document 的元素
+                //     if (ele.getRootNode() != document) {
+                //         // 防止内存不回收
+                //         // 清除svParent
+                //         _$('[sv-content]', ele).each((i, e) => {
+                //             delete e.svParent;
+                //         });
+
+                //         // 清空observer属性
+                //         let { _svData } = ele;
+                //         if (_svData) {
+                //             _svData._obs && _svData._obs.disconnect();
+                //             delete _svData._obs;
+                //             delete ele._svData;
+                //         }
+                //     }
+                // });
             });
         });
         observer.observe(document.body, {
