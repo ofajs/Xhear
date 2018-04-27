@@ -8,6 +8,7 @@
     <title>Document</title>
     <script src="jquery-3.2.1.js"></script>
     <!-- <script src="smartjq-recommend.js"></script> -->
+    <!-- <script src="zepto.js"></script> -->
     <script src="../dist/shear.js"></script>
     <style>
         #test_area {
@@ -30,7 +31,7 @@
             </test>
         </test>
         <br><br>
-        <test2 sv-ele id="b">bbb</test2>
+        <test2 sv-ele id="b">test222222 content</test2>
 
         <div id="c"></div>
         <br><br>
@@ -38,14 +39,19 @@
 </body>
 <script>
     setTimeout(() => {
+        let testele = $('<test2 id="c" sv-ele></test2>');
+        setTimeout(() => {
+            $('body').append(testele);
+        }, 500);
+
         shear.register({
             tag: "test",
             temp: `
             <div class="title2" style="color:green;font-size:12px;">{{a}}--{{a}}</div>
-            <div class="title3" style="color:blue;font-size:12px;">我是kaka => {{kaka}}</div>
+            <div class="title3" sv-tar="t3" style="color:blue;font-size:12px;">我是kaka => {{kaka}}</div>
             <input sv-module="kaka" />
             <div sv-content style="font-size:12px;"></div>
-        `,
+            `,
             data: {
                 a: "我是副标题"
             },
@@ -81,17 +87,21 @@
     setTimeout(() => {
         shear.register({
             tag: "test2",
+            // temp: `
+            //     <div>test2</div>
+            //     <test sv-tar="testEle" sv-ele kaka="i am test2" sv-content></test>
+            // `,
             temp: `
                 <div>test2</div>
                 <test sv-tar="testEle" sv-ele kaka="i am test2">
-                    test2-content
+                    <div class="test2_content" sv-content></div>
                 </test>
             `,
             data: {
                 a: "test2aaaa"
             }
         });
-    }, 1000);
+    }, 300);
 </script>
 
 </html>

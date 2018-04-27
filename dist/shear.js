@@ -5,6 +5,7 @@
     const SWATCH = RANDOMID + "_watchs";
     const SWATCHORI = RANDOMID + "_watchs_ori";
     const SVKEY = "_svkey" + RANDOMID;
+    const ATTACHED_KEY = "_u_attached";
 
     // base
     // 基础tag记录器
@@ -60,6 +61,9 @@
             return arr => {
                 let reObj = create(shearInitPrototype);
                 reObj.splice(-1, 0, ...arr);
+                if (arr.prevObject) {
+                    reObj.prevObject = arr.prevObject;
+                }
                 return reObj;
             };
         } else {
@@ -67,6 +71,9 @@
                 let reObj = create(shearInitPrototype);
                 for (let len = arr.length, i = 0; i < len; i++) {
                     reObj.push(arr[i]);
+                }
+                if (arr.prevObject) {
+                    reObj.prevObject = arr.prevObject;
                 }
                 return reObj;
             }
@@ -81,6 +88,7 @@
         return e;
     }
 
+    // 渲染所有的sv-ele元素
     const renderAllSvEle = ($ele) => {
         // 自己是不是sv-ele
         $ele.each((i, e) => {
@@ -222,8 +230,11 @@
                 defineProperty(shearData, '$content', {
                     enumerable: true,
                     get() {
-                        // return _$('[sv-content]', ele);
-                        return createShear$(_$('[sv-content]', ele));
+                        if (!$content[0]._svData) {
+                            return createShear$($content);
+                        } else {
+                            return createShearObject($content[0]);
+                        }
                     }
                 });
                 // 把东西还原回content
@@ -355,12 +366,18 @@
             tagdata.rendered && tagdata.rendered(createShearObject(ele));
 
             // 如果是在document上，直接触发 attached 事件
-            if (ele.getRootNode() === document) {
-                tagdata.attached && tagdata.attached(createShearObject(ele));
+            if (ele.getRootNode() === document && tagdata.attached && !ele[ATTACHED_KEY]) {
+                tagdata.attached(createShearObject(ele))
+                ele[ATTACHED_KEY] = 1;
             }
 
             // 设置渲染完成
             isRenderOK = 1;
+
+            // 渲染依赖sv-ele
+            _$('[sv-ele]', ele).each((i, e) => {
+                renderEle(e);
+            });
         }
     }
     const register = (options) => {
@@ -456,7 +473,33 @@
     glo.$ = function(...args) {
         let reObj = _$(...args);
 
-        renderAllSvEle(reObj);
+        // 优化操作，不用每次都查找节点
+        // 判断传进来的参数是不是字符串
+        let arg1 = args[0];
+        if (getType(arg1) == "string" && arg1.search('<') > -1) {
+            renderAllSvEle(reObj);
+        }
+
+        // 去除 shadow 元素
+        let hasShadow = 0,
+            newArr = [],
+            { prevObject } = reObj;
+
+        reObj.each((i, e) => {
+            if (hasAttr(e, 'sv-shadow')) {
+                hasShadow = 1;
+            } else {
+                newArr.push(e);
+            }
+        });
+        if (hasShadow) {
+            reObj = _$(newArr);
+            // 还原prevObject
+            if (prevObject) {
+                reObj.prevObject = prevObject;
+            }
+        }
+        prevObject = newArr = null;
 
         // 判断只有一个的情况下，返回shear对象
         let _svData = (reObj.length == 1) && (reObj[0]._svData);
@@ -475,46 +518,133 @@
         // 修正其他节点操控的方法
     assign(shearInitPrototype, {
         aaa: "shearjs",
-        clone() {
-
+        eq(index) {
+            let old_func = $fn.eq;
         }
     });
 
-    // 替换旧式方法
+    (() => {
+        // 判断有没有pushStack
+        let { pushStack } = $fn;
+        if (pushStack) {
+            shearInitPrototype.pushStack = function(...args) {
+                return createShear$(pushStack.apply(this, args));
+            }
+        }
+    })();
+
+    // 替换旧式方法---
+
+    // 执行添加元素的方法
+    const appendFunc = (elem, content, oldFunc) => {
+        // 判断是否字符串类型
+        let contentType = getType(content);
+
+        // 要添加的内容
+        elem.each((i, e) => {
+            // 目标元素
+            let tar = _$(e);
+
+            // 是不是影子元素,并且不是sv-content
+            let needAddShadow = hasAttr(e, 'sv-shadow') && !hasAttr(e, 'sv-content');
+
+            // 要添加的内容
+            let $con = content;
+
+            // 字符串元素
+            if (contentType === "string" && content.search('<') > -1) {
+                $con = _$(content);
+            } else if (contentType == "function") {
+                $con = _$(content(i));
+            }
+
+            // 非字符串类型
+            if (getType($con) !== "string") {
+                renderAllSvEle($con);
+
+                // 影子元素的话添加影子属性
+                if (needAddShadow) {
+                    $con.attr('sv-shadow', "");
+                }
+            }
+
+            // 判断当前是不是svData
+            let svData = e._svData;
+            if (svData) {
+                tar = svData.$content;
+            }
+
+            // 执行方法
+            oldFunc.call(tar, $con);
+        });
+    };
+
+    // append prepend
     each(['append', 'prepend'], kName => {
         let oldFunc = $fn[kName];
         oldFunc && (shearInitPrototype[kName] = function(content) {
             // 需要返回的对象
             let reObj = this;
 
-            // 判断是否字符串类型
-            let contentType = getType(content);
-
-            reObj.each(function(i, e) {
-                // 目标元素
-                let tar = _$(e);
-
-                // 要添加的内容
-                let $con = content;
-
-                // 判断当前是不是svData
-                let svData = e._svData;
-                if (svData) {
-                    tar = svData.$content;
-                }
-                if (contentType == "string" && content.search('<') > -1) {
-                    $con = _$(content);
-                } else if (contentType == "function") {
-                    $con = _$(content(i));
-                }
-                renderAllSvEle($con);
-
-                // 执行方法
-                oldFunc.call(tar, $con);
-            });
+            appendFunc(reObj, content, oldFunc);
 
             // 返回对象
             return reObj;
+        });
+    });
+
+    // html text
+    each(['html', 'text'], kName => {
+        let oldFunc = $fn[kName];
+        oldFunc && (shearInitPrototype[kName] = function(content) {
+            // 需要返回的对象
+            let reObj = this;
+
+            // 为了获取html来的
+            if (!content) {
+                let elem = _$(reObj[0]);
+
+                // 判断是否存在 shear控件
+                let hasShear = 0 in elem.find('[sv-shadow]');
+                if (hasShear) {
+                    // 先复制一个出来
+                    let cloneElem = _$(elem[0].cloneNode(true));
+
+                    // 清除所有非 sv-content 的 sv-shadow 元素
+                    cloneElem.find('[sv-shadow]:not([sv-content])').remove();
+
+                    // 将剩余的 sv-content 还原回上一级去
+                    cloneElem.find('[sv-content]').each((i, e) => {
+                        // 获取子元素数组
+                        _$(e).before(e.childNodes).remove();
+                    });
+
+                    // 返回
+                    return oldFunc.call(cloneElem);
+                } else {
+                    return oldFunc.call(elem);
+                }
+            } else {
+                // 需要返回的对象
+                let reObj = this;
+
+                // 直接继承
+                if (kName == 'text') {
+                    reObj.each((i, e) => {
+                        let tar = _$(e);
+                        let svData = e._svData;
+                        if (svData) {
+                            tar = svData.$content;
+                        }
+                        oldFunc.call(tar, content);
+                    });
+                } else {
+                    appendFunc(reObj, content, oldFunc);
+                }
+
+                // 返回对象
+                return reObj;
+            }
         });
     });
 
@@ -526,41 +656,21 @@
             renderEle(e);
         });
 
-        // 对sv元素进行操作
-        // const svDomFunc = (ele, fName, otherFunc) => {
-        //     let tagdata = getTagData(ele);
-        //     tagdata[fName] && tagdata[fName](createShearObject(ele));
-        //     otherFunc && otherFunc(ele, tagdata);
-        // };
-
-        // // 触发元素事件函数
-        // const domModifyFunc = (fName, eArr, otherFunc) => {
-        //     if (eArr && 0 in eArr) {
-        //         each(Array.from(eArr), (ele) => {
-        //             // 判断自身是否sv-ele
-        //             if (ele.svRender) {
-        //                 svDomFunc(ele, fName, otherFunc);
-        //             }
-
-        //             // 判断子元素是否有 sv-render
-        //             _$('[sv-render]', ele).each((i, e) => {
-        //                 svDomFunc(e, fName, otherFunc);
-        //             });
-        //         });
-        //     }
-        // };
-
         const attachedFun = (ele) => {
+            if (ele[ATTACHED_KEY]) {
+                return;
+            }
             let tagdata = getTagData(ele);
             tagdata.attached && tagdata.attached(createShearObject(ele));
+            ele[ATTACHED_KEY] = 1;
         }
 
         const detachedFunc = (ele) => {
-            let tagdata = getTagData(ele);
-            tagdata.detached && tagdata.detached(createShearObject(ele));
-
             // 确认是移出 document 的元素
             if (ele.getRootNode() != document) {
+                let tagdata = getTagData(ele);
+                tagdata.detached && tagdata.detached(createShearObject(ele));
+
                 // 防止内存不回收
                 // 清除svParent
                 _$('[sv-content]', ele).each((i, e) => {
@@ -607,28 +717,6 @@
                         });
                     });
                 }
-
-
-                // 改动监听
-                // domModifyFunc('attached', e.addedNodes);
-                // domModifyFunc('detached', e.removedNodes, (ele) => {
-                //     // 确认是移出 document 的元素
-                //     if (ele.getRootNode() != document) {
-                //         // 防止内存不回收
-                //         // 清除svParent
-                //         _$('[sv-content]', ele).each((i, e) => {
-                //             delete e.svParent;
-                //         });
-
-                //         // 清空observer属性
-                //         let { _svData } = ele;
-                //         if (_svData) {
-                //             _svData._obs && _svData._obs.disconnect();
-                //             delete _svData._obs;
-                //             delete ele._svData;
-                //         }
-                //     }
-                // });
             });
         });
         observer.observe(document.body, {

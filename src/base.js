@@ -5,6 +5,7 @@
     const SWATCH = RANDOMID + "_watchs";
     const SWATCHORI = RANDOMID + "_watchs_ori";
     const SVKEY = "_svkey" + RANDOMID;
+    const ATTACHED_KEY = "_u_attached";
 
     // base
     // 基础tag记录器
@@ -60,6 +61,9 @@
             return arr => {
                 let reObj = create(shearInitPrototype);
                 reObj.splice(-1, 0, ...arr);
+                if (arr.prevObject) {
+                    reObj.prevObject = arr.prevObject;
+                }
                 return reObj;
             };
         } else {
@@ -67,6 +71,9 @@
                 let reObj = create(shearInitPrototype);
                 for (let len = arr.length, i = 0; i < len; i++) {
                     reObj.push(arr[i]);
+                }
+                if (arr.prevObject) {
+                    reObj.prevObject = arr.prevObject;
                 }
                 return reObj;
             }
@@ -81,6 +88,7 @@
         return e;
     }
 
+    // 渲染所有的sv-ele元素
     const renderAllSvEle = ($ele) => {
         // 自己是不是sv-ele
         $ele.each((i, e) => {
@@ -222,8 +230,11 @@
                 defineProperty(shearData, '$content', {
                     enumerable: true,
                     get() {
-                        // return _$('[sv-content]', ele);
-                        return createShear$(_$('[sv-content]', ele));
+                        if (!$content[0]._svData) {
+                            return createShear$($content);
+                        } else {
+                            return createShearObject($content[0]);
+                        }
                     }
                 });
                 // 把东西还原回content
@@ -355,12 +366,18 @@
             tagdata.rendered && tagdata.rendered(createShearObject(ele));
 
             // 如果是在document上，直接触发 attached 事件
-            if (ele.getRootNode() === document) {
-                tagdata.attached && tagdata.attached(createShearObject(ele));
+            if (ele.getRootNode() === document && tagdata.attached && !ele[ATTACHED_KEY]) {
+                tagdata.attached(createShearObject(ele))
+                ele[ATTACHED_KEY] = 1;
             }
 
             // 设置渲染完成
             isRenderOK = 1;
+
+            // 渲染依赖sv-ele
+            _$('[sv-ele]', ele).each((i, e) => {
+                renderEle(e);
+            });
         }
     }
     const register = (options) => {
@@ -456,7 +473,33 @@
     glo.$ = function(...args) {
         let reObj = _$(...args);
 
-        renderAllSvEle(reObj);
+        // 优化操作，不用每次都查找节点
+        // 判断传进来的参数是不是字符串
+        let arg1 = args[0];
+        if (getType(arg1) == "string" && arg1.search('<') > -1) {
+            renderAllSvEle(reObj);
+        }
+
+        // 去除 shadow 元素
+        let hasShadow = 0,
+            newArr = [],
+            { prevObject } = reObj;
+
+        reObj.each((i, e) => {
+            if (hasAttr(e, 'sv-shadow')) {
+                hasShadow = 1;
+            } else {
+                newArr.push(e);
+            }
+        });
+        if (hasShadow) {
+            reObj = _$(newArr);
+            // 还原prevObject
+            if (prevObject) {
+                reObj.prevObject = prevObject;
+            }
+        }
+        prevObject = newArr = null;
 
         // 判断只有一个的情况下，返回shear对象
         let _svData = (reObj.length == 1) && (reObj[0]._svData);
@@ -482,41 +525,21 @@
             renderEle(e);
         });
 
-        // 对sv元素进行操作
-        // const svDomFunc = (ele, fName, otherFunc) => {
-        //     let tagdata = getTagData(ele);
-        //     tagdata[fName] && tagdata[fName](createShearObject(ele));
-        //     otherFunc && otherFunc(ele, tagdata);
-        // };
-
-        // // 触发元素事件函数
-        // const domModifyFunc = (fName, eArr, otherFunc) => {
-        //     if (eArr && 0 in eArr) {
-        //         each(Array.from(eArr), (ele) => {
-        //             // 判断自身是否sv-ele
-        //             if (ele.svRender) {
-        //                 svDomFunc(ele, fName, otherFunc);
-        //             }
-
-        //             // 判断子元素是否有 sv-render
-        //             _$('[sv-render]', ele).each((i, e) => {
-        //                 svDomFunc(e, fName, otherFunc);
-        //             });
-        //         });
-        //     }
-        // };
-
         const attachedFun = (ele) => {
+            if (ele[ATTACHED_KEY]) {
+                return;
+            }
             let tagdata = getTagData(ele);
             tagdata.attached && tagdata.attached(createShearObject(ele));
+            ele[ATTACHED_KEY] = 1;
         }
 
         const detachedFunc = (ele) => {
-            let tagdata = getTagData(ele);
-            tagdata.detached && tagdata.detached(createShearObject(ele));
-
             // 确认是移出 document 的元素
             if (ele.getRootNode() != document) {
+                let tagdata = getTagData(ele);
+                tagdata.detached && tagdata.detached(createShearObject(ele));
+
                 // 防止内存不回收
                 // 清除svParent
                 _$('[sv-content]', ele).each((i, e) => {
@@ -563,28 +586,6 @@
                         });
                     });
                 }
-
-
-                // 改动监听
-                // domModifyFunc('attached', e.addedNodes);
-                // domModifyFunc('detached', e.removedNodes, (ele) => {
-                //     // 确认是移出 document 的元素
-                //     if (ele.getRootNode() != document) {
-                //         // 防止内存不回收
-                //         // 清除svParent
-                //         _$('[sv-content]', ele).each((i, e) => {
-                //             delete e.svParent;
-                //         });
-
-                //         // 清空observer属性
-                //         let { _svData } = ele;
-                //         if (_svData) {
-                //             _svData._obs && _svData._obs.disconnect();
-                //             delete _svData._obs;
-                //             delete ele._svData;
-                //         }
-                //     }
-                // });
             });
         });
         observer.observe(document.body, {
