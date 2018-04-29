@@ -31,7 +31,9 @@
             </test>
         </test>
         <br><br>
-        <test2 sv-ele id="b">test222222 content</test2>
+        <test2 sv-ele id="b">
+            <div>test222222 content</div>
+        </test2>
 
         <div id="c"></div>
         <br><br>
@@ -72,15 +74,18 @@
                     console.log('initWatch', val, beforeVal, this);
                 }
             },
-            rendered: (tar) => {
+            rendered(tar) {
                 console.log('rendered tar => ', tar);
             },
-            attached: (tar) => {
+            attached(tar) {
                 console.log('attached tar => ', tar);
             },
-            detached: (tar) => {
+            detached(tar) {
                 console.log('detached tar => ', tar);
             },
+            childChange(tar) {
+                console.log('childChange => ', tar);
+            }
         });
     }, 500);
 

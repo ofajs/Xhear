@@ -1,12 +1,4 @@
 ((glo) => {
-    // COMMON
-    // 随机字符串
-    const RANDOMID = "_" + Math.random().toString(32).substr(2);
-    const SWATCH = RANDOMID + "_watchs";
-    const SWATCHORI = RANDOMID + "_watchs_ori";
-    const SVKEY = "_svkey" + RANDOMID;
-    const ATTACHED_KEY = "_u_attached";
-
     // base
     // 基础tag记录器
     let tagDatabase = {};
@@ -27,6 +19,9 @@
         tars.push(func);
     };
 
+    // 获取随机id
+    const getRandomId = () => Math.random().toString(32).substr(2);
+
     //改良异步方法
     const nextTick = (() => {
         let isTick = false;
@@ -45,6 +40,14 @@
             nextTickArr.push(fun);
         };
     })();
+
+    // COMMON
+    // 随机字符串
+    const RANDOMID = "_" + getRandomId();
+    const SWATCH = RANDOMID + "_watchs";
+    const SWATCHORI = RANDOMID + "_watchs_ori";
+    const SVKEY = "_svkey" + RANDOMID;
+    const ATTACHED_KEY = "_u_attached";
 
     // start
     // 获取旧的主体
@@ -358,8 +361,12 @@
                 });
             }
 
+            // 生成renderId
+            let renderId = getRandomId();
+
             // 设置已经渲染
-            $ele.removeAttr('sv-ele').attr('sv-render', 1);
+            $ele.removeAttr('sv-ele').attr('sv-render', renderId);
+            $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
             ele.svRender = 1;
 
             // 触发渲染完成后的事件
@@ -445,7 +452,7 @@
 
         // 全部添加shadow
         let code_ele = _$(`<div>${code}</div>`);
-        code_ele.find('*').attr('sv-shadow', "");
+        code_ele.find('*').attr('sv-shadow', "t");
         code = code_ele.html();
 
         // 添加进数据库

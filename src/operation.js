@@ -2,7 +2,32 @@
     assign(shearInitPrototype, {
         aaa: "shearjs",
         eq(index) {
-            let old_func = $fn.eq;
+            let reObj = $fn.eq.call(this, index);
+            let { prevObject } = reObj;
+            if (reObj[0]._svData) {
+                reObj = $(reObj[0]);
+                prevObject && (reObj.prevObject = prevObject);
+            }
+            return reObj;
+        },
+        clone(...args) {
+            // 抽出来
+            let tar = _$(Array.from(this));
+
+            // 判断是否有 sv-ele
+            if (tar.attr('sv-render') || tar.find('[sv-render]')) {
+                let arr = [];
+                tar.each((i, e) => {
+                    // 获取html
+                    let htmlCode = shearInitPrototype.html.call(_$(e));
+                    debugger
+                });
+
+
+                debugger
+            } else {
+                return $fn.clone.apply(this, args);
+            }
         }
     });
 
@@ -76,6 +101,29 @@
         });
     });
 
+    // 还原克隆sv-ele元素
+    const reduceSvEle = (elem) => {
+        let renderId = elem.attr('sv-render');
+
+        if (renderId) {
+
+            // 清除所有非 sv-content 的 sv-shadow 元素
+            elem.find(`[sv-shadow="${renderId}"]:not([sv-content])`).remove();
+
+            // 将剩余的 sv-content 还原回上一级去
+            elem.find(`[sv-shadow="${renderId}"][sv-content]`).each((i, e) => {
+                // 获取子元素数组
+                _$(e).before(e.childNodes).remove();
+            });
+        }
+
+        // 判断是否有子sv-ele元素，并还原
+        let childsSvEle = elem.find('[sv-render]');
+        childsSvEle.each((i, e) => {
+            reduceSvEle(_$(e));
+        });
+    };
+
     // html text
     each(['html', 'text'], kName => {
         let oldFunc = $fn[kName];
@@ -88,19 +136,12 @@
                 let elem = _$(reObj[0]);
 
                 // 判断是否存在 shear控件
-                let hasShear = 0 in elem.find('[sv-shadow]');
-                if (hasShear) {
+                if (0 in elem.find('[sv-shadow]')) {
                     // 先复制一个出来
                     let cloneElem = _$(elem[0].cloneNode(true));
 
-                    // 清除所有非 sv-content 的 sv-shadow 元素
-                    cloneElem.find('[sv-shadow]:not([sv-content])').remove();
-
-                    // 将剩余的 sv-content 还原回上一级去
-                    cloneElem.find('[sv-content]').each((i, e) => {
-                        // 获取子元素数组
-                        _$(e).before(e.childNodes).remove();
-                    });
+                    // 还原元素
+                    reduceSvEle(cloneElem);
 
                     // 返回
                     return oldFunc.call(cloneElem);

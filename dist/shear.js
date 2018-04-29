@@ -1,12 +1,4 @@
 ((glo) => {
-    // COMMON
-    // 随机字符串
-    const RANDOMID = "_" + Math.random().toString(32).substr(2);
-    const SWATCH = RANDOMID + "_watchs";
-    const SWATCHORI = RANDOMID + "_watchs_ori";
-    const SVKEY = "_svkey" + RANDOMID;
-    const ATTACHED_KEY = "_u_attached";
-
     // base
     // 基础tag记录器
     let tagDatabase = {};
@@ -27,6 +19,9 @@
         tars.push(func);
     };
 
+    // 获取随机id
+    const getRandomId = () => Math.random().toString(32).substr(2);
+
     //改良异步方法
     const nextTick = (() => {
         let isTick = false;
@@ -45,6 +40,14 @@
             nextTickArr.push(fun);
         };
     })();
+
+    // COMMON
+    // 随机字符串
+    const RANDOMID = "_" + getRandomId();
+    const SWATCH = RANDOMID + "_watchs";
+    const SWATCHORI = RANDOMID + "_watchs_ori";
+    const SVKEY = "_svkey" + RANDOMID;
+    const ATTACHED_KEY = "_u_attached";
 
     // start
     // 获取旧的主体
@@ -358,8 +361,12 @@
                 });
             }
 
+            // 生成renderId
+            let renderId = getRandomId();
+
             // 设置已经渲染
-            $ele.removeAttr('sv-ele').attr('sv-render', 1);
+            $ele.removeAttr('sv-ele').attr('sv-render', renderId);
+            $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
             ele.svRender = 1;
 
             // 触发渲染完成后的事件
@@ -445,7 +452,7 @@
 
         // 全部添加shadow
         let code_ele = _$(`<div>${code}</div>`);
-        code_ele.find('*').attr('sv-shadow', "");
+        code_ele.find('*').attr('sv-shadow', "t");
         code = code_ele.html();
 
         // 添加进数据库
@@ -519,7 +526,32 @@
     assign(shearInitPrototype, {
         aaa: "shearjs",
         eq(index) {
-            let old_func = $fn.eq;
+            let reObj = $fn.eq.call(this, index);
+            let { prevObject } = reObj;
+            if (reObj[0]._svData) {
+                reObj = $(reObj[0]);
+                prevObject && (reObj.prevObject = prevObject);
+            }
+            return reObj;
+        },
+        clone(...args) {
+            // 抽出来
+            let tar = _$(Array.from(this));
+
+            // 判断是否有 sv-ele
+            if (tar.attr('sv-render') || tar.find('[sv-render]')) {
+                let arr = [];
+                tar.each((i, e) => {
+                    // 获取html
+                    let htmlCode = shearInitPrototype.html.call(_$(e));
+                    debugger
+                });
+
+
+                debugger
+            } else {
+                return $fn.clone.apply(this, args);
+            }
         }
     });
 
@@ -593,6 +625,29 @@
         });
     });
 
+    // 还原克隆sv-ele元素
+    const reduceSvEle = (elem) => {
+        let renderId = elem.attr('sv-render');
+
+        if (renderId) {
+
+            // 清除所有非 sv-content 的 sv-shadow 元素
+            elem.find(`[sv-shadow="${renderId}"]:not([sv-content])`).remove();
+
+            // 将剩余的 sv-content 还原回上一级去
+            elem.find(`[sv-shadow="${renderId}"][sv-content]`).each((i, e) => {
+                // 获取子元素数组
+                _$(e).before(e.childNodes).remove();
+            });
+        }
+
+        // 判断是否有子sv-ele元素，并还原
+        let childsSvEle = elem.find('[sv-render]');
+        childsSvEle.each((i, e) => {
+            reduceSvEle(_$(e));
+        });
+    };
+
     // html text
     each(['html', 'text'], kName => {
         let oldFunc = $fn[kName];
@@ -605,19 +660,12 @@
                 let elem = _$(reObj[0]);
 
                 // 判断是否存在 shear控件
-                let hasShear = 0 in elem.find('[sv-shadow]');
-                if (hasShear) {
+                if (0 in elem.find('[sv-shadow]')) {
                     // 先复制一个出来
                     let cloneElem = _$(elem[0].cloneNode(true));
 
-                    // 清除所有非 sv-content 的 sv-shadow 元素
-                    cloneElem.find('[sv-shadow]:not([sv-content])').remove();
-
-                    // 将剩余的 sv-content 还原回上一级去
-                    cloneElem.find('[sv-content]').each((i, e) => {
-                        // 获取子元素数组
-                        _$(e).before(e.childNodes).remove();
-                    });
+                    // 还原元素
+                    reduceSvEle(cloneElem);
 
                     // 返回
                     return oldFunc.call(cloneElem);
