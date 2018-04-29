@@ -1,4 +1,5 @@
 ((glo) => {
+    "use strict";
     // base
     // 基础tag记录器
     let tagDatabase = {};
@@ -7,6 +8,23 @@
     const create = Object.create;
     const defineProperty = Object.defineProperty;
     const emptyFun = () => {};
+
+    // function
+    const hasAttr = (e, attrName) => {
+        if (!e.getAttribute) {
+            return 0;
+        }
+        let attr = e.getAttribute(attrName);
+        if (attr !== null && attr !== undefined) {
+            return 1;
+        }
+    };
+
+    // 获取类型
+    let objectToString = Object.prototype.toString;
+    const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
+
+    const each = (arr, func) => Array.from(arr).forEach(func);
 
     // 获取watch数组的方法
     const getWatchObj = (d, k, wname = SWATCH) => {
@@ -48,6 +66,7 @@
     const SWATCHORI = RANDOMID + "_watchs_ori";
     const SVKEY = "_svkey" + RANDOMID;
     const ATTACHED_KEY = "_u_attached";
+    const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
 
     // start
     // 获取旧的主体
@@ -92,25 +111,70 @@
     }
 
     // 渲染所有的sv-ele元素
-    const renderAllSvEle = ($ele) => {
+    const renderAllSvEle = (jq_obj) => {
         // 自己是不是sv-ele
-        $ele.each((i, e) => {
+        jq_obj.each((i, e) => {
             if (hasAttr(e, 'sv-ele')) {
                 renderEle(e);
             }
         });
 
         // 查找有没有 sv-ele
-        $ele.find('[sv-ele]').each((i, e) => {
+        _$('[sv-ele]', Array.from(jq_obj)).each((i, e) => {
             renderEle(e);
         });
+    }
+
+    // 去除所有sv-shadow元素
+    const filterShadow = ($eles, exShadowId) => {
+        // 去除 shadow 元素
+        let hasShadow = 0,
+            newArr = [],
+            { prevObject } = $eles;
+
+        if (exShadowId) {
+            $eles.each((i, e) => {
+                // if (hasAttr(e, 'sv-shadow') && e.getAttribute('sv-shadow') != exShadowId) {
+                //     hasShadow = 1;
+                // } else {
+                //     newArr.push(e);
+                // }
+
+                if (hasAttr(e, 'sv-shadow') && e.getAttribute('sv-shadow') == exShadowId) {
+                    newArr.push(e);
+                    hasShadow = 1;
+                }
+            });
+        } else {
+            $eles.each((i, e) => {
+                if (hasAttr(e, 'sv-shadow')) {
+                    hasShadow = 1;
+                } else {
+                    newArr.push(e);
+                }
+            });
+        }
+
+        if (hasShadow) {
+            $eles = _$(newArr);
+            // 还原prevObject
+            if (prevObject) {
+                $eles.prevObject = prevObject;
+            }
+        }
+
+        return $eles;
     }
 
     // Shear class 的原型对象
     let ShearFn = assign(create(shearInitPrototype), {
         // 设置数据变化
         set(key, val) {
-            if (key in this) {
+            let _this = this;
+            if (0 in _this && _this[0]._svData) {
+                _this = _this[0]._svData;
+            }
+            if (key in _this) {
                 console.warn('the value exists');
                 return;
             }
@@ -118,7 +182,7 @@
             // 值寄存点
             let originValue;
 
-            defineProperty(this, key, {
+            defineProperty(_this, key, {
                 enumerable: true,
                 get() {
                     return originValue;
@@ -128,8 +192,8 @@
                     originValue = val;
 
                     // 触发修改函数
-                    let tars = getWatchObj(this, key);
-                    let tars2 = getWatchObj(this, key, SWATCHORI);
+                    let tars = getWatchObj(_this, key);
+                    let tars2 = getWatchObj(_this, key, SWATCHORI);
                     tars.concat(tars2).forEach((e) => {
                         e(val, before_val);
                     });
@@ -137,7 +201,7 @@
             });
 
             // 设置
-            this[key] = val;
+            _this[key] = val;
         },
         // 监听数值变化
         watch(k, func) {
@@ -157,27 +221,8 @@
                 }
             }
         },
-        svRender: 2
+        svRender: !0
     });
-
-    // function
-    const hasAttr = (e, attrName) => {
-        if (!e.getAttribute) {
-            return 0;
-        }
-        let attr = e.getAttribute(attrName);
-        if (attr !== null && attr !== undefined) {
-            return 1;
-        }
-    };
-
-    // 获取类型
-    let objectToString = Object.prototype.toString;
-    const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
-
-    const each = (arr, func) => {
-        arr.forEach(func);
-    };
 
     const getTagData = (ele) => {
         let tagname = ele.tagName.toLowerCase();
@@ -196,7 +241,7 @@
                 return;
             }
 
-            let isRenderOK = 0;
+            // let isRenderOK = 0;
 
             // 主体元素
             let $ele = _$(ele);
@@ -229,6 +274,7 @@
 
             // 写入 $content
             let $content = _$('[sv-content]', ele);
+            delete $content.prevObject;
             if ($content[0]) {
                 defineProperty(shearData, '$content', {
                     enumerable: true,
@@ -331,21 +377,17 @@
             if (needWatchObj) {
                 for (let kName in needWatchObj) {
                     // 绑定值
-                    oriWatch(shearData, kName, (...args) => {
-                        let fun = () => needWatchObj[kName].apply(createShearObject(ele), args);
-                        if (isRenderOK) {
-                            fun();
-                        } else {
-                            nextTick(fun);
-                        }
-                        fun = null;
-                    });
+                    oriWatch(shearData, kName, (...args) => needWatchObj[kName].apply(createShearObject(ele), args));
+                    // oriWatch(shearData, kName, (...args) => {
+                    //     let fun = () => needWatchObj[kName].apply(createShearObject(ele), args);
+                    //     if (isRenderOK) {
+                    //         fun();
+                    //     } else {
+                    //         nextTick(fun);
+                    //     }
+                    //     fun = null;
+                    // });
                 }
-            }
-
-            // 设置 rData
-            for (let k in rData) {
-                shearData.set(k, rData[k]);
             }
 
             // 判断是否有value值绑定
@@ -367,7 +409,11 @@
             // 设置已经渲染
             $ele.removeAttr('sv-ele').attr('sv-render', renderId);
             $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
-            ele.svRender = 1;
+
+            // 设置 rData
+            for (let k in rData) {
+                shearData.set(k, rData[k]);
+            }
 
             // 触发渲染完成后的事件
             tagdata.rendered && tagdata.rendered(createShearObject(ele));
@@ -379,7 +425,7 @@
             }
 
             // 设置渲染完成
-            isRenderOK = 1;
+            // isRenderOK = 1;
 
             // 渲染依赖sv-ele
             _$('[sv-ele]', ele).each((i, e) => {
@@ -469,44 +515,38 @@
     }
 
     // main
-    const shear = {
+    const xhear = {
         register
     };
 
     // init
-    glo.shear = shear;
+    glo.xhear = xhear;
 
     // 替换旧的主体 
     glo.$ = function(...args) {
         let reObj = _$(...args);
+        let [arg1, arg2] = args;
 
         // 优化操作，不用每次都查找节点
         // 判断传进来的参数是不是字符串
-        let arg1 = args[0];
-        if (getType(arg1) == "string" && arg1.search('<') > -1) {
+        if ((getType(arg1) == "string" && arg1.search('<') > -1) || arg1 instanceof Element) {
             renderAllSvEle(reObj);
         }
 
         // 去除 shadow 元素
-        let hasShadow = 0,
-            newArr = [],
-            { prevObject } = reObj;
-
-        reObj.each((i, e) => {
-            if (hasAttr(e, 'sv-shadow')) {
-                hasShadow = 1;
-            } else {
-                newArr.push(e);
-            }
-        });
-        if (hasShadow) {
-            reObj = _$(newArr);
-            // 还原prevObject
-            if (prevObject) {
-                reObj.prevObject = prevObject;
+        let arg2_svShadow;
+        if (arg2) {
+            if (arg2.getAttribute) {
+                arg2_svShadow = arg2.getAttribute('sv-shadow');
+            } else if (arg2.attr) {
+                arg2_svShadow = arg2.attr('sv-shadow');
             }
         }
-        prevObject = newArr = null;
+        if (arg2_svShadow) {
+            reObj = filterShadow(reObj, arg2_svShadow);
+        } else {
+            reObj = filterShadow(reObj);
+        }
 
         // 判断只有一个的情况下，返回shear对象
         let _svData = (reObj.length == 1) && (reObj[0]._svData);
@@ -571,20 +611,28 @@
                 // 监听新增元素
                 if (addedNodes && 0 in addedNodes) {
                     each(Array.from(addedNodes), (ele) => {
-                        if (ele.svRender) {
+                        if (ele._svData) {
                             attachedFun(ele);
                         }
 
-                        _$('[sv-render]', ele).each((i, e) => {
-                            attachedFun(e);
-                        });
+                        if (ele instanceof Element) {
+                            // 补漏没渲染的
+                            each(Array.from(ele.querySelectorAll('[sv-ele]')), e => {
+                                renderEle(e);
+                            });
+
+                            // 触发已渲染的attached
+                            each(Array.from(ele.querySelectorAll('[sv-render]')), e => {
+                                attachedFun(e);
+                            });
+                        }
                     });
                 }
 
                 // 监听去除元素
                 if (removedNodes && 0 in removedNodes) {
                     each(Array.from(removedNodes), (ele) => {
-                        if (ele.svRender) {
+                        if (ele._svData) {
                             detachedFunc(ele);
                         }
 

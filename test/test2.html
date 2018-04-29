@@ -20,39 +20,46 @@
 
 <body>
     <div id="test_area">
-        <test sv-ele id="a" kaka="111111">
+        <test sv-ele class="a" kaka="111111">
             <div>我是内容1</div>
             <div>我是内容2</div>
             <div>我是内容3</div>
-            <test sv-ele id="a2" kaka="2222222">
-                <div>我是内容2-1</div>
-                <div>我是内容2-2</div>
-                <div>我是内容2-3</div>
+            <test sv-ele class="a2" kaka="2222222">
+                <div class="ss">我是内容2-1</div>
+                <div class="ss">我是内容2-2</div>
+                <div class="ss">我是内容2-3</div>
             </test>
         </test>
+        <span class="ss">我是内容2-444</span>
         <br><br>
-        <test2 sv-ele id="b">
+        <test2 sv-ele class="b">
             <div>test222222 content</div>
         </test2>
 
-        <div id="c"></div>
+        <br><br>
+        <div class="c"></div>
+
+        <br><br>
+
+        <test3 sv-ele class="e"><span id="t1">haha test3</span></test3>
+
         <br><br>
     </div>
 </body>
 <script>
     setTimeout(() => {
-        let testele = $('<test2 id="c" sv-ele></test2>');
+        let testele = $('<test2 class="d" sv-ele></test2>');
         setTimeout(() => {
-            $('body').append(testele);
+            $('.c').append(testele);
         }, 500);
 
-        shear.register({
+        xhear.register({
             tag: "test",
             temp: `
             <div class="title2" style="color:green;font-size:12px;">{{a}}--{{a}}</div>
             <div class="title3" sv-tar="t3" style="color:blue;font-size:12px;">我是kaka => {{kaka}}</div>
             <input sv-module="kaka" />
-            <div sv-content style="font-size:12px;"></div>
+            <div sv-content style="font-size:12px;padding:10px;color:red;"></div>
             `,
             data: {
                 a: "我是副标题"
@@ -90,23 +97,59 @@
     }, 500);
 
     setTimeout(() => {
-        shear.register({
+        xhear.register({
             tag: "test2",
+            temp: `
+                <h3>test2</h3>
+                <div class="test2_content_con" sv-tar="testEle">
+                    <test sv-ele kaka="i am test2" sv-content></test>
+                    <div class="test2_content_con_child1"></div>
+                </div>
+                <div sv-tar="t2">
+                    <div class="t2_child1">
+                        <div class="t2_child1_1"></div>  
+                    </div>  
+                    <div class="t2_child2"></div>  
+                    <div class="t2_child3"></div>    
+                </div>
+            `,
             // temp: `
             //     <div>test2</div>
-            //     <test sv-tar="testEle" sv-ele kaka="i am test2" sv-content></test>
+            //     <test sv-tar="testEle" sv-ele kaka="i am test2">
+            //         <div class="test2_content" sv-content></div>
+            //     </test>
+            //     <div sv-tar="t2">
+            //         <div class="t2_child1">
+            //             <div class="t2_child1_1"></div>  
+            //         </div>  
+            //         <div class="t2_child2"></div>  
+            //         <div class="t2_child3"></div>    
+            //     </div>
             // `,
-            temp: `
-                <div>test2</div>
-                <test sv-tar="testEle" sv-ele kaka="i am test2">
-                    <div class="test2_content" sv-content></div>
-                </test>
-            `,
             data: {
                 a: "test2aaaa"
             }
         });
+
+        xhear.register({
+            tag: "test3",
+            temp: `
+                <h2>test3</h2>
+                <div class="test2_content_con">
+                    <test2 sv-ele sv-content></test2>
+                </div>
+                <test4 sv-ele sv-tar="test4"></test4>
+            `
+        });
     }, 300);
+
+    xhear.register({
+        tag: "test4",
+        temp: `
+            <h4>test4</h4>
+            <div sv-content></div>
+        `
+    });
 </script>
 
 </html>
