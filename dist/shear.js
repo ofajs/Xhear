@@ -134,12 +134,6 @@
 
         if (exShadowId) {
             $eles.each((i, e) => {
-                // if (hasAttr(e, 'sv-shadow') && e.getAttribute('sv-shadow') != exShadowId) {
-                //     hasShadow = 1;
-                // } else {
-                //     newArr.push(e);
-                // }
-
                 if (hasAttr(e, 'sv-shadow') && e.getAttribute('sv-shadow') == exShadowId) {
                     newArr.push(e);
                     hasShadow = 1;
@@ -603,16 +597,12 @@ const reduceCloneSvEle = (elem) => {
 };
 
 // 修正content的sv-shadow属性
-// const fixShadowContent = (_this, content, notInRender) => {
 const fixShadowContent = (_this, content) => {
     // 如果自己是影子元素
     if (_this.is('[sv-shadow]')) {
-        let svid;
-        if (_this.svRender && !notInRender) {
-            svid = _this.attr('sv-render');
-        } else {
-            svid = _this.attr('sv-shadow');
-        }
+        // 获取shadowId
+        let svid = _this.attr('sv-shadow');
+
         let contentType = getType(content);
         if ((contentType == "string" && content.search('<') > -1)) {
             let contentEle = _$(content)
@@ -797,9 +787,6 @@ assign(shearInitPrototype, {
         $fn.empty.call(fixSelfToContent(this));
         return this;
     },
-    replaceAll() {
-
-    },
     // unwrap需要重做
     unwrap() {
         let pNode = _$(this).parent();
@@ -821,19 +808,16 @@ assign(shearInitPrototype, {
             $fn.unwrap.call(this);
         }
         return this;
-    },
-    wrapAll() {
-        // 断定
     }
 });
 
 // 修正影子content
-each(['after', 'before', 'wrap'], kName => {
+each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function(content) {
 
         // 继承旧的方法
-        oldFunc.call(this, fixShadowContent(this, content, 1));
+        oldFunc.call(this, fixShadowContent(this, content));
 
         // 返回对象
         return this;
@@ -841,7 +825,7 @@ each(['after', 'before', 'wrap'], kName => {
 });
 
 // 紧跟after before wrap 步伐
-each(['insertAfter', 'insertBefore'], kName => {
+each(['insertAfter', 'insertBefore', 'replaceAll'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function(content) {
         // 影子元素不能做这个操作
@@ -850,7 +834,7 @@ each(['insertAfter', 'insertBefore'], kName => {
         }
 
         // 继承旧的方法
-        oldFunc.call(fixShadowContent(_$(content), this, 1), content);
+        oldFunc.call(fixShadowContent(_$(content), this), content);
 
         // 返回对象
         return this;
@@ -858,7 +842,7 @@ each(['insertAfter', 'insertBefore'], kName => {
 });
 
 // 修正影子content，引向$content
-each(['append', 'prepend'], kName => {
+each(['append', 'prepend', 'wrapInner'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function(content) {
 
@@ -902,12 +886,14 @@ each(['find', 'children'], kName => {
 
         if (svData) {
             reObj = createShearObject(reObj[0]);
-        } else if (this.is('[sv-shadow]')) {
-            reObj = filterShadow(reObj, this.attr('sv-shadow'));
-            // reObj = filterShadow(reObj, this.attr('sv-render') || this.attr('sv-shadow'));
         } else {
-            // 如果前一级不是sv-shaodw，就去除查找后的带sv-shadow
-            reObj = filterShadow(reObj);
+            if (this.is('[sv-shadow]')) {
+                reObj = filterShadow(reObj, this.attr('sv-shadow'));
+            } else {
+                // 如果前一级不是sv-shaodw，就去除查找后的带sv-shadow
+                reObj = filterShadow(reObj);
+            }
+            reObj = createShear$(reObj);
         }
 
         return reObj;

@@ -134,12 +134,6 @@
 
         if (exShadowId) {
             $eles.each((i, e) => {
-                // if (hasAttr(e, 'sv-shadow') && e.getAttribute('sv-shadow') != exShadowId) {
-                //     hasShadow = 1;
-                // } else {
-                //     newArr.push(e);
-                // }
-
                 if (hasAttr(e, 'sv-shadow') && e.getAttribute('sv-shadow') == exShadowId) {
                     newArr.push(e);
                     hasShadow = 1;
@@ -378,15 +372,6 @@
                 for (let kName in needWatchObj) {
                     // 绑定值
                     oriWatch(shearData, kName, (...args) => needWatchObj[kName].apply(createShearObject(ele), args));
-                    // oriWatch(shearData, kName, (...args) => {
-                    //     let fun = () => needWatchObj[kName].apply(createShearObject(ele), args);
-                    //     if (isRenderOK) {
-                    //         fun();
-                    //     } else {
-                    //         nextTick(fun);
-                    //     }
-                    //     fun = null;
-                    // });
                 }
             }
 

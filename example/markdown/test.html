@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="uikit.gradient.css">
+    <style>
+        markdown {
+            padding: 20px;
+            overflow-y: auto;
+        }
+    </style>
+    <script src="../../test/jquery-3.2.1.js"></script>
+    <script src="../../dist/shear.js"></script>
+    <script src="marked.js"></script>
+    <script src="markdown-xhear.js"></script>
+</head>
+
+<body>
+    <markdown sv-ele>
+        <!--可以加个 pre， 防止换行符被编辑器格式化了 -->
+        <pre>
+        Marked Demo
+        ======================
+    
+        这是一个Marked库使用的例子。 http://blog.fens.me/nodejs-markdown-marked/
+    
+        > A full-featured markdown parser and compiler, written in JavaScript. Built
+        > for speed.
+    
+        [![NPM version](https://badge.fury.io/js/marked.png)][badge]
+    
+        ## Install
+    
+        ``` bash
+        npm install marked --save
+        ```
+    
+        ## 列表测试
+    
+        + 列表测试，行1
+        + 列表测试，行2
+        + 列表测试，行3
+        + 列表测试，行4
+    
+        ## 表格测试
+    
+        Table Heading A | Table Heading B | Table Heading C
+        --|--|--
+        A1 | B1 | C1
+        A2 | B2 | C2
+        A3 | B3 | C3
+        </pre>
+    </markdown>
+</body>
+
+</html>
