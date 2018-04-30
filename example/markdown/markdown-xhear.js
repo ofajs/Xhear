@@ -7,9 +7,6 @@
 
 xhear.register({
     tag: "markdown",
-    temp: `
-        <div sv-content></div>
-    `,
     data: {
         // 原始文本
         mtext: ""
@@ -58,7 +55,7 @@ xhear.register({
             $ele.html(temp.html());
         }
     },
-    rendered($ele) {
+    inited($ele) {
         // 获取文本数据
         let text = $ele.text();
 

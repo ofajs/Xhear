@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>tCode test</title>
+    <script src="../../test/jquery-3.2.1.js"></script>
+    <script src="../../dist/shear.js"></script>
+    <script src="webcode.js"></script>
+    <style>
+        webcode {
+            padding: 10px;
+            color: #ddd;
+            background-color: #1e1e1e;
+            font-family: 'Source Code Pro', 'Consolas', monospace, Arial, sans-serif;
+            font-size: 15px;
+        }
+        
+        webcode *::selection,
+        webcode *::-webkit-selection {
+            /* color: #fff !important; */
+            background-color: rgba(255, 255, 255, .2);
+        }
+        /* 前置颜色 */
+        
+        .c1 {
+            color: #9872a2;
+        }
+        
+        .c2 {
+            color: #9aa835;
+        }
+        
+        .c3 {
+            color: #676867;
+        }
+        
+        .c4 {
+            color: #4684b4;
+        }
+        
+        .c5 {
+            color: #c7423d;
+        }
+        
+        .c6 {
+            color: #9a9b99;
+        }
+        
+        .c7 {
+            color: #ce4f19;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="asd">
+
+        asdasd
+    </div>
+    <code lang="javascript">
+        var a = {
+            val:'hahaha'
+        };
+
+        a.val = "aaaaaa";
+
+        window.alert(a.val);
+    </code>
+    <webcode class="a" lang="javascript" sv-ele>
+        <pre>
+                xhear.register({
+                    tag: "markdown",
+                    data: {
+                        // 原始文本
+                        mtext: ""
+                    },
+                    val: {
+                        get() {
+                            return this.mtext;
+                        },
+                        set(text) {
+                            // 保存内容
+                            this.mtext = text;
+                
+                            let $ele = this;
+                
+                            // 根据第一段文字，确定后面的数据删减空格数
+                            let line_one = text.match(/ *\S/);
+                
+                            // 按行分组
+                            let lines = text.match(/.*\n/g);
+                
+                            if (lines) {
+                                // 重新修正文本
+                                text = "";
+                
+                                // 把前置空格干掉
+                                lines.map(e => {
+                                    text += e.replace(new RegExp('^ +'), "");
+                                });
+                            }
+                
+                            // 临时元素
+                            let temp = $('<div />');
+                
+                            // 这个 markdown 自定义元素依赖 marked 这个库
+                            temp.html(marked(text));
+                
+                            // table添加样式
+                            temp.find('table').addClass('uk-table uk-table-hover uk-table-striped');
+                
+                            // 列表
+                            temp.find('ul').addClass('uk-list uk-list-striped');
+                
+                            // 描述
+                            temp.find('dl').addClass('uk-description-list-horizontal uk-description-list-line');
+                
+                            $ele.html(temp.html());
+                        }
+                    },
+                    inited($ele) {
+                        // 获取文本数据
+                        let text = $ele.text();
+                
+                        // 直接设置value
+                        $ele.val(text);
+                    }
+                });
+    </pre>
+    </webcode>
+</body>
+
+</html>

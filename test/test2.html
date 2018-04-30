@@ -37,7 +37,7 @@
         </test2>
 
         <br><br>
-        <div class="c"></div>
+        <div class="c"><span id="t2">t2</span></div>
 
         <br><br>
 
@@ -81,8 +81,8 @@
                     console.log('initWatch', val, beforeVal, this);
                 }
             },
-            rendered(tar) {
-                console.log('rendered tar => ', tar);
+            init(tar) {
+                console.log('init tar => ', tar);
             },
             attached(tar) {
                 console.log('attached tar => ', tar);

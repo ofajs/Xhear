@@ -82,18 +82,18 @@ const fixSelfToContent = (_this) => {
 
 // 将指向$content修正到parent上
 // 判断是否带了shadowId的子元素
-const fixContentToParent = (ele, shadowId) => {
-    if (ele.is('[sv-content]')) {
-        ele = ele.map((i, e) => {
-            let re = e;
-            while (re.svParent) {
-                re = re.svParent;
-            }
-            return re;
-        });
-    }
-    return ele;
-}
+// const fixContentToParent = (ele, shadowId) => {
+//     if (ele.is('[sv-content]')) {
+//         ele = ele.map((i, e) => {
+//             let re = e;
+//             while (re.svParent) {
+//                 re = re.svParent;
+//             }
+//             return re;
+//         });
+//     }
+//     return ele;
+// }
 
 // 修正其他节点操控的方法
 assign(shearInitPrototype, {
@@ -229,6 +229,43 @@ assign(shearInitPrototype, {
         $fn.empty.call(fixSelfToContent(this));
         return this;
     },
+    parent(expr) {
+        // return fixContentToParent($fn.parent.apply(this, args));
+        let rearr = this.map((i, e) => {
+            let re = e.parentNode;
+            while (re.svParent) {
+                re = re.svParent;
+            }
+            return re;
+        });
+        let reobj = createShear$(new Set(rearr));
+        if (expr) {
+            reobj = reobj.filter(expr);
+        }
+        return reobj;
+    },
+    // parents需要重做
+    parents(expr) {
+        let rearr = [];
+        this.each((i, e) => {
+            let par = e.parentNode;
+            while (par) {
+                if (par.svParent) {
+                    par = par.svParent;
+                }
+                rearr.push(par);
+                par = par.parentNode;
+            }
+        });
+        let reobj = createShear$(new Set(rearr));
+        if (expr) {
+            reobj = reobj.filter(expr);
+        }
+        return reobj;
+    },
+    // parentUtil() {
+
+    // },
     // unwrap需要重做
     unwrap() {
         let pNode = _$(this).parent();
@@ -352,16 +389,6 @@ each(['eq', 'first', 'last', 'filter', 'has', 'not', 'slice', 'next', 'nextAll',
         if (reObj.length === 1 && tar._svData) {
             reObj = createShearObject(tar);
         }
-        return reObj;
-    });
-});
-
-// parent级别的方法
-each(['parent'], kName => {
-    let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(...args) {
-        let reObj = $fn[kName].apply(this, args);
-        reObj = fixContentToParent(reObj);
         return reObj;
     });
 });

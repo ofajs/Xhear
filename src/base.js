@@ -10,6 +10,7 @@
     const emptyFun = () => {};
 
     // function
+    let isUndefined = val => val === undefined;
     const hasAttr = (e, attrName) => {
         if (!e.getAttribute) {
             return 0;
@@ -164,6 +165,12 @@
     let ShearFn = assign(create(shearInitPrototype), {
         // 设置数据变化
         set(key, val) {
+            if (getType(key) !== "string") {
+                for (let i in key) {
+                    this.set(i, key[i]);
+                }
+                return;
+            }
             let _this = this;
             if (0 in _this && _this[0]._svData) {
                 _this = _this[0]._svData;
@@ -188,7 +195,7 @@
                     // 触发修改函数
                     let tars = getWatchObj(_this, key);
                     let tars2 = getWatchObj(_this, key, SWATCHORI);
-                    tars.concat(tars2).forEach((e) => {
+                    tars.concat(tars2).forEach(e => {
                         e(val, before_val);
                     });
                 }
@@ -199,8 +206,14 @@
         },
         // 监听数值变化
         watch(k, func) {
-            let tars = getWatchObj(this, k);
-            tars.push(func);
+            if (getType(k) == "string") {
+                let tars = getWatchObj(this, k);
+                tars.push(func);
+            } else {
+                for (let i in k) {
+                    this.watch(i, k[i]);
+                }
+            }
         },
         // 取消监听数值变化
         unwatch(k, func) {
@@ -247,10 +260,10 @@
             ele.innerHTML = tagdata.code;
 
             // 生成元素
-            let shearData = new tagdata.Shear();
+            let shearObject = new tagdata.Shear();
 
             //挂载数据
-            ele._svData = shearData;
+            ele._svData = shearObject;
 
             // 先转换 sv-span 元素
             _$('sv-span', ele).each((i, e) => {
@@ -261,7 +274,7 @@
 
                 // 文本数据绑定
                 var svkey = e.getAttribute(SVKEY);
-                oriWatch(shearData, svkey, (val) => {
+                oriWatch(shearObject, svkey, (val) => {
                     textnode.textContent = val;
                 });
             });
@@ -270,7 +283,7 @@
             let $content = _$('[sv-content]', ele);
             delete $content.prevObject;
             if ($content[0]) {
-                defineProperty(shearData, '$content', {
+                defineProperty(shearObject, '$content', {
                     enumerable: true,
                     get() {
                         if (!$content[0]._svData) {
@@ -307,14 +320,14 @@
                     });
 
                     // 设置监听属性
-                    shearData._obs = observer;
+                    shearObject._obs = observer;
                 }
             }
 
             // 写入其他定义节点
             _$('[sv-tar]', ele).each((i, e) => {
                 let eName = _$(e).attr('sv-tar');
-                defineProperty(shearData, '$' + eName, {
+                defineProperty(shearObject, '$' + eName, {
                     enumerable: true,
                     get() {
                         if (!e._svData) {
@@ -336,10 +349,12 @@
             tagdata.attrs.forEach(kName => {
                 // 获取属性值并设置
                 let attrVal = $ele.attr(kName);
-                rData[kName] = attrVal;
+                if (!isUndefined(attrVal)) {
+                    rData[kName] = attrVal;
+                }
 
                 // 绑定值
-                oriWatch(shearData, kName, (val) => {
+                oriWatch(shearObject, kName, (val) => {
                     $ele.attr(kName, val);
                 });
             });
@@ -356,13 +371,13 @@
                 let kName = $tar.attr('sv-module');
 
                 // 绑定值
-                oriWatch(shearData, kName, (val) => {
+                oriWatch(shearObject, kName, (val) => {
                     tar.value = val;
                 });
 
                 // 监听改动
                 $tar.on('input', () => {
-                    shearData[kName] = tar.value;
+                    shearObject[kName] = tar.value;
                 });
             });
 
@@ -371,7 +386,7 @@
             if (needWatchObj) {
                 for (let kName in needWatchObj) {
                     // 绑定值
-                    oriWatch(shearData, kName, (...args) => needWatchObj[kName].apply(createShearObject(ele), args));
+                    oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(createShearObject(ele), args));
                 }
             }
 
@@ -395,13 +410,17 @@
             $ele.removeAttr('sv-ele').attr('sv-render', renderId);
             $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
 
-            // 设置 rData
-            for (let k in rData) {
-                shearData.set(k, rData[k]);
-            }
+            // 渲染节点完成
+            tagdata.render && tagdata.render(createShearObject(ele), rData);
 
-            // 触发渲染完成后的事件
-            tagdata.rendered && tagdata.rendered(createShearObject(ele));
+            // 设置 rData
+            shearObject.set(rData);
+            // for (let k in rData) {
+            //     shearObject.set(k, rData[k]);
+            // }
+
+            // 初始化完成
+            tagdata.inited && tagdata.inited(createShearObject(ele));
 
             // 如果是在document上，直接触发 attached 事件
             if (ele.getRootNode() === document && tagdata.attached && !ele[ATTACHED_KEY]) {
@@ -423,7 +442,7 @@
             // 注册的元素名
             tag: "",
             // 注册元素的内容
-            temp: "",
+            temp: "<div sv-content></div>",
             // 动态绑定 attribute 的数据属性名
             attrs: [],
             // 初始获取 attribute 填充数据的属性名
@@ -438,10 +457,12 @@
             data: {},
             // 原型链上的数据
             proto: {},
+            // 渲染完节点触发的时间（数据还没绑定）
+            // render(){},
             // 直接监听属性变动对象
             // watch: {},
-            // 渲染后触发的事件
-            // rendered: emptyFun,
+            // 初始化完成后触发的事件
+            // inited: emptyFun,
             // 添加进document执行的callback
             // attached: emptyFun,
             // 删除后执行的callback
