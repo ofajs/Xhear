@@ -1,9 +1,9 @@
 {
-  "name": "shear.js",
-  "version": "2.0.0",
+  "name": "Xhear.js",
+  "version": "1.0.0",
   "description": "jQuery + webComponent",
   "scripts": {
-    "build": "node scripts/build.js"
+    "build": "node scripts/watch.js"
   },
   "author": "YAO",
   "license": "MIT"

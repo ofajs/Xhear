@@ -335,7 +335,7 @@
                     });
 
                     // 设置监听属性
-                    shearObject._obs = observer;
+                    shearObject.__obs = observer;
                 }
             }
 
@@ -354,22 +354,13 @@
                 });
             });
 
-            // 私有数据对象
-            // let pri = {};
-            // assign(pri, tagdata.pri);
-            // let innerShearObject = createShearObject(ele);
-            // innerShearObject.pri = pri;
-            // let createInnerShearObject = () => innerShearObject;
-            // let createInnerShearObject = () => {
-            //     let obj = createShearObject(ele);
-            //     obj.pri = pri;
-            //     return obj;
-            // }
-
             // 私有属性
             let innerShearObject = createShearObject(ele);
-            if (tagdata.pri) {
-                assign(innerShearObject, tagdata.pri);
+            let priObj = tagdata.pri;
+            if (priObj) {
+                for (let k in priObj) {
+                    innerShearObject["_" + k] = priObj[k];
+                }
             }
 
             // 等下需要设置的data
@@ -419,8 +410,7 @@
             if (needWatchObj) {
                 for (let kName in needWatchObj) {
                     // 绑定值
-                    oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(createInnerShearObject(), args));
-                    // oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(createInnerShearObject(), args));
+                    oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(innerShearObject, args));
                 }
             }
 
@@ -428,8 +418,8 @@
             let val = tagdata.val;
             if (val) {
                 let dObj = {};
-                val.get && (dObj.get = () => val.get.call(createInnerShearObject()));
-                val.set && (dObj.set = d => val.set.call(createInnerShearObject(), d));
+                val.get && (dObj.get = () => val.get.call(innerShearObject));
+                val.set && (dObj.set = d => val.set.call(innerShearObject, d));
                 defineProperty(ele, 'value', dObj);
             }
 
@@ -441,10 +431,7 @@
             $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
 
             // 渲染节点完成
-            tagdata.render && tagdata.render(createInnerShearObject(), rData);
-
-            // 设置 rData
-            shearObject.set(rData);
+            tagdata.render && tagdata.render(innerShearObject, rData);
 
             // 是否有自定义字段数据
             let {
@@ -467,10 +454,10 @@
                     let dObj = {
                         enumerable: true
                     };
-                    getFunc && (dObj.get = () => getFunc.call(createInnerShearObject()));
+                    getFunc && (dObj.get = () => getFunc.call(innerShearObject));
                     setFunc && (dObj.set = d => {
                         // 获取当前值
-                        let val = setFunc.call(createInnerShearObject(), d);
+                        let val = setFunc.call(innerShearObject, d);
 
                         if (getFunc) {
                             d = shearObject[key];
@@ -489,12 +476,15 @@
                 }
             }
 
+            // 设置 rData
+            shearObject.set(rData);
+
             // 初始化完成
-            tagdata.inited && tagdata.inited(createInnerShearObject());
+            tagdata.inited && tagdata.inited(innerShearObject);
 
             // 如果是在document上，直接触发 attached 事件
             if (ele.getRootNode() === document && tagdata.attached && !ele[ATTACHED_KEY]) {
-                tagdata.attached(createInnerShearObject())
+                tagdata.attached(innerShearObject);
                 ele[ATTACHED_KEY] = 1;
             }
 
@@ -675,8 +665,8 @@
                     _svData
                 } = ele;
                 if (_svData) {
-                    _svData._obs && _svData._obs.disconnect();
-                    delete _svData._obs;
+                    _svData.__obs && _svData.__obs.disconnect();
+                    delete _svData.__obs;
                     delete ele._svData;
                 }
             }
