@@ -6,7 +6,9 @@ xhear.register({
         code: ""
     },
     val: {
-        get() {},
+        get() {
+            return this.code;
+        },
         set(text) {
 
             let $ele = this;
@@ -23,7 +25,7 @@ xhear.register({
                     e = e.replace(/('.*?')|(".*?")|(\/.+\/)/g, text => `{c2/}${text}{/c2}`);
 
                     // 特定符号后面的定义变量
-                    e = e.replace(/(var|let|function|return)( +[\w_\$]+)/g, function(content, b1, b2) {
+                    e = e.replace(/(var|let|function|return)( +[\w_\$]+)/g, function (content, b1, b2) {
                         content = content.replace(b1, `{c1/}${b1}{/c1}`);
                         content = content.replace(b2, `{c4/}${b2}{/c4}`);
                         return content;
@@ -36,7 +38,7 @@ xhear.register({
                     e = e.replace(/\/\/.+/g, text => `{c6/}${text}{/c6}`);
 
                     // 等于号前后的东西
-                    e = e.replace(/=(.+);/g, function(content, tar) {
+                    e = e.replace(/=(.+);/g, function (content, tar) {
                         // 判断是否有大于号
                         if (content.search('{') == -1) {
                             content = content.replace(tar, `{c4/}${tar}{/c4}`);
@@ -45,7 +47,7 @@ xhear.register({
                     });
 
                     // 点 的前后
-                    e = e.replace(/([\w_\$]+)\.([\w+_]+)/g, function(content, b1, b2) {
+                    e = e.replace(/([\w_\$]+)\.([\w+_]+)/g, function (content, b1, b2) {
                         // 判断 b1 是不是关键字内的
                         if (/(document|window)/.test(b1)) {
                             content = content.replace(b1 + ".", `{c5/}${b1}{/c5}.`);
@@ -60,7 +62,7 @@ xhear.register({
                     e = e.replace(/ /g, '&nbsp;');
 
                     // 根据标识转换class span
-                    e = e.replace(/\{(.+?)\/\}(.+?)\{\/.+?\}/g, function(e, className, content) {
+                    e = e.replace(/\{(.+?)\/\}(.+?)\{\/.+?\}/g, function (e, className, content) {
                         // 替换class
                         return `<span class="${className}">${content}</span>`;
                     });

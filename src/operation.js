@@ -249,8 +249,8 @@ assign(shearInitPrototype, {
         let rearr = [];
         this.each((i, e) => {
             let par = e.parentNode;
-            while (par) {
-                if (par.svParent) {
+            while (par && par !== document) {
+                while (par.svParent) {
                     par = par.svParent;
                 }
                 rearr.push(par);
@@ -263,9 +263,25 @@ assign(shearInitPrototype, {
         }
         return reobj;
     },
-    // parentUtil() {
+    parentsUntil(expr) {
+        let rearr = [];
 
-    // },
+        this.each((i, e) => {
+            let par = e.parentNode;
+            while (par && par !== document) {
+                while (par.svParent) {
+                    par = par.svParent;
+                }
+                if (expr && _$(par).is(expr)) {
+                    break;
+                }
+                rearr.push(par);
+                par = par.parentNode;
+            }
+        });
+
+        return createShear$(new Set(rearr));
+    },
     // unwrap需要重做
     unwrap() {
         let pNode = _$(this).parent();

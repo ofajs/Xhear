@@ -20,7 +20,8 @@
 <body>
     <div id="test_area">
         <div id="aa"></div>
-        <br><br>
+        <br>
+        <br>
 
         <test sv-ele id="b" kaka="111111">
             <div>我是内容1</div>
@@ -28,9 +29,11 @@
             <div>我是内容3</div>
         </test>
 
-        <br><br>
+        <br>
+        <br>
         <div id="c"></div>
-        <br><br>
+        <br>
+        <br>
     </div>
 </body>
 <script>
@@ -42,11 +45,30 @@
             <div class="title3" style="color:blue;font-size:12px;">我是kaka => {{kaka}}</div>
             <input sv-module="kaka" name="" />
             <div sv-content style="font-size:12px;"></div>
+            <div> c=> {{c}}</div>
         `,
         data: {
             a: "我是副标题"
         },
-        attrs: ['kaka'],
+        computed: {
+            b() {
+                return 100;
+            },
+            c: {
+                get() {
+                    return this._c + " haha";
+                },
+                set(val) {
+                    this._c = val;
+                }
+            }
+        },
+        // 私有属性，内部对象要获取记得加下划线
+        pri: {
+            val: "I am private data",
+            c: "I am c"
+        },
+        attrs: ['kaka', "c"],
         proto: {
             haha() {
                 console.log(this, 'ni ma si');
@@ -60,10 +82,10 @@
         watch: {
             // 监听 a 的改动
             a(val, beforeVal) {
-                console.log('initWatch', val, beforeVal, this);
+                console.log('initWatch', val, beforeVal, '  this=> ', this);
             }
         },
-        init: (tar) => {
+        inited: (tar) => {
             console.log('init tar => ', tar);
         },
         attached: (tar) => {
@@ -83,8 +105,8 @@
     // let after_ele = $('<div><test sv-ele kaka="woshikakaka">hahatest</test></div>');
 
     // 兼容值变动
-    ele_b.watch('kaka', (val, oldVal) => {
-        console.log('watch => ', val, oldVal);
+    ele_b.watch('a', function (val, oldVal) {
+        console.log('after watch => ', val, oldVal, '  this=> ', this);
     });
     setTimeout(() => {
         ele_b.kaka = 'kakakakakakakakakaka';
@@ -97,7 +119,7 @@
     }, 1000);
 
     $('#aa').append((...args) => {
-        return `<test sv-ele id="b" kaka="function +"></test>`
+        return `<test sv-ele kaka="function +"></test>`
     })
 </script>
 

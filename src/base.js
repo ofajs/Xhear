@@ -27,17 +27,6 @@
 
     const each = (arr, func) => Array.from(arr).forEach(func);
 
-    // 获取watch数组的方法
-    const getWatchObj = (d, k, wname = SWATCH) => {
-        return d[wname][k] || (d[wname][k] = []);
-    };
-
-    // 内部用的watch方法
-    const oriWatch = (d, k, func) => {
-        let tars = getWatchObj(d, k, SWATCHORI);
-        tars.push(func);
-    };
-
     // 获取随机id
     const getRandomId = () => Math.random().toString(32).substr(2);
 
@@ -131,7 +120,9 @@
         // 去除 shadow 元素
         let hasShadow = 0,
             newArr = [],
-            { prevObject } = $eles;
+            {
+                prevObject
+            } = $eles;
 
         if (exShadowId) {
             $eles.each((i, e) => {
@@ -161,13 +152,44 @@
         return $eles;
     }
 
+    // 获取标签数据
+    const getTagData = (ele) => {
+        let tagname = ele.tagName.toLowerCase();
+        return tagDatabase[tagname];
+    }
+
+    // Shear class function
+    // 获取watch数组的方法
+    const getWatchObj = (d, k, wname = SWATCH) => {
+        return d[wname][k] || (d[wname][k] = []);
+    };
+
+    // 内部用的watch方法
+    const oriWatch = (d, k, func) => {
+        let tars = getWatchObj(d, k, SWATCHORI);
+        tars.push(func);
+    };
+
+    // 触发修改事件
+    const emitChange = (sObj, key, val) => {
+        let beforeValue = sObj[key];
+        // 触发修改函数
+        let tars = getWatchObj(sObj, key);
+        let tars2 = getWatchObj(sObj, key, SWATCHORI);
+        tars.concat(tars2).forEach(e => {
+            e(val, beforeValue);
+        });
+    }
+
     // Shear class 的原型对象
     let ShearFn = assign(create(shearInitPrototype), {
         // 设置数据变化
         set(key, val) {
-            if (getType(key) !== "string") {
-                for (let i in key) {
-                    this.set(i, key[i]);
+            if (getType(key) == "object") {
+                if (!val) {
+                    for (let i in key) {
+                        this.set(i, key[i]);
+                    }
                 }
                 return;
             }
@@ -176,7 +198,7 @@
                 _this = _this[0]._svData;
             }
             if (key in _this) {
-                console.warn('the value exists');
+                console.warn('the value exists => ', key);
                 return;
             }
 
@@ -189,15 +211,12 @@
                     return originValue;
                 },
                 set(val) {
-                    let before_val = originValue;
-                    originValue = val;
-
                     // 触发修改函数
-                    let tars = getWatchObj(_this, key);
-                    let tars2 = getWatchObj(_this, key, SWATCHORI);
-                    tars.concat(tars2).forEach(e => {
-                        e(val, before_val);
-                    });
+                    emitChange(_this, key, val);
+
+                    // 改变值
+                    originValue = val;
+                    return val;
                 }
             });
 
@@ -231,11 +250,6 @@
         svRender: !0
     });
 
-    const getTagData = (ele) => {
-        let tagname = ele.tagName.toLowerCase();
-        return tagDatabase[tagname];
-    }
-
     // 渲染 sv元素
     const renderEle = (ele) => {
         // 判断是否属于sv-ele元素
@@ -247,8 +261,6 @@
                 console.warn('this element is not defined', ele);
                 return;
             }
-
-            // let isRenderOK = 0;
 
             // 主体元素
             let $ele = _$(ele);
@@ -303,7 +315,10 @@
                 if (tagdata.childChange) {
                     let observer = new MutationObserver((mutations) => {
                         mutations.forEach((mutation) => {
-                            let { addedNodes, removedNodes } = mutation;
+                            let {
+                                addedNodes,
+                                removedNodes
+                            } = mutation;
                             let obsEvent = {};
                             (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
                             (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
@@ -338,6 +353,24 @@
                     }
                 });
             });
+
+            // 私有数据对象
+            // let pri = {};
+            // assign(pri, tagdata.pri);
+            // let innerShearObject = createShearObject(ele);
+            // innerShearObject.pri = pri;
+            // let createInnerShearObject = () => innerShearObject;
+            // let createInnerShearObject = () => {
+            //     let obj = createShearObject(ele);
+            //     obj.pri = pri;
+            //     return obj;
+            // }
+
+            // 私有属性
+            let innerShearObject = createShearObject(ele);
+            if (tagdata.pri) {
+                assign(innerShearObject, tagdata.pri);
+            }
 
             // 等下需要设置的data
             let rData = {};
@@ -386,21 +419,18 @@
             if (needWatchObj) {
                 for (let kName in needWatchObj) {
                     // 绑定值
-                    oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(createShearObject(ele), args));
+                    oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(createInnerShearObject(), args));
+                    // oriWatch(shearObject, kName, (...args) => needWatchObj[kName].apply(createInnerShearObject(), args));
                 }
             }
 
             // 判断是否有value值绑定
             let val = tagdata.val;
             if (val) {
-                defineProperty(ele, "value", {
-                    get() {
-                        return val.get && val.get.call(createShearObject(ele));
-                    },
-                    set(d) {
-                        return val.set && val.set.call(createShearObject(ele), d);
-                    }
-                });
+                let dObj = {};
+                val.get && (dObj.get = () => val.get.call(createInnerShearObject()));
+                val.set && (dObj.set = d => val.set.call(createInnerShearObject(), d));
+                defineProperty(ele, 'value', dObj);
             }
 
             // 生成renderId
@@ -411,25 +441,62 @@
             $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
 
             // 渲染节点完成
-            tagdata.render && tagdata.render(createShearObject(ele), rData);
+            tagdata.render && tagdata.render(createInnerShearObject(), rData);
 
             // 设置 rData
             shearObject.set(rData);
-            // for (let k in rData) {
-            //     shearObject.set(k, rData[k]);
-            // }
+
+            // 是否有自定义字段数据
+            let {
+                computed
+            } = tagdata;
+            if (computed) {
+                for (let key in computed) {
+                    let tar = computed[key];
+                    let tarType = getType(tar);
+
+                    // 专门方法
+                    let getFunc, setFunc;
+
+                    if (tarType == "function") {
+                        getFunc = tar;
+                    } else {
+                        getFunc = tar.get;
+                        setFunc = tar.set;
+                    }
+                    let dObj = {
+                        enumerable: true
+                    };
+                    getFunc && (dObj.get = () => getFunc.call(createInnerShearObject()));
+                    setFunc && (dObj.set = d => {
+                        // 获取当前值
+                        let val = setFunc.call(createInnerShearObject(), d);
+
+                        if (getFunc) {
+                            d = shearObject[key];
+                        }
+
+                        // 触发修改函数
+                        emitChange(shearObject, key, d);
+
+                        return val;
+                    });
+
+                    defineProperty(shearObject, key, dObj);
+
+                    // 先触发一次渲染
+                    emitChange(shearObject, key, shearObject[key]);
+                }
+            }
 
             // 初始化完成
-            tagdata.inited && tagdata.inited(createShearObject(ele));
+            tagdata.inited && tagdata.inited(createInnerShearObject());
 
             // 如果是在document上，直接触发 attached 事件
             if (ele.getRootNode() === document && tagdata.attached && !ele[ATTACHED_KEY]) {
-                tagdata.attached(createShearObject(ele))
+                tagdata.attached(createInnerShearObject())
                 ele[ATTACHED_KEY] = 1;
             }
-
-            // 设置渲染完成
-            // isRenderOK = 1;
 
             // 渲染依赖sv-ele
             _$('[sv-ele]', ele).each((i, e) => {
@@ -455,8 +522,12 @@
             // },
             // 自带数据
             data: {},
+            // 混合到实例中的值
+            // computed: {},
             // 原型链上的数据
             proto: {},
+            // 私有数据对象，外部实例化是拿不到的
+            pri: {},
             // 渲染完节点触发的时间（数据还没绑定）
             // render(){},
             // 直接监听属性变动对象
@@ -469,7 +540,7 @@
             // detached: emptyFun,
             // 子节点被修改后出发的callback
             // sv-content内的一代元素的删除或添加
-            // childChange: emptyFun
+            // childChange: emptyFun,
         };
         // 合并选项
         assign(defaults, options);
@@ -529,7 +600,7 @@
     glo.xhear = xhear;
 
     // 替换旧的主体 
-    glo.$ = function(...args) {
+    glo.$ = function (...args) {
         let reObj = _$(...args);
         let [arg1, arg2] = args;
 
@@ -600,7 +671,9 @@
                 });
 
                 // 清空observer属性
-                let { _svData } = ele;
+                let {
+                    _svData
+                } = ele;
                 if (_svData) {
                     _svData._obs && _svData._obs.disconnect();
                     delete _svData._obs;
@@ -612,7 +685,10 @@
         // attached detached 监听
         let observer = new MutationObserver((mutations) => {
             mutations.forEach((e) => {
-                let { addedNodes, removedNodes } = e;
+                let {
+                    addedNodes,
+                    removedNodes
+                } = e;
 
                 // 监听新增元素
                 if (addedNodes && 0 in addedNodes) {
