@@ -5,6 +5,8 @@ const readFile = util.promisify(fs.readFile);
 
 let count = 1;
 
+let beforeCode = "";
+
 let mainFun = async () => {
     // 打开主体base文件
     let basefile = await readFile('src/base.js', 'utf8');
@@ -15,8 +17,13 @@ let mainFun = async () => {
     // 整合 扩展控制器逻辑 
     basefile = basefile.replace('//<!--operation-->', operationFile);
 
+    if (beforeCode == basefile) {
+        return;
+    }
+    beforeCode = basefile;
+
     // 写入最终文件
-    fs.writeFile('dist/shear.js', basefile, 'utf8', (err) => {
+    fs.writeFile('dist/xhear.js', basefile, 'utf8', (err) => {
         if (err) throw err;
         console.log('shear.js write succeed!' + count++);
     });

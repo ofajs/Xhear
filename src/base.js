@@ -373,7 +373,7 @@
             tagdata.attrs.forEach(kName => {
                 // 获取属性值并设置
                 let attrVal = $ele.attr(kName);
-                if (!isUndefined(attrVal)) {
+                if (attrVal) {
                     rData[kName] = attrVal;
                 }
 
@@ -430,9 +430,6 @@
             $ele.removeAttr('sv-ele').attr('sv-render', renderId);
             $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
 
-            // 渲染节点完成
-            tagdata.render && tagdata.render(innerShearObject, rData);
-
             // 是否有自定义字段数据
             let {
                 computed
@@ -475,6 +472,9 @@
                     emitChange(shearObject, key, shearObject[key]);
                 }
             }
+
+            // 渲染节点完成
+            tagdata.render && tagdata.render(innerShearObject, rData);
 
             // 设置 rData
             shearObject.set(rData);
@@ -689,9 +689,9 @@
 
                         if (ele instanceof Element) {
                             // 补漏没渲染的
-                            each(Array.from(ele.querySelectorAll('[sv-ele]')), e => {
-                                renderEle(e);
-                            });
+                            // each(Array.from(ele.querySelectorAll('[sv-ele]')), e => {
+                            //     renderEle(e);
+                            // });
 
                             // 触发已渲染的attached
                             each(Array.from(ele.querySelectorAll('[sv-render]')), e => {

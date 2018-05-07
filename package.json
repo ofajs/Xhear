@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "jQuery + webComponent",
   "scripts": {
-    "build": "node scripts/watch.js"
+    "watch": "node scripts/watch.js"
   },
   "author": "YAO",
   "license": "MIT"

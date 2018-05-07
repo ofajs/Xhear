@@ -373,7 +373,7 @@
             tagdata.attrs.forEach(kName => {
                 // 获取属性值并设置
                 let attrVal = $ele.attr(kName);
-                if (!isUndefined(attrVal)) {
+                if (attrVal) {
                     rData[kName] = attrVal;
                 }
 
@@ -430,9 +430,6 @@
             $ele.removeAttr('sv-ele').attr('sv-render', renderId);
             $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
 
-            // 渲染节点完成
-            tagdata.render && tagdata.render(innerShearObject, rData);
-
             // 是否有自定义字段数据
             let {
                 computed
@@ -475,6 +472,9 @@
                     emitChange(shearObject, key, shearObject[key]);
                 }
             }
+
+            // 渲染节点完成
+            tagdata.render && tagdata.render(innerShearObject, rData);
 
             // 设置 rData
             shearObject.set(rData);
@@ -671,12 +671,13 @@ const reduceCloneSvEle = (elem) => {
 
 // 修正content的sv-shadow属性
 const fixShadowContent = (_this, content) => {
+    // 获取content类型
+    let contentType = getType(content);
+
     // 如果自己是影子元素
     if (_this.is('[sv-shadow]')) {
         // 获取shadowId
         let svid = _this.attr('sv-shadow');
-
-        let contentType = getType(content);
         if ((contentType == "string" && content.search('<') > -1)) {
             let contentEle = _$(content)
             contentEle.attr('sv-shadow', svid);
@@ -700,7 +701,9 @@ const fixSelfToContent = (_this) => {
     if (_this.is('[sv-render]')) {
         _this = _this.map((i, e) => {
             let re = e;
-            let { _svData } = e;
+            let {
+                _svData
+            } = e;
             while (_svData && _svData.$content) {
                 re = _svData.$content[0];
                 _svData = re._svData;
@@ -918,7 +921,9 @@ assign(shearInitPrototype, {
         let pNode = _$(this).parent();
         if (pNode.is('[sv-content]')) {
             pNode.each((i, e) => {
-                let { svParent } = e;
+                let {
+                    svParent
+                } = e;
                 if (svParent) {
                     svParent = _$(svParent);
                 } else {
@@ -940,10 +945,12 @@ assign(shearInitPrototype, {
 // 修正影子content
 each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(content) {
+    oldFunc && (shearInitPrototype[kName] = function (content) {
 
         // 继承旧的方法
         oldFunc.call(this, fixShadowContent(this, content));
+
+        renderAllSvEle(this);
 
         // 返回对象
         return this;
@@ -953,7 +960,7 @@ each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
 // 紧跟after before wrap 步伐
 each(['insertAfter', 'insertBefore', 'replaceAll'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(content) {
+    oldFunc && (shearInitPrototype[kName] = function (content) {
         // 影子元素不能做这个操作
         if (this.is('[sv-shadow]')) {
             throw SHADOW_DESCRIPT_CANNOTUSE + kName;
@@ -970,10 +977,12 @@ each(['insertAfter', 'insertBefore', 'replaceAll'], kName => {
 // 修正影子content，引向$content
 each(['append', 'prepend', 'wrapInner'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(content) {
+    oldFunc && (shearInitPrototype[kName] = function (content) {
 
         // 继承旧的方法
         oldFunc.call(fixSelfToContent(this), fixShadowContent(this, content));
+
+        renderAllSvEle(this);
 
         return this;
     });
@@ -982,7 +991,7 @@ each(['append', 'prepend', 'wrapInner'], kName => {
 // 紧跟append 和 prepend 步伐
 each(['appendTo', 'prependTo'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(content) {
+    oldFunc && (shearInitPrototype[kName] = function (content) {
         // 影子元素不能做这个操作
         if (this.is('[sv-shadow]')) {
             throw SHADOW_DESCRIPT_CANNOTUSE + kName;
@@ -1005,7 +1014,7 @@ each(['appendTo', 'prependTo'], kName => {
 // 引向$content，影子过滤，修正成svele
 each(['find', 'children'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(expr) {
+    oldFunc && (shearInitPrototype[kName] = function (expr) {
         let reObj = $fn[kName].call(fixSelfToContent(this), expr);
 
         let svData = (reObj.length == 1) && reObj[0]._svData;
@@ -1030,7 +1039,7 @@ each(['find', 'children'], kName => {
 // 修正成svele （筛选型方法）
 each(['eq', 'first', 'last', 'filter', 'has', 'not', 'slice', 'next', 'nextAll', 'nextUntil', 'prev', 'prevAll', 'prevUntil', 'siblings'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(...args) {
+    oldFunc && (shearInitPrototype[kName] = function (...args) {
         let reObj = $fn[kName].apply(this, args);
         let tar = reObj[0];
         if (reObj.length === 1 && tar._svData) {
@@ -1043,7 +1052,7 @@ each(['eq', 'first', 'last', 'filter', 'has', 'not', 'slice', 'next', 'nextAll',
 // html text
 each(['html', 'text'], kName => {
     let oldFunc = $fn[kName];
-    oldFunc && (shearInitPrototype[kName] = function(content) {
+    oldFunc && (shearInitPrototype[kName] = function (content) {
         // 需要返回的对象
         let reObj = this;
 
@@ -1072,6 +1081,8 @@ each(['html', 'text'], kName => {
             }
 
             oldFunc.call(fixSelfToContent(this), content);
+            
+            renderAllSvEle(this);
 
             // 返回对象
             return reObj;
@@ -1081,9 +1092,11 @@ each(['html', 'text'], kName => {
 
 (() => {
     // 判断有没有pushStack
-    let { pushStack } = $fn;
+    let {
+        pushStack
+    } = $fn;
     if (pushStack) {
-        shearInitPrototype.pushStack = function(...args) {
+        shearInitPrototype.pushStack = function (...args) {
             return createShear$(pushStack.apply(this, args));
         }
     }
@@ -1147,9 +1160,9 @@ each(['html', 'text'], kName => {
 
                         if (ele instanceof Element) {
                             // 补漏没渲染的
-                            each(Array.from(ele.querySelectorAll('[sv-ele]')), e => {
-                                renderEle(e);
-                            });
+                            // each(Array.from(ele.querySelectorAll('[sv-ele]')), e => {
+                            //     renderEle(e);
+                            // });
 
                             // 触发已渲染的attached
                             each(Array.from(ele.querySelectorAll('[sv-render]')), e => {
