@@ -67,8 +67,16 @@
 
     let shearInitPrototype = create($fn);
 
+    // 生成专用shear对象
+    const createShearObject = (ele) => {
+        let obj = ele._svData;
+        let e = create(obj);
+        e.push(ele);
+        return e;
+    }
+
     // 生成普通继承的$实例
-    const createShear$ = (() => {
+    const inCreate$ = (() => {
         if ($fn.splice) {
             return arr => {
                 let reObj = create(shearInitPrototype);
@@ -91,13 +99,13 @@
             }
         }
     })();
-
-    // 生成专用shear对象
-    const createShearObject = (ele) => {
-        let obj = ele._svData;
-        let e = create(obj);
-        e.push(ele);
-        return e;
+    
+    // 通用实例生成方法
+    const createShear$ = arr => {
+        if (arr.length == 1 && arr[0]._svData) {
+            return createShearObject(arr[0]);
+        }
+        return inCreate$(arr);
     }
 
     // 渲染所有的sv-ele元素
@@ -298,11 +306,11 @@
                 defineProperty(shearObject, '$content', {
                     enumerable: true,
                     get() {
-                        if (!$content[0]._svData) {
-                            return createShear$($content);
-                        } else {
-                            return createShearObject($content[0]);
-                        }
+                        // if (!$content[0]._svData) {
+                        return createShear$($content);
+                        // } else {
+                        //     return createShearObject($content[0]);
+                        // }
                     }
                 });
                 // 把东西还原回content
@@ -345,11 +353,11 @@
                 defineProperty(shearObject, '$' + eName, {
                     enumerable: true,
                     get() {
-                        if (!e._svData) {
-                            return createShear$([e]);
-                        } else {
-                            return createShearObject(e);
-                        }
+                        // if (!e._svData) {
+                        return createShear$([e]);
+                        // } else {
+                        //     return createShearObject(e);
+                        // }
                     }
                 });
             });
@@ -616,13 +624,13 @@
         }
 
         // 判断只有一个的情况下，返回shear对象
-        let _svData = (reObj.length == 1) && (reObj[0]._svData);
-        if (_svData) {
-            // 初始化当前对象
-            reObj = createShearObject(reObj[0])
-        } else {
-            reObj = createShear$(reObj);
-        }
+        // let _svData = (reObj.length == 1) && (reObj[0]._svData);
+        // if (_svData) {
+        // 初始化当前对象
+        // reObj = createShearObject(reObj[0])
+        // } else {
+        reObj = createShear$(reObj);
+        // }
 
         return reObj;
     };
@@ -864,7 +872,6 @@ assign(shearInitPrototype, {
         return this;
     },
     parent(expr) {
-        // return fixContentToParent($fn.parent.apply(this, args));
         let rearr = this.map((i, e) => {
             let re = e.parentNode;
             while (re.svParent) {
@@ -872,7 +879,7 @@ assign(shearInitPrototype, {
             }
             return re;
         });
-        let reobj = createShear$(new Set(rearr));
+        let reobj = createShear$(Array.from(new Set(rearr)));
         if (expr) {
             reobj = reobj.filter(expr);
         }
@@ -891,7 +898,7 @@ assign(shearInitPrototype, {
                 par = par.parentNode;
             }
         });
-        let reobj = createShear$(new Set(rearr));
+        let reobj = createShear$(Array.from(new Set(rearr)));
         if (expr) {
             reobj = reobj.filter(expr);
         }
@@ -1041,10 +1048,11 @@ each(['eq', 'first', 'last', 'filter', 'has', 'not', 'slice', 'next', 'nextAll',
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (...args) {
         let reObj = $fn[kName].apply(this, args);
-        let tar = reObj[0];
-        if (reObj.length === 1 && tar._svData) {
-            reObj = createShearObject(tar);
-        }
+        // let tar = reObj[0];
+        // if (reObj.length === 1 && tar._svData) {
+        //     reObj = createShearObject(tar);
+        // }
+        reObj = createShear$(reObj);
         return reObj;
     });
 });
@@ -1081,7 +1089,7 @@ each(['html', 'text'], kName => {
             }
 
             oldFunc.call(fixSelfToContent(this), content);
-            
+
             renderAllSvEle(this);
 
             // 返回对象

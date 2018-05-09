@@ -233,7 +233,6 @@ assign(shearInitPrototype, {
         return this;
     },
     parent(expr) {
-        // return fixContentToParent($fn.parent.apply(this, args));
         let rearr = this.map((i, e) => {
             let re = e.parentNode;
             while (re.svParent) {
@@ -241,7 +240,7 @@ assign(shearInitPrototype, {
             }
             return re;
         });
-        let reobj = createShear$(new Set(rearr));
+        let reobj = createShear$(Array.from(new Set(rearr)));
         if (expr) {
             reobj = reobj.filter(expr);
         }
@@ -260,7 +259,7 @@ assign(shearInitPrototype, {
                 par = par.parentNode;
             }
         });
-        let reobj = createShear$(new Set(rearr));
+        let reobj = createShear$(Array.from(new Set(rearr)));
         if (expr) {
             reobj = reobj.filter(expr);
         }
@@ -410,10 +409,11 @@ each(['eq', 'first', 'last', 'filter', 'has', 'not', 'slice', 'next', 'nextAll',
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (...args) {
         let reObj = $fn[kName].apply(this, args);
-        let tar = reObj[0];
-        if (reObj.length === 1 && tar._svData) {
-            reObj = createShearObject(tar);
-        }
+        // let tar = reObj[0];
+        // if (reObj.length === 1 && tar._svData) {
+        //     reObj = createShearObject(tar);
+        // }
+        reObj = createShear$(reObj);
         return reObj;
     });
 });
@@ -450,7 +450,7 @@ each(['html', 'text'], kName => {
             }
 
             oldFunc.call(fixSelfToContent(this), content);
-            
+
             renderAllSvEle(this);
 
             // 返回对象
