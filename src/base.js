@@ -732,5 +732,5 @@
     });
 
     // 添加初始化css
-    _$('head').append('<style>[sv-ele]{display:none}[sv-render]{display:block}</style>');
+    _$('head').append('<style>[sv-ele]{display:none}</style>');
 })(window);
