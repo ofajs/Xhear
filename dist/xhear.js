@@ -99,7 +99,7 @@
             }
         }
     })();
-    
+
     // 通用实例生成方法
     const createShear$ = arr => {
         if (arr.length == 1 && arr[0]._svData) {
@@ -348,7 +348,7 @@
             }
 
             // 写入其他定义节点
-            _$('[sv-tar]', ele).each((i, e) => {
+            _$('[sv-tar][sv-shadow="t"]', ele).each((i, e) => {
                 let eName = _$(e).attr('sv-tar');
                 defineProperty(shearObject, '$' + eName, {
                     enumerable: true,
