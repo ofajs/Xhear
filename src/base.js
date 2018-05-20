@@ -7,7 +7,7 @@
     const assign = Object.assign;
     const create = Object.create;
     const defineProperty = Object.defineProperty;
-    const emptyFun = () => {};
+    const emptyFun = () => { };
 
     // function
     let isUndefined = val => val === undefined;
@@ -255,6 +255,16 @@
                 }
             }
         },
+        // 查找所有元素（包含影子元素）
+        findReal(...args) {
+            return $fn.find.apply(this, args);
+        },
+        // 只查找自己的影子元素
+        findShadow(...args) {
+            let reObj = $fn.find.apply(this, args);
+            reObj = filterShadow(reObj, this.attr('sv-render'));
+            return reObj;
+        },
         svRender: !0
     });
 
@@ -423,7 +433,7 @@
             }
 
             // 判断是否有value值绑定
-            let val = tagdata.val;
+            let { val } = tagdata;
             if (val) {
                 let dObj = {};
                 val.get && (dObj.get = () => val.get.call(innerShearObject));

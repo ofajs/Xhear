@@ -56,11 +56,11 @@ const fixShadowContent = (_this, content) => {
                 content += e.outerHTML;
             });
         } else
-        if (contentType instanceof Element) {
-            _$(content).attr('sv-shadow', svid);
-        } else if (content instanceof $) {
-            _$(Array.from(content)).attr('sv-shadow', svid);
-        }
+            if (contentType instanceof Element) {
+                _$(content).attr('sv-shadow', svid);
+            } else if (content instanceof $) {
+                _$(Array.from(content)).attr('sv-shadow', svid);
+            }
     }
     return content;
 }
@@ -383,7 +383,7 @@ each(['appendTo', 'prependTo'], kName => {
 each(['find', 'children'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (expr) {
-        let reObj = $fn[kName].call(fixSelfToContent(this), expr);
+        let reObj = oldFunc.call(fixSelfToContent(this), expr);
 
         let svData = (reObj.length == 1) && reObj[0]._svData;
 

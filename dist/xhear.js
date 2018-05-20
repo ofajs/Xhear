@@ -7,7 +7,7 @@
     const assign = Object.assign;
     const create = Object.create;
     const defineProperty = Object.defineProperty;
-    const emptyFun = () => {};
+    const emptyFun = () => { };
 
     // function
     let isUndefined = val => val === undefined;
@@ -255,6 +255,16 @@
                 }
             }
         },
+        // 查找所有元素（包含影子元素）
+        findReal(...args) {
+            return $fn.find.apply(this, args);
+        },
+        // 只查找自己的影子元素
+        findShadow(...args) {
+            let reObj = $fn.find.apply(this, args);
+            reObj = filterShadow(reObj, this.attr('sv-render'));
+            return reObj;
+        },
         svRender: !0
     });
 
@@ -423,7 +433,7 @@
             }
 
             // 判断是否有value值绑定
-            let val = tagdata.val;
+            let { val } = tagdata;
             if (val) {
                 let dObj = {};
                 val.get && (dObj.get = () => val.get.call(innerShearObject));
@@ -695,11 +705,11 @@ const fixShadowContent = (_this, content) => {
                 content += e.outerHTML;
             });
         } else
-        if (contentType instanceof Element) {
-            _$(content).attr('sv-shadow', svid);
-        } else if (content instanceof $) {
-            _$(Array.from(content)).attr('sv-shadow', svid);
-        }
+            if (contentType instanceof Element) {
+                _$(content).attr('sv-shadow', svid);
+            } else if (content instanceof $) {
+                _$(Array.from(content)).attr('sv-shadow', svid);
+            }
     }
     return content;
 }
@@ -1022,7 +1032,7 @@ each(['appendTo', 'prependTo'], kName => {
 each(['find', 'children'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (expr) {
-        let reObj = $fn[kName].call(fixSelfToContent(this), expr);
+        let reObj = oldFunc.call(fixSelfToContent(this), expr);
 
         let svData = (reObj.length == 1) && reObj[0]._svData;
 
