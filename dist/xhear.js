@@ -257,13 +257,13 @@
         },
         // 查找所有元素（包含影子元素）
         findReal(...args) {
-            return $fn.find.apply(this, args);
+            return createShear$($fn.find.apply(this, args));
         },
         // 只查找自己的影子元素
         findShadow(...args) {
             let reObj = $fn.find.apply(this, args);
             reObj = filterShadow(reObj, this.attr('sv-render'));
-            return reObj;
+            return createShear$(reObj);
         },
         svRender: !0
     });
@@ -645,6 +645,10 @@
         return reObj;
     };
     assign($, _$);
+    assign($, {
+        initEle: ele => createShear$([ele])
+
+    });
     $.prototype = $.fn = $fn;
 
     // 覆盖还原 sv-ele 数据
