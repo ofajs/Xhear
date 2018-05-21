@@ -17,6 +17,9 @@ let mainFun = async () => {
     // 整合 扩展控制器逻辑 
     basefile = basefile.replace('//<!--operation-->', operationFile);
 
+    let rCode = await readFile('src/renderEle.js', 'utf8');
+    basefile = basefile.replace('//<!--renderEle-->', e => rCode);
+
     if (beforeCode == basefile) {
         return;
     }
