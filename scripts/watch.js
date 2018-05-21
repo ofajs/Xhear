@@ -20,6 +20,9 @@ let mainFun = async () => {
     let rCode = await readFile('src/renderEle.js', 'utf8');
     basefile = basefile.replace('//<!--renderEle-->', e => rCode);
 
+    rCode = await readFile('src/bridge.js', 'utf8');
+    basefile = basefile.replace('//<!--bridge-->', e => rCode);
+
     if (beforeCode == basefile) {
         return;
     }

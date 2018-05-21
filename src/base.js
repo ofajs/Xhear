@@ -172,20 +172,21 @@
         return d[wname][k] || (d[wname][k] = []);
     };
 
-    // 内部用的watch方法
-    const oriWatch = (d, k, func) => {
-        let tars = getWatchObj(d, k, SWATCHORI);
-        tars.push(func);
-    };
-
     // 触发修改事件
-    const emitChange = (sObj, key, val) => {
+    // param sObj {object} 主体元素的 svData
+    // param key {string} 要改动的值名
+    // param val {all} 通过正常getter后的改动的值
+    // param oriVal {all} 没用通过getter的设置值
+    const emitChange = (sObj, key, val, oriVal) => {
         let beforeValue = sObj[key];
+
         // 触发修改函数
         let tars = getWatchObj(sObj, key);
         let tars2 = getWatchObj(sObj, key, SWATCHORI);
+
+        // 运行
         tars.concat(tars2).forEach(e => {
-            e(val, beforeValue);
+            e(val, beforeValue, oriVal);
         });
     }
 
@@ -207,11 +208,6 @@
             }
             if (key in _this) {
                 console.warn('the value exists => ', key);
-
-                // 触发修改函数
-                // emitChange(_this, key, val);
-
-                // _this[key] = val;
                 return;
             }
 
@@ -225,7 +221,7 @@
                 },
                 set(val) {
                     // 触发修改函数
-                    emitChange(_this, key, val);
+                    emitChange(_this, key, val, val);
 
                     // 改变值
                     originValue = val;
@@ -396,14 +392,7 @@
             reObj = filterShadow(reObj);
         }
 
-        // 判断只有一个的情况下，返回shear对象
-        // let _svData = (reObj.length == 1) && (reObj[0]._svData);
-        // if (_svData) {
-        // 初始化当前对象
-        // reObj = createShearObject(reObj[0])
-        // } else {
         reObj = createShear$(reObj);
-        // }
 
         return reObj;
     };
@@ -415,6 +404,8 @@
     $.prototype = $.fn = $fn;
 
     //<!--operation-->
+
+    //<!--bridge-->
 
     // ready
     // 页面进入之后，进行一次渲染操作

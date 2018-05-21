@@ -83,21 +83,6 @@ const fixSelfToContent = (_this) => {
     return _this;
 };
 
-// 将指向$content修正到parent上
-// 判断是否带了shadowId的子元素
-// const fixContentToParent = (ele, shadowId) => {
-//     if (ele.is('[sv-content]')) {
-//         ele = ele.map((i, e) => {
-//             let re = e;
-//             while (re.svParent) {
-//                 re = re.svParent;
-//             }
-//             return re;
-//         });
-//     }
-//     return ele;
-// }
-
 // 修正其他节点操控的方法
 assign(shearInitPrototype, {
     add(...args) {
