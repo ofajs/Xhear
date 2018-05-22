@@ -5,7 +5,12 @@ const oriWatch = (d, k, func) => {
 };
 
 // 获取 defineObject 的 参数对象
-const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => {
+// param computedObj getter setter 对象
+// param key 绑定属性名
+// param innerShearObject 内部用 shear元素对象
+// param shearProtoObj shear元素对象的一级原型对象
+// param setCall setter callback
+const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, setCall) => {
     let computedObjType = getType(computedObj);
 
     // 专门方法
@@ -23,6 +28,9 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => 
     };
     getFunc && (dObj.get = () => getFunc.call(innerShearObject));
     setFunc && (dObj.set = d => {
+        // 获取之前的值
+        let beforeVal = innerShearObject[key];
+
         // 获取当前值
         let reObj = setFunc.call(innerShearObject, d);
 
@@ -34,16 +42,14 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => 
         }
 
         // 触发修改函数
-        emitChange(shearProtoObj, key, val, d);
+        emitChange(shearProtoObj, key, val, beforeVal, d);
+
+        setCall();
 
         return reObj;
     });
 
     return dObj;
-
-    // defineProperty(shearProtoObj, key, dObj);
-
-    // return [getFunc, setFunc];
 }
 
 // 渲染 sv元素
@@ -211,7 +217,7 @@ const renderEle = (ele) => {
         let valInfoData = tagdata.val;
         if (valInfoData) {
 
-            let defineOptions = getDefineOptions(valInfoData, 'val', innerShearObject, shearProtoObj);;
+            let defineOptions = getDefineOptions(valInfoData, 'val', innerShearObject, shearProtoObj);
 
             defineProperty(ele, 'value', defineOptions);
         }

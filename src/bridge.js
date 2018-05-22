@@ -3,7 +3,10 @@ $.bridge = (...args) => {
     let beforeOriVal = undefined;
 
     each(args, options => {
-        let { tar, key } = options;
+        let {
+            tar,
+            key
+        } = options;
 
         if (options instanceof $) {
             tar = options;

@@ -7,7 +7,7 @@
     const assign = Object.assign;
     const create = Object.create;
     const defineProperty = Object.defineProperty;
-    const emptyFun = () => { };
+    const emptyFun = () => {};
 
     // function
     let isUndefined = val => val === undefined;
@@ -177,8 +177,8 @@
     // param key {string} 要改动的值名
     // param val {all} 通过正常getter后的改动的值
     // param oriVal {all} 没用通过getter的设置值
-    const emitChange = (sObj, key, val, oriVal) => {
-        let beforeValue = sObj[key];
+    const emitChange = (sObj, key, val, beforeValue, oriVal) => {
+        // let beforeValue = sObj[key];
 
         // 触发修改函数
         let tars = getWatchObj(sObj, key);
@@ -221,7 +221,7 @@
                 },
                 set(val) {
                     // 触发修改函数
-                    emitChange(_this, key, val, val);
+                    emitChange(_this, key, val, originValue, val);
 
                     // 改变值
                     originValue = val;

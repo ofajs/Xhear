@@ -7,7 +7,7 @@
     const assign = Object.assign;
     const create = Object.create;
     const defineProperty = Object.defineProperty;
-    const emptyFun = () => { };
+    const emptyFun = () => {};
 
     // function
     let isUndefined = val => val === undefined;
@@ -177,8 +177,8 @@
     // param key {string} 要改动的值名
     // param val {all} 通过正常getter后的改动的值
     // param oriVal {all} 没用通过getter的设置值
-    const emitChange = (sObj, key, val, oriVal) => {
-        let beforeValue = sObj[key];
+    const emitChange = (sObj, key, val, beforeValue, oriVal) => {
+        // let beforeValue = sObj[key];
 
         // 触发修改函数
         let tars = getWatchObj(sObj, key);
@@ -221,7 +221,7 @@
                 },
                 set(val) {
                     // 触发修改函数
-                    emitChange(_this, key, val, val);
+                    emitChange(_this, key, val, originValue, val);
 
                     // 改变值
                     originValue = val;
@@ -276,7 +276,12 @@ const oriWatch = (d, k, func) => {
 };
 
 // 获取 defineObject 的 参数对象
-const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => {
+// param computedObj getter setter 对象
+// param key 绑定属性名
+// param innerShearObject 内部用 shear元素对象
+// param shearProtoObj shear元素对象的一级原型对象
+// param setCall setter callback
+const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, setCall) => {
     let computedObjType = getType(computedObj);
 
     // 专门方法
@@ -294,6 +299,9 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => 
     };
     getFunc && (dObj.get = () => getFunc.call(innerShearObject));
     setFunc && (dObj.set = d => {
+        // 获取之前的值
+        let beforeVal = innerShearObject[key];
+
         // 获取当前值
         let reObj = setFunc.call(innerShearObject, d);
 
@@ -305,16 +313,14 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => 
         }
 
         // 触发修改函数
-        emitChange(shearProtoObj, key, val, d);
+        emitChange(shearProtoObj, key, val, beforeVal, d);
+
+        setCall();
 
         return reObj;
     });
 
     return dObj;
-
-    // defineProperty(shearProtoObj, key, dObj);
-
-    // return [getFunc, setFunc];
 }
 
 // 渲染 sv元素
@@ -482,7 +488,7 @@ const renderEle = (ele) => {
         let valInfoData = tagdata.val;
         if (valInfoData) {
 
-            let defineOptions = getDefineOptions(valInfoData, 'val', innerShearObject, shearProtoObj);;
+            let defineOptions = getDefineOptions(valInfoData, 'val', innerShearObject, shearProtoObj);
 
             defineProperty(ele, 'value', defineOptions);
         }
@@ -1140,7 +1146,10 @@ each(['html', 'text'], kName => {
     let beforeOriVal = undefined;
 
     each(args, options => {
-        let { tar, key } = options;
+        let {
+            tar,
+            key
+        } = options;
 
         if (options instanceof $) {
             tar = options;
