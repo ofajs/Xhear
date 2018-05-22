@@ -312,6 +312,8 @@
         // 合并选项
         assign(defaults, options);
 
+        defaults.props.push('val');
+
         // 专属class
         function Shear(sdata = {}) {
             // 外部用的watch
