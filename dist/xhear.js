@@ -537,7 +537,7 @@ const renderEle = (ele) => {
         // val 设值
         if (valInfoData) {
             let tar_val = rData.val;
-            (!isUndefined(tar_val) && !(tar_val !== null)) && (ele.value = tar_val);
+            (!isUndefined(tar_val) && tar_val !== null) && (ele.value = tar_val);
         }
 
         // 初始化完成
