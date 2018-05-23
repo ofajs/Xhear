@@ -56,11 +56,11 @@ const fixShadowContent = (_this, content) => {
                 content += e.outerHTML;
             });
         } else
-            if (contentType instanceof Element) {
-                _$(content).attr('sv-shadow', svid);
-            } else if (content instanceof $) {
-                _$(Array.from(content)).attr('sv-shadow', svid);
-            }
+        if (contentType instanceof Element) {
+            _$(content).attr('sv-shadow', svid);
+        } else if (content instanceof $) {
+            _$(Array.from(content)).attr('sv-shadow', svid);
+        }
     }
     return content;
 }
@@ -411,7 +411,7 @@ each(['html', 'text'], kName => {
         let reObj = this;
 
         // 为了获取html来的
-        if (!content) {
+        if (isUndefined(content)) {
             let elem = _$(reObj[0]);
 
             // 判断是否存在 shear控件
@@ -434,7 +434,8 @@ each(['html', 'text'], kName => {
                 content = fixShadowContent(this, content);
             }
 
-            oldFunc.call(fixSelfToContent(this), content);
+            reObj = oldFunc.call(fixSelfToContent(this), content);
+            // reObj = oldFunc.call(fixSelfToContent(this));
 
             renderAllSvEle(this);
 
