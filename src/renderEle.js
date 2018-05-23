@@ -185,7 +185,7 @@ const renderEle = (ele) => {
         // props 上的数据
         tagdata.props.forEach(kName => {
             let attrVal = $ele.attr(kName);
-            rData[kName] = attrVal;
+            !isUndefined(attrVal) && (attrVal !== null) && (rData[kName] = attrVal);
         });
 
         // 绑定sv-module
