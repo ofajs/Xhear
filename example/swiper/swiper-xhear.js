@@ -12,17 +12,24 @@ xhear.register({
         autoplay: 0
     },
     attrs: ["speed", "autoplay"],
-    render($ele, data) {
-        data.sw = new Swiper($ele);
-    },
-    watch: {
-        speed(val) {
-            this.sw.params.speed = val;
+    computed: {
+        speed: {
+            get() {
+                return this.sw.params.speed;
+            },
+            set(val) {
+                this.sw.params.speed = val;
+            }
         },
-        autoplay(val) {
-            if (val) {
-                this.sw.params.autoplay = val;
-                this.sw.startAutoplay();
+        autoplay: {
+            get() {
+                return this.sw.params.autoplay;
+            },
+            set(autoplay) {
+                if (autoplay) {
+                    this.sw.params.autoplay = autoplay;
+                    this.sw.startAutoplay();
+                }
             }
         }
     },
@@ -39,5 +46,8 @@ xhear.register({
     // 改变子元素
     childChange($ele) {
         $ele.update();
+    },
+    render($ele, data) {
+        data.sw = new Swiper($ele);
     }
 });

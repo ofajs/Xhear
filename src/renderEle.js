@@ -263,55 +263,6 @@ const renderEle = (ele) => {
             }
         }
 
-        // watch监听
-        // let needWatchObj = tagdata.watch;
-        // if (needWatchObj) {
-        //     for (let kName in needWatchObj) {
-        //         // 绑定值
-        //         oriWatch(shearProtoObj, kName, (...args) => needWatchObj[kName].apply(innerShearObject, args));
-        //     }
-        // }
-
-        // 需要computed进去的key
-        // let computedInData = [];
-
-        // 是否有自定义字段数据
-        // let {
-        //     computed
-        // } = tagdata;
-        // if (computed) {
-        //     for (let key in computed) {
-        //         // 定义方法
-        //         let defineOptions = getDefineOptions(computed[key], key, innerShearObject, shearProtoObj);
-
-        //         defineProperty(shearProtoObj, key, defineOptions);
-
-        //         // 预先设置数据
-        //         if (!isUndefined(rData[key])) {
-        //             computedInData.push(key);
-        //             // rData[key] = shearProtoObj[key];
-        //         }
-        //     }
-        // }
-
-        // 渲染节点完成
-        // tagdata.render && tagdata.render(innerShearObject, rData);
-
-        // 设置 rData
-        // shearProtoObj.set(rData);
-
-        // // computedInData数据设置
-        // each(computedInData, key => {
-        //     let tar_val = rData[key];
-        //     !isUndefined(tar_val) && (shearProtoObj[key] = tar_val);
-        // });
-
-        // // val 设值
-        // if (valInfoData) {
-        //     let tar_val = rData.val;
-        //     (!isUndefined(tar_val) && tar_val !== null) && (ele.value = tar_val);
-        // }
-
         // 初始化完成
         tagdata.inited && tagdata.inited(innerShearObject);
 
