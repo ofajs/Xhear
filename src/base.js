@@ -4,6 +4,8 @@
     // 基础tag记录器
     let tagDatabase = {};
 
+    glo.tagDatabase = tagDatabase;
+
     const assign = Object.assign;
     const create = Object.create;
     const defineProperty = Object.defineProperty;
@@ -11,6 +13,7 @@
 
     // function
     let isUndefined = val => val === undefined;
+    let isRealValue = val => val !== undefined && val !== null;
     const hasAttr = (e, attrName) => {
         if (!e.getAttribute) {
             return 0;
@@ -343,9 +346,9 @@
         });
 
         // 全部添加shadow
-        let code_ele = _$(`<div>${code}</div>`);
-        code_ele.find('*').attr('sv-shadow', "t");
-        code = code_ele.html();
+        // let code_ele = _$(`<div>${code}</div>`);
+        // code_ele.find('*').attr('sv-shadow', "t");
+        // code = code_ele.html();
 
         // 添加进数据库
         tagDatabase[defaults.tag] = assign({
