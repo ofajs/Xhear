@@ -304,7 +304,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
     };
     setFunc && (dObj.set = d => {
         // 获取之前的值
-        let beforeVal = innerShearObject[key];
+        let beforeVal = (key == "val") ? innerShearObject.val() : innerShearObject[key];
 
         // 获取当前值
         let reObj = setFunc.call(innerShearObject, d);
@@ -312,7 +312,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
         let val = d;
 
         // 重新get获取数据
-        if (getFunc) {
+        if (getFunc && key !== "val") {
             val = shearProtoObj[key];
         }
 
@@ -1143,9 +1143,9 @@ each(['html', 'text'], kName => {
 
     $.bridge = (...args) => {
     // 之前的值得
-    let beforeOriVal = undefined;
+    let beforeOriVal;
 
-    each(args, options => {
+    each(args, (options, i) => {
         let {
             tar,
             key
@@ -1182,6 +1182,14 @@ each(['html', 'text'], kName => {
                 }
             });
         });
+
+        if (i == args.length - 1) {
+            if (key === "val") {
+                tar.val(tar.val());
+            } else {
+                tar[key] = tar[key];
+            }
+        }
     });
 }
 

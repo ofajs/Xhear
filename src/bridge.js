@@ -1,8 +1,8 @@
 $.bridge = (...args) => {
     // 之前的值得
-    let beforeOriVal = undefined;
+    let beforeOriVal;
 
-    each(args, options => {
+    each(args, (options, i) => {
         let {
             tar,
             key
@@ -39,5 +39,13 @@ $.bridge = (...args) => {
                 }
             });
         });
+
+        if (i == args.length - 1) {
+            if (key === "val") {
+                tar.val(tar.val());
+            } else {
+                tar[key] = tar[key];
+            }
+        }
     });
 }
