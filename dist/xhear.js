@@ -475,7 +475,7 @@ const renderEle = (ele) => {
         });
 
         // 绑定sv-module
-        _$('[sv-module]', ele).each((i, tar) => {
+        _$(`[sv-module][sv-shadow="${renderId}"]`, ele).each((i, tar) => {
             let $tar = _$(tar);
             let kName = $tar.attr('sv-module');
 
@@ -485,9 +485,14 @@ const renderEle = (ele) => {
             });
 
             // 监听改动
-            $tar.on('input', () => {
+            $tar.on('input change', () => {
                 shearProtoObj[kName] = tar.value;
             });
+
+            if (tar.tagName.toLowerCase() == 'select') {
+                rData[kName] = tar.value;
+            }
+
         });
 
         // 判断是否有value值绑定
