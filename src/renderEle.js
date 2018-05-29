@@ -4,6 +4,18 @@ const oriWatch = (d, k, func) => {
     tars.push(func);
 };
 
+// 设置数据
+const setRData = (rData, k, innerShearObject) => {
+    let data = rData[k];
+    switch (k) {
+        case "val":
+            innerShearObject.val(data);
+            break;
+        default:
+            innerShearObject[k] = data;
+    }
+}
+
 // 获取 defineObject 的 参数对象
 // param computedObj getter setter 对象
 // param key 绑定属性名
@@ -77,12 +89,10 @@ const renderEle = (ele) => {
         ele.innerHTML = tagdata.code;
 
         // 生成renderId
-        // let renderId = getRandomId();
         let renderId = ++rid;
 
         // 设置渲染id
         $ele.removeAttr('sv-ele').attr('sv-render', renderId);
-        // $ele.find(`[sv-shadow="t"]`).attr('sv-shadow', renderId);
         $ele.find(`*`).attr('sv-shadow', renderId);
 
         // 渲染依赖sv-ele
@@ -229,6 +239,7 @@ const renderEle = (ele) => {
         }
 
         let computed = assign({}, tagdata.computed);
+        let computedKey = Object.keys(computed);
 
         // 设置rData其他的 computed
         for (let k in rData) {
@@ -258,15 +269,14 @@ const renderEle = (ele) => {
 
         // 设置值
         for (let k in rData) {
-            let data = rData[k];
-            switch (k) {
-                case "val":
-                    innerShearObject.val(data);
-                    break;
-                default:
-                    innerShearObject[k] = data;
+            if (computedKey.indexOf(k) > -1) {
+                continue;
             }
+            setRData(rData, k, innerShearObject);
         }
+        each(computedKey, k => {
+            isRealValue(rData[k]) && setRData(rData, k, innerShearObject);
+        });
 
         // 初始化完成
         tagdata.inited && tagdata.inited(innerShearObject);
