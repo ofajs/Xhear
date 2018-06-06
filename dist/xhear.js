@@ -473,8 +473,8 @@ const renderEle = (ele) => {
             }
 
             // 绑定值
-            oriWatch(shearProtoObj, kName, (val) => {
-                $ele.attr(kName, val);
+            oriWatch(shearProtoObj, kName, (value) => {
+                $ele.attr(kName, value);
             });
         });
 
@@ -495,8 +495,8 @@ const renderEle = (ele) => {
             });
 
             // 监听改动
-            $tar.on('input change', () => {
-                shearProtoObj[kName] = tar.value;
+            $tar.on('input change', (e) => {
+                (kName == "val") ? $ele.val(tar.value): (shearProtoObj[kName] = tar.value);
             });
 
             if (tar.tagName.toLowerCase() == 'select') {
@@ -505,12 +505,28 @@ const renderEle = (ele) => {
 
         });
 
-        // 判断是否有value值绑定
         let valInfoData = tagdata.val;
+
+        if (0 in _$(`[sv-module="val"][sv-shadow="${renderId}"]`, ele) && !valInfoData) {
+            let tempVal = "";
+            valInfoData = {
+                get: () => tempVal,
+                set: val => tempVal = val
+            };
+        }
+
+        // 判断是否有value值绑定
         if (valInfoData) {
             let defineOptions = getDefineOptions(valInfoData, 'val', innerShearObject, shearProtoObj);
             defineProperty(ele, 'value', defineOptions);
         }
+
+        // 禁止val事件向上冒泡
+        $ele.on('change input', e => {
+            if (e.target !== ele) {
+                e.stopImmediatePropagation();
+            }
+        });
 
         let computed = assign({}, tagdata.computed);
         let computedKey = Object.keys(computed);
