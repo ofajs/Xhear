@@ -303,7 +303,7 @@ each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
         // 继承旧的方法
         oldFunc.call(this, fixShadowContent(this, content));
 
-        renderAllSvEle(this);
+        renderAllSvEle(this.parent());
 
         // 返回对象
         return this;
