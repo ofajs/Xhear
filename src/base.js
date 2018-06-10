@@ -469,11 +469,6 @@
                         }
 
                         if (ele instanceof Element) {
-                            // 补漏没渲染的
-                            // each(Array.from(ele.querySelectorAll('[sv-ele]')), e => {
-                            //     renderEle(e);
-                            // });
-
                             // 触发已渲染的attached
                             each(Array.from(ele.querySelectorAll('[sv-render]')), e => {
                                 attachedFun(e);

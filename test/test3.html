@@ -44,6 +44,12 @@
             <input type="text" sv-module="val" />
         `
     });
+
+    let data = new $.XData({
+        a: "1000"
+    });
+
+    $.syncData($('test'), data);
 </script>
 
 </html>
