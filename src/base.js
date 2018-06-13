@@ -179,10 +179,9 @@
     // param sObj {object} 主体元素的 svData
     // param key {string} 要改动的值名
     // param val {all} 通过正常getter后的改动的值
+    // param beforeValue {all} 没变动前的值
     // param oriVal {all} 没用通过getter的设置值
     const emitChange = (sObj, key, val, beforeValue, oriVal) => {
-        // let beforeValue = sObj[key];
-
         // 触发修改函数
         let tars = getWatchObj(sObj, key);
         let tars2 = getWatchObj(sObj, key, SWATCHORI);

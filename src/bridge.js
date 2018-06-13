@@ -91,6 +91,7 @@ $.syncData = (...args) => {
 
 let XDataFn = {};
 
+
 let XData = $.XData = function (obj) {
     defineProperty(this, SWATCH, {
         value: {}
@@ -99,19 +100,42 @@ let XData = $.XData = function (obj) {
     defineProperty(this, SWATCHORI, {
         value: {}
     });
-    this.set(obj);
+    obj && this.set(obj);
 }
 
-each(['watch', 'unwatch', 'set'], fName => {
-    defineProperty(XDataFn, fName, {
-        value: ShearFn[fName]
-    });
-});
+// each(['watch', 'unwatch', 'set'], fName => {
+//     defineProperty(XDataFn, fName, {
+//         value: ShearFn[fName]
+//     });
+// });
 
-defineProperty(XDataFn, "cover", {
-    value(obj) {
-        for (let k in obj) {
-            this[k] = obj[k];
+Object.defineProperties(XDataFn, {
+    watch: {
+        value: ShearFn.watch
+    },
+    unwatch: {
+        value: ShearFn.unwatch
+    },
+    set: {
+        value: ShearFn.set
+    },
+    cover: {
+        value(obj) {
+            for (let k in obj) {
+                this[k] = obj[k];
+            }
+        }
+    },
+    // 观察
+    observe: {
+        vaule(callback) {
+
+        }
+    },
+    // 取消观察
+    unobserve: {
+        value(callback) {
+
         }
     }
 });

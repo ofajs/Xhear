@@ -179,10 +179,9 @@
     // param sObj {object} 主体元素的 svData
     // param key {string} 要改动的值名
     // param val {all} 通过正常getter后的改动的值
+    // param beforeValue {all} 没变动前的值
     // param oriVal {all} 没用通过getter的设置值
     const emitChange = (sObj, key, val, beforeValue, oriVal) => {
-        // let beforeValue = sObj[key];
-
         // 触发修改函数
         let tars = getWatchObj(sObj, key);
         let tars2 = getWatchObj(sObj, key, SWATCHORI);
@@ -1265,6 +1264,7 @@ $.syncData = (...args) => {
 
 let XDataFn = {};
 
+
 let XData = $.XData = function (obj) {
     defineProperty(this, SWATCH, {
         value: {}
@@ -1273,19 +1273,42 @@ let XData = $.XData = function (obj) {
     defineProperty(this, SWATCHORI, {
         value: {}
     });
-    this.set(obj);
+    obj && this.set(obj);
 }
 
-each(['watch', 'unwatch', 'set'], fName => {
-    defineProperty(XDataFn, fName, {
-        value: ShearFn[fName]
-    });
-});
+// each(['watch', 'unwatch', 'set'], fName => {
+//     defineProperty(XDataFn, fName, {
+//         value: ShearFn[fName]
+//     });
+// });
 
-defineProperty(XDataFn, "cover", {
-    value(obj) {
-        for (let k in obj) {
-            this[k] = obj[k];
+Object.defineProperties(XDataFn, {
+    watch: {
+        value: ShearFn.watch
+    },
+    unwatch: {
+        value: ShearFn.unwatch
+    },
+    set: {
+        value: ShearFn.set
+    },
+    cover: {
+        value(obj) {
+            for (let k in obj) {
+                this[k] = obj[k];
+            }
+        }
+    },
+    // 观察
+    observe: {
+        vaule(callback) {
+
+        }
+    },
+    // 取消观察
+    unobserve: {
+        value(callback) {
+
         }
     }
 });
