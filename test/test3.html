@@ -50,6 +50,10 @@
     });
 
     $.syncData($('test'), data);
+
+    data.observe(d => {
+        console.log(d);
+    });
 </script>
 
 </html>

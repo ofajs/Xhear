@@ -42,7 +42,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
     };
     setFunc && (dObj.set = d => {
         // 获取之前的值
-        let beforeVal = (key == "val") ? innerShearObject.val() : innerShearObject[key];
+        let oldVal = (key == "val") ? innerShearObject.val() : innerShearObject[key];
 
         // 获取当前值
         let reObj = setFunc.call(innerShearObject, d);
@@ -55,7 +55,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
         }
 
         // 触发修改函数
-        emitChange(shearProtoObj, key, val, beforeVal, d);
+        emitChange(shearProtoObj, key, val, oldVal, d);
 
         setCall(val);
 

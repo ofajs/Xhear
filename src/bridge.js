@@ -89,27 +89,17 @@ $.syncData = (...args) => {
     });
 }
 
-let XDataFn = {};
-
-
 let XData = $.XData = function (obj) {
     defineProperty(this, SWATCH, {
         value: {}
     });
-    // 内部用的watch
-    defineProperty(this, SWATCHORI, {
-        value: {}
+    defineProperty(this, OBSERVERKEYS, {
+        value: []
     });
     obj && this.set(obj);
 }
 
-// each(['watch', 'unwatch', 'set'], fName => {
-//     defineProperty(XDataFn, fName, {
-//         value: ShearFn[fName]
-//     });
-// });
-
-Object.defineProperties(XDataFn, {
+Object.defineProperties(XData.prototype, {
     watch: {
         value: ShearFn.watch
     },
@@ -128,16 +118,18 @@ Object.defineProperties(XDataFn, {
     },
     // 观察
     observe: {
-        vaule(callback) {
-
+        value(callback) {
+            this[OBSERVERKEYS].push(callback);
         }
     },
     // 取消观察
     unobserve: {
         value(callback) {
-
+            let arr = this[OBSERVERKEYS];
+            let id = arr.indexOf(callback);
+            if (id > -1) {
+                arr.splice(id, 1);
+            }
         }
     }
 });
-
-XData.prototype = XDataFn;

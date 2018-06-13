@@ -61,6 +61,9 @@
     const ATTACHED_KEY = "_u_attached";
     const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
 
+    // observe数组key
+    const OBSERVERKEYS = RANDOMID + "OBSERVER";
+
     // start
     // 获取旧的主体
     let _$ = glo.$;
@@ -171,25 +174,38 @@
 
     // Shear class function
     // 获取watch数组的方法
-    const getWatchObj = (d, k, wname = SWATCH) => {
-        return d[wname][k] || (d[wname][k] = []);
-    };
+    const getWatchObj = (d, k, wname = SWATCH) => d[wname] && (d[wname][k] || (d[wname][k] = []));
 
     // 触发修改事件
     // param sObj {object} 主体元素的 svData
     // param key {string} 要改动的值名
     // param val {all} 通过正常getter后的改动的值
-    // param beforeValue {all} 没变动前的值
+    // param oldVal {all} 没变动前的值
     // param oriVal {all} 没用通过getter的设置值
-    const emitChange = (sObj, key, val, beforeValue, oriVal) => {
+    const emitChange = (sObj, key, val, oldVal, oriVal) => {
         // 触发修改函数
         let tars = getWatchObj(sObj, key);
-        let tars2 = getWatchObj(sObj, key, SWATCHORI);
-
-        // 运行
-        tars.concat(tars2).forEach(e => {
-            e(val, beforeValue, oriVal);
+        each(tars, e => {
+            e(val, oldVal, oriVal);
         });
+
+        let tars2 = getWatchObj(sObj, key, SWATCHORI);
+        if (tars2) {
+            each(tars2, e => {
+                e(val, oldVal, oriVal);
+            });
+        }
+
+        let obsArr = sObj[OBSERVERKEYS];
+        if (obsArr) {
+            each(obsArr, fun => fun({
+                name: key,
+                type: "update",
+                oldVal,
+                val,
+                oriVal
+            }));
+        }
     }
 
     // Shear class 的原型对象
@@ -222,11 +238,14 @@
                     return originValue;
                 },
                 set(val) {
-                    // 触发修改函数
-                    emitChange(_this, key, val, originValue, val);
+                    let oldVal = originValue;
 
                     // 改变值
                     originValue = val;
+
+                    // 触发修改函数
+                    emitChange(_this, key, val, oldVal, val);
+
                     return val;
                 }
             });
@@ -315,7 +334,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
     };
     setFunc && (dObj.set = d => {
         // 获取之前的值
-        let beforeVal = (key == "val") ? innerShearObject.val() : innerShearObject[key];
+        let oldVal = (key == "val") ? innerShearObject.val() : innerShearObject[key];
 
         // 获取当前值
         let reObj = setFunc.call(innerShearObject, d);
@@ -328,7 +347,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
         }
 
         // 触发修改函数
-        emitChange(shearProtoObj, key, val, beforeVal, d);
+        emitChange(shearProtoObj, key, val, oldVal, d);
 
         setCall(val);
 
@@ -1262,27 +1281,17 @@ $.syncData = (...args) => {
     });
 }
 
-let XDataFn = {};
-
-
 let XData = $.XData = function (obj) {
     defineProperty(this, SWATCH, {
         value: {}
     });
-    // 内部用的watch
-    defineProperty(this, SWATCHORI, {
-        value: {}
+    defineProperty(this, OBSERVERKEYS, {
+        value: []
     });
     obj && this.set(obj);
 }
 
-// each(['watch', 'unwatch', 'set'], fName => {
-//     defineProperty(XDataFn, fName, {
-//         value: ShearFn[fName]
-//     });
-// });
-
-Object.defineProperties(XDataFn, {
+Object.defineProperties(XData.prototype, {
     watch: {
         value: ShearFn.watch
     },
@@ -1301,19 +1310,21 @@ Object.defineProperties(XDataFn, {
     },
     // 观察
     observe: {
-        vaule(callback) {
-
+        value(callback) {
+            this[OBSERVERKEYS].push(callback);
         }
     },
     // 取消观察
     unobserve: {
         value(callback) {
-
+            let arr = this[OBSERVERKEYS];
+            let id = arr.indexOf(callback);
+            if (id > -1) {
+                arr.splice(id, 1);
+            }
         }
     }
 });
-
-XData.prototype = XDataFn;
 
     // ready
     // 页面进入之后，进行一次渲染操作
