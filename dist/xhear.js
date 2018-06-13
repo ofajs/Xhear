@@ -1239,45 +1239,6 @@ each(['html', 'text'], kName => {
     });
 }
 
-// 同步数据的方法
-$.syncData = (...args) => {
-    let computedKeys = [];
-    each(args, d => {
-        if (d instanceof XData) {
-            for (let k in d) {
-                // 查找到就下一个
-                if (computedKeys.indexOf(k) > -1) {
-                    continue;
-                }
-
-                // 需要绑定的参数数组
-                let needBridgeObj = [{
-                    tar: d,
-                    key: k
-                }];
-
-                // 遍历查找是否有相同key的XData
-                each(args, e2 => {
-                    if (e2 !== d && k in e2) {
-                        needBridgeObj.push({
-                            tar: e2,
-                            key: k
-                        });
-                    }
-                });
-
-                if (1 in needBridgeObj) {
-                    // 绑定数据
-                    bridge(...needBridgeObj);
-                }
-
-                // 加入已完成列表
-                computedKeys.push(k);
-            }
-        }
-    });
-}
-
 let XData = $.XData = function (obj) {
     defineProperty(this, SWATCH, {
         value: {}
@@ -1303,12 +1264,14 @@ Object.defineProperties(XData.prototype, {
             for (let k in obj) {
                 this[k] = obj[k];
             }
+            return this;
         }
     },
     // 观察
     observe: {
         value(callback) {
             this[OBSERVERKEYS].push(callback);
+            return this;
         }
     },
     // 取消观察
@@ -1319,6 +1282,58 @@ Object.defineProperties(XData.prototype, {
             if (id > -1) {
                 arr.splice(id, 1);
             }
+            return this;
+        }
+    },
+    // 同步数据的方法
+    syncData: {
+        value(dataObj, options) {
+            switch (getType(options)) {
+                case "string":
+                    bridge({
+                        tar: this,
+                        key: options
+                    }, {
+                        tar: dataObj,
+                        key: options
+                    });
+                    break;
+                case "array":
+                    each(options, k => {
+                        bridge({
+                            tar: this,
+                            key: k
+                        }, {
+                            tar: dataObj,
+                            key: k
+                        });
+                    });
+                    break;
+                case "objecy":
+                    for (let k in options) {
+                        bridge({
+                            tar: this,
+                            key: k
+                        }, {
+                            tar: dataObj,
+                            key: options[k]
+                        });
+                    }
+                    break;
+                default:
+                    for (let k in this) {
+                        if (k in dataObj) {
+                            bridge({
+                                tar: this,
+                                key: k
+                            }, {
+                                tar: dataObj,
+                                key: k
+                            });
+                        }
+                    }
+            }
+            return this;
         }
     }
 });
