@@ -21,8 +21,7 @@ const setRData = (rData, k, innerShearObject) => {
 // param key 绑定属性名
 // param innerShearObject 内部用 shear元素对象
 // param shearProtoObj shear元素对象的一级原型对象
-// param setCall setter callback
-const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, setCall = () => {}) => {
+const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => {
     let computedObjType = getType(computedObj);
 
     // 专门方法
@@ -56,8 +55,6 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj, set
 
         // 触发修改函数
         emitChange(shearProtoObj, key, val, oldVal, d);
-
-        setCall(val);
 
         return reObj;
     });
