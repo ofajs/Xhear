@@ -96,9 +96,9 @@ Object.defineProperties(XData.prototype, {
             return this;
         }
     },
-    // 同步数据的方法
+    // 同步数据
     syncData: {
-        value(dataObj, options) {
+        value(dataObj, options, proprs) {
             switch (getType(options)) {
                 case "string":
                     bridge({
@@ -145,6 +145,31 @@ Object.defineProperties(XData.prototype, {
                     }
             }
             return this;
+        }
+    },
+    // 中转型绑定数据
+    transData: {
+        value(myKey, dataObj, dataObjKey, props) {
+            // 两个值
+            let beforeGetVal, beforeSetVal;
+
+            // 转换get
+            this.watch(myKey, (val, oldVal, oriVal) => {
+                if (oriVal === beforeSetVal) {
+                    return;
+                }
+                beforeGetVal = props.beforeGet(val);
+                dataObj[dataObjKey] = beforeGetVal;
+            });
+
+            // 转换set
+            dataObj.watch(dataObjKey, (val, oldVal, oriVal) => {
+                if (oriVal === beforeGetVal) {
+                    return;
+                }
+                beforeSetVal = props.beforeSet(val);
+                this[myKey] = beforeSetVal;
+            });
         }
     }
 });

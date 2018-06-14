@@ -54,6 +54,19 @@
     data.observe(d => {
         console.log(d);
     });
+
+    let data2 = new $.XData({
+        k: ""
+    });
+
+    data.transData("a", data2, "k", {
+        beforeGet(val) {
+            return val + "1";
+        },
+        beforeSet(val) {
+            return val + "2";
+        }
+    });
 </script>
 
 </html>
