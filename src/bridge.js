@@ -38,6 +38,7 @@ const bridge = $.bridge = (...args) => {
                     }
                 }
             });
+            beforeOriVal = undefined;
         });
 
         if (i == args.length - 1) {
@@ -153,13 +154,40 @@ Object.defineProperties(XData.prototype, {
             // 两个值
             let beforeGetVal, beforeSetVal;
 
+            let {
+                beforeGet,
+                beforeSet
+            } = props;
+
+            let _beforeGet, _beforeSet;
+
+            if (beforeGet || beforeSet) {
+                _beforeGet = (val) => beforeGet(val);
+                _beforeSet = (val) => beforeSet(val);
+            } else if (getType(props) === "object") {
+                // 反向props
+                let reverseProps = {};
+                for (let k in props) {
+                    reverseProps[props[k]] = k;
+                }
+                _beforeGet = (val) => props[val];
+                _beforeSet = (val) => reverseProps[val];
+            } else {
+                return;
+            }
+
             // 转换get
             this.watch(myKey, (val, oldVal, oriVal) => {
                 if (oriVal === beforeSetVal) {
                     return;
                 }
-                beforeGetVal = props.beforeGet(val);
-                dataObj[dataObjKey] = beforeGetVal;
+                beforeGetVal = _beforeGet(val);
+                if (dataObj instanceof $ && dataObjKey === "val") {
+                    dataObj.val(beforeGetVal);
+                } else {
+                    dataObj[dataObjKey] = beforeGetVal;
+                }
+                beforeGetVal = undefined;
             });
 
             // 转换set
@@ -167,8 +195,9 @@ Object.defineProperties(XData.prototype, {
                 if (oriVal === beforeGetVal) {
                     return;
                 }
-                beforeSetVal = props.beforeSet(val);
+                beforeSetVal = _beforeSet(val);
                 this[myKey] = beforeSetVal;
+                beforeSetVal = undefined;
             });
         }
     }
