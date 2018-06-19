@@ -176,6 +176,12 @@
     // 获取watch数组的方法
     const getWatchObj = (d, k, wname = SWATCH) => d[wname] && (d[wname][k] || (d[wname][k] = []));
 
+    // 内部用的watch方法
+    const oriWatch = (d, k, func) => {
+        let tars = getWatchObj(d, k, SWATCHORI);
+        tars.push(func);
+    };
+
     // 触发修改事件
     // param sObj {object} 主体元素的 svData
     // param key {string} 要改动的值名
@@ -290,12 +296,7 @@
         svRender: !0
     });
 
-    // 内部用的watch方法
-const oriWatch = (d, k, func) => {
-    let tars = getWatchObj(d, k, SWATCHORI);
-    tars.push(func);
-};
-
+    
 // 设置数据
 const setRData = (rData, k, innerShearObject) => {
     let data = rData[k];
@@ -1288,7 +1289,7 @@ Object.defineProperties(XData.prototype, {
     },
     // 同步数据
     syncData: {
-        value(dataObj, options, proprs) {
+        value(dataObj, options) {
             switch (getType(options)) {
                 case "string":
                     bridge({
@@ -1310,7 +1311,7 @@ Object.defineProperties(XData.prototype, {
                         });
                     });
                     break;
-                case "objecy":
+                case "object":
                     for (let k in options) {
                         bridge({
                             tar: this,
@@ -1388,6 +1389,8 @@ Object.defineProperties(XData.prototype, {
                 this[myKey] = beforeSetVal;
                 beforeSetVal = undefined;
             });
+
+            return this;
         }
     }
 });

@@ -67,6 +67,13 @@
             return val + "2";
         }
     });
+
+    let data3 = new $.XData({
+        d: ""
+    });
+    data3.syncData(data, {
+        "d": "a"
+    });
 </script>
 
 </html>

@@ -1,8 +1,3 @@
-// 内部用的watch方法
-const oriWatch = (d, k, func) => {
-    let tars = getWatchObj(d, k, SWATCHORI);
-    tars.push(func);
-};
 
 // 设置数据
 const setRData = (rData, k, innerShearObject) => {

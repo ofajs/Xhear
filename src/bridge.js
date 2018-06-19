@@ -99,7 +99,7 @@ Object.defineProperties(XData.prototype, {
     },
     // 同步数据
     syncData: {
-        value(dataObj, options, proprs) {
+        value(dataObj, options) {
             switch (getType(options)) {
                 case "string":
                     bridge({
@@ -121,7 +121,7 @@ Object.defineProperties(XData.prototype, {
                         });
                     });
                     break;
-                case "objecy":
+                case "object":
                     for (let k in options) {
                         bridge({
                             tar: this,
@@ -199,6 +199,8 @@ Object.defineProperties(XData.prototype, {
                 this[myKey] = beforeSetVal;
                 beforeSetVal = undefined;
             });
+
+            return this;
         }
     }
 });

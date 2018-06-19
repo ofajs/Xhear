@@ -176,6 +176,12 @@
     // 获取watch数组的方法
     const getWatchObj = (d, k, wname = SWATCH) => d[wname] && (d[wname][k] || (d[wname][k] = []));
 
+    // 内部用的watch方法
+    const oriWatch = (d, k, func) => {
+        let tars = getWatchObj(d, k, SWATCHORI);
+        tars.push(func);
+    };
+
     // 触发修改事件
     // param sObj {object} 主体元素的 svData
     // param key {string} 要改动的值名
