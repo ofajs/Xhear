@@ -82,17 +82,19 @@ Object.defineProperties(XData.prototype, {
     // 观察
     observe: {
         value(callback) {
-            this[OBSERVERKEYS].push(callback);
+            callback && this[OBSERVERKEYS].push(callback);
             return this;
         }
     },
     // 取消观察
     unobserve: {
         value(callback) {
-            let arr = this[OBSERVERKEYS];
-            let id = arr.indexOf(callback);
-            if (id > -1) {
-                arr.splice(id, 1);
+            if (callback) {
+                let arr = this[OBSERVERKEYS];
+                let id = arr.indexOf(callback);
+                if (id > -1) {
+                    arr.splice(id, 1);
+                }
             }
             return this;
         }
@@ -178,11 +180,11 @@ Object.defineProperties(XData.prototype, {
 
             // 转换get
             this.watch(myKey, (val, oldVal, oriVal) => {
-                if (oriVal === beforeSetVal) {
+                if (oriVal == beforeSetVal) {
                     return;
                 }
                 beforeGetVal = _beforeGet(val);
-                if (dataObj instanceof $ && dataObjKey === "val") {
+                if (dataObj instanceof $ && dataObjKey == "val") {
                     dataObj.val(beforeGetVal);
                 } else {
                     dataObj[dataObjKey] = beforeGetVal;

@@ -213,7 +213,7 @@ const renderEle = (ele) => {
             });
 
             // 监听改动
-            $tar.on('input change', (e) => {
+            $tar.on('change', (e) => {
                 (kName == "val") ? $ele.val(tar.value): (shearProtoObj[kName] = tar.value);
             });
 
