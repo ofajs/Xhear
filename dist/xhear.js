@@ -296,10 +296,8 @@
         svRender: !0
     });
 
-    
-// 设置数据
-const setRData = (rData, k, innerShearObject) => {
-    let data = rData[k];
+    // 设置数据
+const setRData = (data, k, innerShearObject) => {
     switch (k) {
         case "val":
             innerShearObject.val(data);
@@ -355,6 +353,7 @@ const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => 
     return dObj;
 }
 
+// 元素自定义组件id
 let rid = 100;
 
 // 渲染 sv元素
@@ -511,9 +510,15 @@ const renderEle = (ele) => {
             });
 
             // 监听改动
-            $tar.on('change', (e) => {
-                (kName == "val") ? $ele.val(tar.value): (shearProtoObj[kName] = tar.value);
-            });
+            if (tar._svData) {
+                $.init(tar).watch('val', (d) => {
+                    (kName == "val") ? $ele.val(d): (shearProtoObj[kName] = d);
+                });
+            } else {
+                $tar.on('change', (e) => {
+                    (kName == "val") ? $ele.val(tar.value): (shearProtoObj[kName] = tar.value);
+                });
+            }
 
             if (tar.tagName.toLowerCase() == 'select') {
                 rData[kName] = tar.value;
@@ -523,6 +528,7 @@ const renderEle = (ele) => {
 
         let valInfoData = tagdata.val;
 
+        // 若有val，补充 get set
         if (0 in _$(`[sv-module="val"][sv-shadow="${renderId}"]`, ele) && !valInfoData) {
             let tempVal = "";
             valInfoData = {
@@ -578,10 +584,11 @@ const renderEle = (ele) => {
             if (computedKey.indexOf(k) > -1) {
                 continue;
             }
-            setRData(rData, k, innerShearObject);
+            setRData(rData[k], k, innerShearObject);
         }
         each(computedKey, k => {
-            isRealValue(rData[k]) && setRData(rData, k, innerShearObject);
+            let data = rData[k];
+            isRealValue(data) && setRData(data, k, innerShearObject);
         });
 
         // 初始化完成
