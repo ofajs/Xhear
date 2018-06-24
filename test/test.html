@@ -1,119 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
-    <script src="jquery-3.2.1.js"></script>
-    <!-- <script src="smartjq-recommend.js"></script> -->
-    <script src="../dist/xhear.js"></script>
-    <style>
-        #test_area {
-            background-color: #fff;
-            color: black;
-        }
-    </style>
+    <script src="../dist/xhear-no$.js"></script>
 </head>
-
 <body>
-    <div id="test_area">
-        <div id="aa"></div>
-        <br>
-        <br>
-
-        <test sv-ele id="b" kaka="111111">
-            <div>我是内容1</div>
-            <div>我是内容2</div>
-            <div>我是内容3</div>
-        </test>
-
-        <br>
-        <br>
-        <div id="c"></div>
-        <br>
-        <br>
-    </div>
+    
 </body>
-<script>
-    xhear.register({
-        tag: "test",
-        temp: `
-            <div class="title" style="color:red;font-size:16px;" sv-tar="title">我是title</div>
-            <div class="title2" style="color:green;font-size:12px;">{{a}}--{{a}}</div>
-            <div class="title3" style="color:blue;font-size:12px;">我是kaka => {{kaka}}</div>
-            <input sv-module="kaka" name="" />
-            <div sv-content style="font-size:12px;"></div>
-            <div> c=> {{c}}</div>
-        `,
-        data: {
-            a: "我是副标题"
-        },
-        computed: {
-            b() {
-                return 100;
-            },
-            c: {
-                get() {
-                    return this._c + ", haha";
-                },
-                set(val) {
-                    this._c = val;
-                }
-            }
-        },
-        // 私有属性，内部对象要获取记得加下划线
-        pri: {
-            c: "I am c"
-        },
-        attrs: ['kaka', "c"],
-        proto: {
-            haha() {
-                console.log(this, 'ni ma si');
-            }
-        },
-        val: {
-            get() {
-                return this.a;
-            }
-        },
-        inited: (tar) => {
-            console.log('init tar => ', tar);
-        },
-        attached: (tar) => {
-            console.log('attached tar => ', tar);
-        },
-        detached: (tar) => {
-            console.log('detached tar => ', tar);
-        },
-        childChange(tar, obs) {
-            console.log('childChange => ', tar, obs);
-        }
-    });
-
-    let ele_b = $('#b');
-    console.log('ele_b => ', ele_b);
-
-    // let after_ele = $('<div><test sv-ele kaka="woshikakaka">hahatest</test></div>');
-
-    // 兼容值变动
-    ele_b.watch('a', function (val, oldVal) {
-        console.log('after watch => ', val, oldVal, '  this=> ', this);
-    });
-    setTimeout(() => {
-        ele_b.kaka = 'kakakakakakakakakaka';
-        ele_b.a = "改变标题";
-
-        // $('#aa').append(after_ele);
-
-        // 直接填入
-        $('#test_area').append('<div><test sv-ele kaka="后来的">houlai</test></div>');
-    }, 1000);
-
-    $('#aa').append((...args) => {
-        return `<test sv-ele kaka="function +"></test>`
-    })
-</script>
-
 </html>
