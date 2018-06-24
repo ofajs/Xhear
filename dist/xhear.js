@@ -510,15 +510,15 @@ const renderEle = (ele) => {
             });
 
             // 监听改动
-            if (tar._svData) {
-                $.init(tar).watch('val', (d) => {
-                    (kName == "val") ? $ele.val(d): (shearProtoObj[kName] = d);
-                });
-            } else {
+            // if (tar._svData) {
+            //     $.init(tar).watch('val', (d) => {
+            //         (kName == "val") ? $ele.val(d): (shearProtoObj[kName] = d);
+            //     });
+            // } else {
                 $tar.on('change', (e) => {
                     (kName == "val") ? $ele.val(tar.value): (shearProtoObj[kName] = tar.value);
                 });
-            }
+            // }
 
             if (tar.tagName.toLowerCase() == 'select') {
                 rData[kName] = tar.value;
