@@ -11,17 +11,20 @@ let mainFun = async () => {
     // 打开主体base文件
     let basefile = await readFile('src/base.js', 'utf8');
 
-    // 扩展控制器逻辑
-    // let operationFile = await readFile('src/operation.js', 'utf8');
+    // 正则匹配文件名标记
+    await Promise.all(basefile.match(/\/\/<\!--(.+?)-->/g).map(async (e) => {
+        // 获取文件名
+        let f = e.match(/\/\/<\!--(.+?)-->/);
+        if (f && (1 in f)) {
+            f = f[1];
+        }
 
-    // // 整合 扩展控制器逻辑 
-    // basefile = basefile.replace('//<!--operation-->', operationFile);
+        // 读取文件
+        code = await readFile(`src/${f}.js`, 'utf8');
 
-    // let rCode = await readFile('src/renderEle.js', 'utf8');
-    // basefile = basefile.replace('//<!--renderEle-->', e => rCode);
-
-    // rCode = await readFile('src/bridge.js', 'utf8');
-    // basefile = basefile.replace('//<!--bridge-->', e => rCode);
+        // 替换记录部分
+        basefile = basefile.replace(`//<!--${f}-->`, code);
+    }));
 
     if (beforeCode == basefile) {
         return;
@@ -31,7 +34,7 @@ let mainFun = async () => {
     // 写入最终文件
     fs.writeFile('dist/xhear-no$.js', basefile, 'utf8', (err) => {
         if (err) throw err;
-        console.log('shear.js write succeed!' + count++);
+        console.log('xhear.js write succeed!' + count++);
     });
 }
 
