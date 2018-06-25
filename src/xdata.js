@@ -59,10 +59,28 @@ defineProperties(XData.prototype, {
                     return oriValue;
                 },
                 set(d) {
-                    let beforeValue = oriValue;
+                    let oldVal = oriValue;
                     oriValue = d;
 
-                    // 触发事件
+                    // 防止重复值触发改动
+                    if (oldVal === d) {
+                        return;
+                    }
+
+                    // 触发watch事件
+                    each(getWatchObj(this, key), callFunc => {
+                        callFunc(oriValue, oldVal);
+                    });
+
+                    // 触发观察
+                    each(this[OBSERVERKEYS], callFunc => {
+                        callFunc({
+                            name: key,
+                            type: "update",
+                            oldVal,
+                            val: d
+                        });
+                    });
                 }
             });
 
