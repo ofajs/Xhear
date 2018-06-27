@@ -1,0 +1,78 @@
+const register = (options) => {
+    let defaults = {
+        // 自定义标签名
+        tag: "",
+        // 正文内容字符串
+        temp: "",
+        // 属性绑定keys
+        attrs: [],
+        props: [],
+        // 默认数据
+        data: {},
+        // 直接监听属性变动对象
+        watch: {},
+        // 原型链上的方法
+        // proto: {},
+        // 渲染完节点触发的时间（数据还没绑定）
+        render() {},
+        // 初始化完成后触发的事件
+        inited() {},
+        // 添加进document执行的callback
+        attached() {},
+        // 删除后执行的callback
+        detached() {}
+    };
+
+    assign(defaults, options);
+
+    let {
+        proto,
+        temp,
+        tag
+    } = defaults;
+
+    // 生成新的数据对象
+    function XHear() {
+        XData.call(this);
+    }
+
+    // 原型对象
+    let XHearFn = Object.create($fn);
+
+    // 合并数据
+    assign(XHearFn, XDataFn);
+
+    // 判断是否有公用方法
+    if (proto) {
+        XHearFn = create(XHearFn);
+        assign(XHearFn, proto);
+    }
+
+    // 赋值原型对象
+    XHear.prototype = XHearFn;
+
+    // 去除无用的代码（注释代码）
+    temp = temp.replace(/<!--.+?-->/g, "");
+
+    //准换自定义字符串数据
+    var textDataArr = temp.match(/{{.+?}}/g);
+    textDataArr && textDataArr.forEach((e) => {
+        var key = /{{(.+?)}}/.exec(e);
+        if (key) {
+            temp = temp.replace(e, `<sv-span svkey="${key[1].trim()}"></sv-span>`);
+        }
+    });
+
+    // 加入tag数据库
+    tagDatabase[tag] = assign({}, defaults, {
+        XHear,
+        temp
+    })
+
+    // 渲染已存在tag
+    _$(defaults.tag + '[xv-ele]').each((i, e) => {
+        renderEle(e);
+    });
+}
+
+$.register = register;

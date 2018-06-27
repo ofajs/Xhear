@@ -1,6 +1,7 @@
 // 基础tag记录器
 let tagDatabase = {};
 
+// debugger
 glo.tagDatabase = tagDatabase;
 
 const {
@@ -55,4 +56,50 @@ const nextTick = (() => {
 // 随机字符串
 const RANDOMID = "_" + getRandomId();
 const SWATCH = RANDOMID + "_watchs";
+const SWATCHGET = SWATCH + "_get";
 const OBSERVERKEYS = RANDOMID + "_observer";
+const XHEAROBJKEY = getRandomId() + "_xhearobj";
+
+
+// business fucntion 
+
+// 生成专用shear对象
+const createShearObject = (ele) => {
+    let xvData = ele[XHEAROBJKEY];
+    let e = create(xvData);
+    e.push(ele);
+    return e;
+}
+
+// 生成普通继承的$实例
+const inCreate$ = arr => {
+    let reObj = create(shearInitPrototype);
+    reObj.splice(-1, 0, ...arr);
+    if (arr.prevObject) {
+        reObj.prevObject = arr.prevObject;
+    }
+    return reObj;
+}
+
+// 通用实例生成方法
+const createShear$ = arr => {
+    if (arr.length == 1 && arr[0][XHEAROBJKEY]) {
+        return createShearObject(arr[0]);
+    }
+    return inCreate$(arr);
+}
+
+// 渲染所有的sv-ele元素
+const renderAllSvEle = (jqObj) => {
+    // 自己是不是sv-ele
+    if (jqObj.is('[xv-ele]')) {
+        jqObj.each((i, e) => {
+            renderEle(e);
+        });
+    }
+
+    // 查找有没有 sv-ele
+    _$('[xv-ele]', Array.from(jqObj)).each((i, e) => {
+        renderEle(e);
+    });
+}
