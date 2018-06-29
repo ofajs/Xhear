@@ -7,14 +7,14 @@ const renderEle = (ele) => {
     }
 
     // 获取tagname
-    let tagname = ele.tagName.toLowerCase();
+    // let tagname = ele.tagName.toLowerCase();
 
     // 从库中获取注册数据
-    let regData = tagDatabase[tagname];
+    let regData = getTagData(ele);
 
     // 判断是否存在注册数据
     if (!regData) {
-        console.warn('no exist' + tagname, ele);
+        console.warn('no exist tag', ele);
         return;
     }
     let $ele = _$(ele);

@@ -12,7 +12,6 @@
 
     // 新jq实例原型对象
     let shearInitPrototype = create($fn);
-    shearInitPrototype.svRender = !0;
 
     //<!--renderEle-->
 
@@ -54,7 +53,6 @@
 
     glo.$ = $;
 
-    // 初始css
-    _$('head').append('<style>[xv-ele]{display:none}</style>');
+    //<!--ready-->
 
 })(window);

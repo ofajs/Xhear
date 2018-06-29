@@ -65,6 +65,11 @@ const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
 
 // business fucntion 
 
+const getTagData = (ele) => {
+    let tagname = ele.tagName.toLowerCase();
+    return tagDatabase[tagname];
+}
+
 // 生成专用shear对象
 const createShearObject = (ele) => {
     let xvData = ele[XHEAROBJKEY];

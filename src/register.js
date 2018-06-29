@@ -1,3 +1,12 @@
+// 原型对象
+let XHearFn = Object.create(shearInitPrototype);
+
+// 设置svRender
+XHearFn.svRender = !0;
+
+// 合并数据
+assign(XHearFn, XDataFn);
+
 const register = (options) => {
     let defaults = {
         // 自定义标签名
@@ -38,20 +47,16 @@ const register = (options) => {
         XData.call(this);
     }
 
-    // 原型对象
-    let XHearFn = Object.create(shearInitPrototype);
-
-    // 合并数据
-    assign(XHearFn, XDataFn);
+    let inXHearFn = XHearFn;
 
     // 判断是否有公用方法
     if (proto) {
-        XHearFn = create(XHearFn);
-        assign(XHearFn, proto);
+        inXHearFn = create(XHearFn);
+        assign(inXHearFn, proto);
     }
 
     // 赋值原型对象
-    XHear.prototype = XHearFn;
+    XHear.prototype = inXHearFn;
 
     // 去除无用的代码（注释代码）
     temp = temp.replace(/<!--.+?-->/g, "");

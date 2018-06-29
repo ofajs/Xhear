@@ -75,6 +75,11 @@ const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
 
 // business fucntion 
 
+const getTagData = (ele) => {
+    let tagname = ele.tagName.toLowerCase();
+    return tagDatabase[tagname];
+}
+
 // 生成专用shear对象
 const createShearObject = (ele) => {
     let xvData = ele[XHEAROBJKEY];
@@ -118,7 +123,6 @@ const renderAllSvEle = (jqObj) => {
 
     // 新jq实例原型对象
     let shearInitPrototype = create($fn);
-    shearInitPrototype.svRender = !0;
 
     // 元素自定义组件id
 let rid = 100;
@@ -129,14 +133,14 @@ const renderEle = (ele) => {
     }
 
     // 获取tagname
-    let tagname = ele.tagName.toLowerCase();
+    // let tagname = ele.tagName.toLowerCase();
 
     // 从库中获取注册数据
-    let regData = tagDatabase[tagname];
+    let regData = getTagData(ele);
 
     // 判断是否存在注册数据
     if (!regData) {
-        console.warn('no exist' + tagname, ele);
+        console.warn('no exist tag', ele);
         return;
     }
     let $ele = _$(ele);
@@ -485,7 +489,16 @@ $.xdata = function (obj, options) {
     return xd;
 }
 
-    const register = (options) => {
+    // 原型对象
+let XHearFn = Object.create(shearInitPrototype);
+
+// 设置svRender
+XHearFn.svRender = !0;
+
+// 合并数据
+assign(XHearFn, XDataFn);
+
+const register = (options) => {
     let defaults = {
         // 自定义标签名
         tag: "",
@@ -525,20 +538,16 @@ $.xdata = function (obj, options) {
         XData.call(this);
     }
 
-    // 原型对象
-    let XHearFn = Object.create(shearInitPrototype);
-
-    // 合并数据
-    assign(XHearFn, XDataFn);
+    let inXHearFn = XHearFn;
 
     // 判断是否有公用方法
     if (proto) {
-        XHearFn = create(XHearFn);
-        assign(XHearFn, proto);
+        inXHearFn = create(XHearFn);
+        assign(inXHearFn, proto);
     }
 
     // 赋值原型对象
-    XHear.prototype = XHearFn;
+    XHear.prototype = inXHearFn;
 
     // 去除无用的代码（注释代码）
     temp = temp.replace(/<!--.+?-->/g, "");
@@ -698,8 +707,7 @@ assign(shearInitPrototype, {
         let [aName, aValue] = args;
         if (aValue && this.is('[xv-render]')) {
             this.each((i, e) => {
-                let tagname = e.tagName.toLowerCase();
-                let tagdata = tagDatabase[tagname];
+                let tagdata = getTagData(e);
                 if (tagdata) {
                     // 查找attr内是否有他自己
                     if (tagdata.attrs.indexOf(aName) > -1) {
@@ -1064,7 +1072,93 @@ each(['html', 'text'], kName => {
 
     glo.$ = $;
 
-    // 初始css
-    _$('head').append('<style>[xv-ele]{display:none}</style>');
+     // ready
+ // 页面进入之后，进行一次渲染操作
+ _$(() => {
+     const attachedFun = (ele) => {
+         if (ele[ATTACHED_KEY]) {
+             return;
+         }
+         let tagdata = getTagData(ele);
+         tagdata.attached && tagdata.attached(createShearObject(ele));
+         ele[ATTACHED_KEY] = 1;
+     }
+
+     const detachedFunc = (ele) => {
+         // 确认是移出 document 的元素
+         if (ele.getRootNode() != document) {
+             let tagdata = getTagData(ele);
+             tagdata.detached && tagdata.detached(createShearObject(ele));
+
+             // 防止内存不回收
+             // 清除svParent
+             _$('[xv-content]', ele).each((i, e) => {
+                 delete e.svParent;
+             });
+
+             // 清空observer属性
+             let xvData = ele[XHEAROBJKEY];
+
+             if (xvData) {
+                 xvData.__obs && xvData.__obs.disconnect();
+                 delete xvData.__obs;
+                 delete ele[XHEAROBJKEY];
+             }
+         }
+     }
+
+     // attached detached 监听
+     let observer = new MutationObserver((mutations) => {
+         mutations.forEach((e) => {
+             let {
+                 addedNodes,
+                 removedNodes
+             } = e;
+
+             // 监听新增元素
+             if (addedNodes && 0 in addedNodes) {
+                 each(addedNodes, (ele) => {
+                     if (ele[XHEAROBJKEY]) {
+                         attachedFun(ele);
+                     }
+
+                     if (ele instanceof Element) {
+                         // 触发已渲染的attached
+                         each(ele.querySelectorAll('[xv-render]'), e => {
+                             attachedFun(e);
+                         });
+                     }
+                 });
+             }
+
+             // 监听去除元素
+             if (removedNodes && 0 in removedNodes) {
+                 each(removedNodes, (ele) => {
+                     if (ele[XHEAROBJKEY]) {
+                         detachedFunc(ele);
+                     }
+
+                     _$('[xv-render]', ele).each((i, e) => {
+                         detachedFunc(e);
+                     });
+                 });
+             }
+         });
+     });
+     observer.observe(document.body, {
+         attributes: false,
+         childList: true,
+         characterData: false,
+         subtree: true,
+     });
+
+     // 初始渲染一次
+     _$('[xv-ele]').each((i, e) => {
+         renderEle(e);
+     });
+ });
+
+ // 初始css
+ _$('head').append('<style>[xv-ele]{display:none}</style>');
 
 })(window);

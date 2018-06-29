@@ -17,5 +17,8 @@ xhear.register({
         <div style="color:red;">content: {{a}} </div>
         <div xv-content></div>
         <div><input xv-module="a" /></div>
-    `
+    `,
+    detached() {
+        console.log('you delete me');
+    }
 });

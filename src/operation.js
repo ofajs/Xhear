@@ -130,8 +130,7 @@ assign(shearInitPrototype, {
         let [aName, aValue] = args;
         if (aValue && this.is('[xv-render]')) {
             this.each((i, e) => {
-                let tagname = e.tagName.toLowerCase();
-                let tagdata = tagDatabase[tagname];
+                let tagdata = getTagData(e);
                 if (tagdata) {
                     // 查找attr内是否有他自己
                     if (tagdata.attrs.indexOf(aName) > -1) {
