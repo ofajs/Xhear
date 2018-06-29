@@ -132,9 +132,6 @@ const renderEle = (ele) => {
         return;
     }
 
-    // 获取tagname
-    // let tagname = ele.tagName.toLowerCase();
-
     // 从库中获取注册数据
     let regData = getTagData(ele);
 
@@ -199,6 +196,33 @@ const renderEle = (ele) => {
 
         // 添加子元素
         xvContentEle.append(childs);
+
+        // 判断是否监听子节点变动
+        if (regData.childChange) {
+            let observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    let {
+                        addedNodes,
+                        removedNodes
+                    } = mutation;
+                    let obsEvent = {};
+                    (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
+                    (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
+                    regData.childChange(createShearObject(ele), obsEvent);
+                });
+            });
+
+            // 监听节点
+            observer.observe(xvContentEle[0], {
+                attributes: false,
+                childList: true,
+                characterData: false,
+                subtree: false,
+            });
+
+            // 设置监听属性
+            xhearObj.__obs = observer;
+        }
     }
 
     // 等下需要设置的data
@@ -324,6 +348,21 @@ const renderEle = (ele) => {
         // 判断传进来的参数是不是字符串
         if ((getType(arg1) == "string" && arg1.search('<') > -1) || arg1 instanceof Element) {
             renderAllSvEle(reObj);
+        }
+
+        // 去除 shadow 元素
+        let arg2_svShadow;
+        if (arg2) {
+            if (arg2.getAttribute) {
+                arg2_svShadow = arg2.getAttribute('xv-shadow');
+            } else if (arg2.attr) {
+                arg2_svShadow = arg2.attr('xv-shadow');
+            }
+        }
+        if (arg2_svShadow) {
+            reObj = filterShadow(reObj, arg2_svShadow);
+        } else {
+            reObj = filterShadow(reObj);
         }
 
         // 生成实例
@@ -909,7 +948,6 @@ assign(shearInitPrototype, {
 each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (content) {
-
         // 继承旧的方法
         oldFunc.call(this, fixShadowContent(this, content));
 
@@ -1080,7 +1118,7 @@ each(['html', 'text'], kName => {
              return;
          }
          let tagdata = getTagData(ele);
-         tagdata.attached && tagdata.attached(createShearObject(ele));
+         tagdata.attached && tagdata.attached.call(ele, createShearObject(ele));
          ele[ATTACHED_KEY] = 1;
      }
 
@@ -1088,7 +1126,7 @@ each(['html', 'text'], kName => {
          // 确认是移出 document 的元素
          if (ele.getRootNode() != document) {
              let tagdata = getTagData(ele);
-             tagdata.detached && tagdata.detached(createShearObject(ele));
+             tagdata.detached && tagdata.detached.call(ele, createShearObject(ele));
 
              // 防止内存不回收
              // 清除svParent

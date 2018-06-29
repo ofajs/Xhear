@@ -6,9 +6,6 @@ const renderEle = (ele) => {
         return;
     }
 
-    // 获取tagname
-    // let tagname = ele.tagName.toLowerCase();
-
     // 从库中获取注册数据
     let regData = getTagData(ele);
 
@@ -73,6 +70,33 @@ const renderEle = (ele) => {
 
         // 添加子元素
         xvContentEle.append(childs);
+
+        // 判断是否监听子节点变动
+        if (regData.childChange) {
+            let observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    let {
+                        addedNodes,
+                        removedNodes
+                    } = mutation;
+                    let obsEvent = {};
+                    (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
+                    (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
+                    regData.childChange(createShearObject(ele), obsEvent);
+                });
+            });
+
+            // 监听节点
+            observer.observe(xvContentEle[0], {
+                attributes: false,
+                childList: true,
+                characterData: false,
+                subtree: false,
+            });
+
+            // 设置监听属性
+            xhearObj.__obs = observer;
+        }
     }
 
     // 等下需要设置的data

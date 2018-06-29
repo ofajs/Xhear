@@ -6,7 +6,7 @@
              return;
          }
          let tagdata = getTagData(ele);
-         tagdata.attached && tagdata.attached(createShearObject(ele));
+         tagdata.attached && tagdata.attached.call(ele, createShearObject(ele));
          ele[ATTACHED_KEY] = 1;
      }
 
@@ -14,7 +14,7 @@
          // 确认是移出 document 的元素
          if (ele.getRootNode() != document) {
              let tagdata = getTagData(ele);
-             tagdata.detached && tagdata.detached(createShearObject(ele));
+             tagdata.detached && tagdata.detached.call(ele, createShearObject(ele));
 
              // 防止内存不回收
              // 清除svParent

@@ -18,7 +18,10 @@ xhear.register({
         <div xv-content></div>
         <div><input xv-module="a" /></div>
     `,
-    detached() {
-        console.log('you delete me');
+    attached($ele) {
+        console.log('new one', $ele);
+    },
+    detached($ele) {
+        console.log('you delete me', $ele);
     }
 });

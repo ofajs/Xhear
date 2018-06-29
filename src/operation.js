@@ -332,7 +332,6 @@ assign(shearInitPrototype, {
 each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (content) {
-
         // 继承旧的方法
         oldFunc.call(this, fixShadowContent(this, content));
 

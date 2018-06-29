@@ -26,6 +26,21 @@
             renderAllSvEle(reObj);
         }
 
+        // 去除 shadow 元素
+        let arg2_svShadow;
+        if (arg2) {
+            if (arg2.getAttribute) {
+                arg2_svShadow = arg2.getAttribute('xv-shadow');
+            } else if (arg2.attr) {
+                arg2_svShadow = arg2.attr('xv-shadow');
+            }
+        }
+        if (arg2_svShadow) {
+            reObj = filterShadow(reObj, arg2_svShadow);
+        } else {
+            reObj = filterShadow(reObj);
+        }
+
         // 生成实例
         reObj = createShear$(reObj);
 
