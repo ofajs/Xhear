@@ -372,9 +372,7 @@ const renderEle = (ele) => {
     };
     $.prototype = $fn;
     assign($, {
-        init() {
-
-        }
+        init: ele => createShear$([ele])
     }, _$);
 
     // 数据绑定Class
