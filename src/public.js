@@ -59,6 +59,8 @@ const SWATCH = RANDOMID + "_watchs";
 const SWATCHGET = SWATCH + "_get";
 const OBSERVERKEYS = RANDOMID + "_observer";
 const XHEAROBJKEY = getRandomId() + "_xhearobj";
+const ATTACHED_KEY = getRandomId() + "_attached";
+const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
 
 
 // business fucntion 

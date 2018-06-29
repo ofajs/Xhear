@@ -15,6 +15,7 @@ xhear.register({
     attrs: ['a'],
     temp: `
         <div style="color:red;">content: {{a}} </div>
+        <div xv-content></div>
         <div><input xv-module="a" /></div>
     `
 });

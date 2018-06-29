@@ -13,31 +13,33 @@ const register = (options) => {
         watch: {},
         // 原型链上的方法
         // proto: {},
-        // 渲染完节点触发的时间（数据还没绑定）
-        render() {},
         // 初始化完成后触发的事件
-        inited() {},
+        // inited() {},
         // 添加进document执行的callback
-        attached() {},
+        // attached() {},
         // 删除后执行的callback
-        detached() {}
+        // detached() {}
     };
 
     assign(defaults, options);
 
     let {
         proto,
+        props,
         temp,
         tag
     } = defaults;
 
+    // 添加value定值
+    props.push('value');
+
     // 生成新的数据对象
-    function XHear() {
+    let XHear = function () {
         XData.call(this);
     }
 
     // 原型对象
-    let XHearFn = Object.create($fn);
+    let XHearFn = Object.create(shearInitPrototype);
 
     // 合并数据
     assign(XHearFn, XDataFn);
@@ -59,7 +61,7 @@ const register = (options) => {
     textDataArr && textDataArr.forEach((e) => {
         var key = /{{(.+?)}}/.exec(e);
         if (key) {
-            temp = temp.replace(e, `<sv-span svkey="${key[1].trim()}"></sv-span>`);
+            temp = temp.replace(e, `<xv-span svkey="${key[1].trim()}"></xv-span>`);
         }
     });
 

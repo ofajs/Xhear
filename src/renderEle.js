@@ -42,9 +42,9 @@ const renderEle = (ele) => {
         renderEle(e);
     });
 
-    // 转换 sv-span 元素
-    _$(`sv-span[xv-shadow="${renderId}"]`, ele).each((i, e) => {
-        // 替换sv-span
+    // 转换 xv-span 元素
+    _$(`xv-span[xv-shadow="${renderId}"]`, ele).each((i, e) => {
+        // 替换xv-span
         var textnode = document.createTextNode("");
         e.parentNode.insertBefore(textnode, e);
         e.parentNode.removeChild(e);
@@ -56,6 +56,24 @@ const renderEle = (ele) => {
             textnode.textContent = d;
         });
     });
+
+    // 放回内容
+    let xvContentEle = _$(`[xv-content][xv-shadow="${renderId}"]`, ele);
+    if (0 in xvContentEle) {
+        // 定义$content属性
+        defineProperty(xhearObj, '$content', {
+            enumerable: true,
+            get() {
+                return createShear$(xvContentEle);
+            }
+        });
+
+        // 添加svParent
+        xvContentEle.prop('svParent', ele);
+
+        // 添加子元素
+        xvContentEle.append(childs);
+    }
 
     // 等下需要设置的data
     let rData = assign({}, regData.data);
@@ -93,9 +111,16 @@ const renderEle = (ele) => {
         });
 
         // 监听改动
-        $tar.on('change input', (e) => {
-            xhearObj[kName] = tar.value;
-        });
+        if (tar[XHEAROBJKEY]) {
+            tar[XHEAROBJKEY].watch("value", val => {
+                xhearObj.value = val;
+            });
+            debugger
+        } else {
+            $tar.on('change input', (e) => {
+                xhearObj[kName] = tar.value;
+            });
+        }
     });
 
     // 设置渲染完成
@@ -139,10 +164,6 @@ const renderEle = (ele) => {
 
     // 存在 value key
     if ('value' in rData) {
-        xhearObj.watch('value', val => {
-            ele.value = val;
-        });
-
         defineProperty(ele, 'value', {
             get() {
                 return xhearObj.value;
@@ -156,5 +177,14 @@ const renderEle = (ele) => {
     // 设置数据
     for (let k in rData) {
         isRealValue(rData[k]) && (xhearObj[k] = rData[k]);
+    }
+
+    // 触发callback
+    regData.inited && regData.inited.call(ele, xhearEle);
+
+    // attached callback
+    if (regData.attached && ele.getRootNode() === document && !ele[ATTACHED_KEY]) {
+        regData.attached.call(ele, xhearEle);
+        ele[ATTACHED_KEY] = 1;
     }
 }

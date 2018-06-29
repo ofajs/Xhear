@@ -12,6 +12,7 @@
 
     // 新jq实例原型对象
     let shearInitPrototype = create($fn);
+    shearInitPrototype.svRender = !0;
 
     //<!--renderEle-->
 
@@ -42,6 +43,8 @@
 
     //<!--register-->
 
+    //<!--operation-->
+
     // init
     const xhear = {
         register
@@ -50,5 +53,8 @@
     glo.xhear = xhear;
 
     glo.$ = $;
+
+    // 初始css
+    _$('head').append('<style>[xv-ele]{display:none}</style>');
 
 })(window);
