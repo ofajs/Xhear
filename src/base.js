@@ -1,3 +1,4 @@
+// ----jQueryCode----
 ((glo) => {
     "use strict";
 

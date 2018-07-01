@@ -20,7 +20,7 @@ let mainFun = async () => {
         }
 
         // 读取文件
-        code = await readFile(`src/${f}.js`, 'utf8');
+        let code = await readFile(`src/${f}.js`, 'utf8');
 
         // 替换记录部分
         basefile = basefile.replace(`//<!--${f}-->`, e => code);
@@ -34,8 +34,19 @@ let mainFun = async () => {
     // 写入最终文件
     fs.writeFile('dist/xhear-no$.js', basefile, 'utf8', (err) => {
         if (err) throw err;
-        console.log('xhear.js write succeed!' + count++);
+        console.log('xhear-no$.js write succeed!' + count++);
     });
+
+    // 写入完整版
+    (async () => {
+        let code = await readFile('src/xque.js');
+        basefile = basefile.replace('// ----jQueryCode----', code);
+
+        fs.writeFile('dist/xhear.js', basefile, 'utf8', (err) => {
+            if (err) throw err;
+            console.log('xhear.js write succeed!' + count++);
+        });
+    })();
 }
 
 let readFileTimer;

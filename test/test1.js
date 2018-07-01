@@ -1,5 +1,5 @@
 (() => {
-    var tester = expect(17, 'xdata test');
+    var tester = expect(18, 'xdata test');
 
     let d1 = $.xdata({
         a: "I am a",
@@ -11,8 +11,25 @@
         b: ""
     });
 
+    let d3 = $.xdata({
+        kk: ""
+    });
+
     // 数据绑定
     d1.syncData(d2);
+
+    // 数据桥接
+    d1.transData({
+        key: "a",
+        target: d3,
+        targetKey: "kk",
+        get(d) {
+            return d.replace(/_to_d3$/, "");
+        },
+        set(d) {
+            return d + "_to_d3";
+        }
+    });
 
     tester.ok(d1.a === "I am a", "get value ok");
 
@@ -71,4 +88,6 @@
 
     tester.ok(d2.a === "change a 2", "syncData ok 1");
     tester.ok(d2.b === "I am b", "syncData ok 2");
+
+    tester.ok(d3.kk === "change a 2_to_d3", "transData ok 1");
 })();
