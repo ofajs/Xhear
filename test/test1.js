@@ -1,10 +1,18 @@
 (() => {
-    var tester = expect(15, 'xdata test');
+    var tester = expect(17, 'xdata test');
 
     let d1 = $.xdata({
         a: "I am a",
         b: "I am b"
     });
+
+    let d2 = $.xdata({
+        a: "",
+        b: ""
+    });
+
+    // 数据绑定
+    d1.syncData(d2);
 
     tester.ok(d1.a === "I am a", "get value ok");
 
@@ -60,4 +68,7 @@
     d1.c = "change c";
 
     console.log(d1);
+
+    tester.ok(d2.a === "change a 2", "syncData ok 1");
+    tester.ok(d2.b === "I am b", "syncData ok 2");
 })();

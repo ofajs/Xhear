@@ -8,10 +8,13 @@ stext {
   color: #fff;
 }
 stext > .s_text_input {
+  width: 100%;
   outline: transparent;
   white-space: nowrap;
-  overflow-x: auto;
-  -webkit-user-modify: read-write-plaintext-only;
+  border: none;
+  padding: 3px 0;
+  color: #eee;
+  background-color: transparent;
   cursor: text;
 }
 stext > .s_text_input:focus + .s_text_before_bottomline {

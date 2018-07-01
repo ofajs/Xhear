@@ -48,7 +48,7 @@
     };
     $.prototype = $fn;
     assign($, {
-        init: ele => createShear$([ele])
+        init: (...args) => createShear$(args)
     }, _$);
 
     //<!--xdata-->

@@ -99,6 +99,17 @@ const renderEle = (ele) => {
         }
     }
 
+    // 写入其他定义节点
+    _$(`[xv-tar][xv-shadow="${renderId}"]`, ele).each((i, e) => {
+        let eName = _$(e).attr('xv-tar');
+        defineProperty(xhearObj, '$' + eName, {
+            enumerable: true,
+            get() {
+                return createShear$([e]);
+            }
+        });
+    });
+
     // 等下需要设置的data
     let rData = assign({}, regData.data);
 
@@ -139,7 +150,6 @@ const renderEle = (ele) => {
             tar[XHEAROBJKEY].watch("value", val => {
                 xhearObj.value = val;
             });
-            debugger
         } else {
             $tar.on('change input', (e) => {
                 xhearObj[kName] = tar.value;

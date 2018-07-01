@@ -225,6 +225,17 @@ const renderEle = (ele) => {
         }
     }
 
+    // 写入其他定义节点
+    _$(`[xv-tar][xv-shadow="${renderId}"]`, ele).each((i, e) => {
+        let eName = _$(e).attr('xv-tar');
+        defineProperty(xhearObj, '$' + eName, {
+            enumerable: true,
+            get() {
+                return createShear$([e]);
+            }
+        });
+    });
+
     // 等下需要设置的data
     let rData = assign({}, regData.data);
 
@@ -265,7 +276,6 @@ const renderEle = (ele) => {
             tar[XHEAROBJKEY].watch("value", val => {
                 xhearObj.value = val;
             });
-            debugger
         } else {
             $tar.on('change input', (e) => {
                 xhearObj[kName] = tar.value;
@@ -372,23 +382,10 @@ const renderEle = (ele) => {
     };
     $.prototype = $fn;
     assign($, {
-        init: ele => createShear$([ele])
+        init: (...args) => createShear$(args)
     }, _$);
 
-    // 数据绑定Class
-let XData = function () {
-    defineProperty(this, SWATCH, {
-        value: {}
-    });
-    defineProperty(this, SWATCHGET, {
-        value: {}
-    });
-    defineProperty(this, OBSERVERKEYS, {
-        value: []
-    });
-}
-
-// 获取监听对象数组
+    // 获取监听对象数组
 const getWatchObj = (d, k, sName = SWATCH) => d[sName] && (d[sName][k] || (d[sName][k] = []));
 
 const watchGetter = (host, k, func) => {
@@ -412,6 +409,32 @@ const emitChange = (tar, key, val, oldVal, type = "update") => {
         });
     });
 };
+
+// 值绑定
+const bridge = (obj1, key1, obj2, key2) => {
+    obj1.watch(key1, d => {
+        obj2[key2] = d;
+    });
+    obj2.watch(key2, d => {
+        obj1[key1] = d;
+    });
+
+    // 设置一次值
+    obj2[key2] = obj1[key1];
+}
+
+// 数据绑定Class
+let XData = function () {
+    defineProperty(this, SWATCH, {
+        value: {}
+    });
+    defineProperty(this, SWATCHGET, {
+        value: {}
+    });
+    defineProperty(this, OBSERVERKEYS, {
+        value: []
+    });
+}
 
 let XDataFn = {
     watch(k, func) {
@@ -502,7 +525,97 @@ let XDataFn = {
     }
 };
 
-let XDataFnDefineObj = {};
+let XDataFnDefineObj = {
+    // 同步数据的方法
+    syncData: {
+        value(obj, options) {
+            if (!(obj instanceof XData) && !obj.svRender) {
+                throw 'error';
+            }
+            switch (getType(options)) {
+                case "object":
+                    for (let k in options) {
+                        bridge(this, k, obj, options[k]);
+                    }
+                    break;
+                case "array":
+                    each(options, k => {
+                        bridge(this, k, obj, k);
+                    });
+                    break;
+                case "string":
+                    bridge(this, options, obj, options);
+                    break;
+                default:
+                    for (let k in this) {
+                        if (k in obj) {
+                            bridge(this, k, obj, k);
+                        }
+                    }
+            }
+        }
+    },
+    // 带中转的同步数据方法
+    transData: {
+        value(options) {
+            let defaults = {
+                // 自身key监听
+                key: "",
+                // 目标数据对象
+                target: "",
+                // 目标key
+                targetKey: "",
+                // 数据对接对象
+                // trans: {},
+                // get set 转换函数
+                // get() {},
+                // set() {}
+            };
+            assign(defaults, options);
+
+            let {
+                key,
+                target,
+                targetKey,
+                trans,
+                get,
+                set
+            } = defaults;
+
+            // 判断是否有trans
+            if (defaults.trans) {
+                // 生成翻转对象
+                let resverObj = {};
+                for (let k in trans) {
+                    resverObj[trans[k]] = k;
+                }
+
+                // 监听
+                this.watch(key, d => {
+                    d = trans[d];
+                    target[targetKey] = d;
+                });
+                target.watch(targetKey, d => {
+                    d = resverObj[d];
+                    this[key] = d;
+                });
+            } else {
+                if (get) {
+                    target.watch(targetKey, d => {
+                        d = get(d);
+                        this[key] = d;
+                    });
+                }
+                if (set) {
+                    this.watch(key, d => {
+                        d = set(d);
+                        target[targetKey] = d;
+                    });
+                }
+            }
+        }
+    }
+};
 for (let k in XDataFn) {
     XDataFnDefineObj[k] = {
         value: XDataFn[k]

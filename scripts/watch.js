@@ -23,7 +23,7 @@ let mainFun = async () => {
         code = await readFile(`src/${f}.js`, 'utf8');
 
         // 替换记录部分
-        basefile = basefile.replace(`//<!--${f}-->`, code);
+        basefile = basefile.replace(`//<!--${f}-->`, e => code);
     }));
 
     if (beforeCode == basefile) {

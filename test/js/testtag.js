@@ -17,6 +17,7 @@ xhear.register({
         <div style="color:red;">content: {{a}} </div>
         <div xv-content></div>
         <div><input xv-module="a" /></div>
+        <stext xv-ele xv-module="value"></stext>
     `,
     attached($ele) {
         console.log('new one', $ele);
