@@ -1,305 +1,224 @@
-// 设置数据
-const setRData = (data, k, innerShearObject) => {
-    switch (k) {
-        case "val":
-            innerShearObject.val(data);
-            break;
-        default:
-            innerShearObject[k] = data;
-    }
-}
-
-// 获取 defineObject 的 参数对象
-// param computedObj getter setter 对象
-// param key 绑定属性名
-// param innerShearObject 内部用 shear元素对象
-// param shearProtoObj shear元素对象的一级原型对象
-const getDefineOptions = (computedObj, key, innerShearObject, shearProtoObj) => {
-    let computedObjType = getType(computedObj);
-
-    // 专门方法
-    let getFunc = () => undefined,
-        setFunc;
-
-    if (computedObjType == "function") {
-        getFunc = computedObj;
-    } else {
-        getFunc = computedObj.get;
-        setFunc = computedObj.set;
-    }
-
-    let dObj = {
-        enumerable: true,
-        get: () => getFunc.call(innerShearObject)
-    };
-    setFunc && (dObj.set = d => {
-        // 获取之前的值
-        let oldVal = (key == "val") ? innerShearObject.val() : innerShearObject[key];
-
-        // 获取当前值
-        let reObj = setFunc.call(innerShearObject, d);
-
-        let val = d;
-
-        // 重新get获取数据
-        if (getFunc && key !== "val") {
-            val = shearProtoObj[key];
-        }
-
-        // 触发修改函数
-        emitChange(shearProtoObj, key, val, oldVal, d);
-
-        return reObj;
-    });
-
-    return dObj;
-}
-
 // 元素自定义组件id
 let rid = 100;
 
-// 渲染 sv元素
 const renderEle = (ele) => {
-    // 判断是否属于sv-ele元素
-    if (hasAttr(ele, 'sv-ele')) {
-        // 获取 tag data
-        let tagdata = getTagData(ele);
+    if (!hasAttr(ele, 'xv-ele')) {
+        return;
+    }
 
-        if (!tagdata) {
-            console.warn('this element is not defined', ele);
-            return;
-        }
+    // 从库中获取注册数据
+    let regData = getTagData(ele);
 
-        // 主体元素
-        let $ele = _$(ele);
+    // 判断是否存在注册数据
+    if (!regData) {
+        console.warn('no exist tag', ele);
+        return;
+    }
+    let $ele = _$(ele);
 
-        // 获取子元素
-        let childs = Array.from(ele.childNodes);
+    // 获取子元素
+    let childs = Array.from(ele.childNodes);
 
-        // 填充模板元素
-        ele.innerHTML = tagdata.code;
+    // 填充代码
+    ele.innerHTML = regData.temp;
 
-        // 生成renderId
-        let renderId = ++rid;
+    // 生成renderId
+    let renderId = ++rid;
 
-        // 设置渲染id
-        $ele.removeAttr('sv-ele').attr('sv-render', renderId);
-        $ele.find(`*`).attr('sv-shadow', renderId);
+    let xhearObj = new regData.XHear();
+    ele[XHEAROBJKEY] = xhearObj;
 
-        // 渲染依赖sv-ele
-        _$(`[sv-ele][sv-shadow="${renderId}"]`, ele).each((i, e) => {
-            renderEle(e);
+    let xhearEle = createShearObject(ele);
+
+    // 设置渲染id
+    $ele.removeAttr('xv-ele').attr('xv-render', renderId);
+    $ele.find(`*`).attr('xv-shadow', renderId);
+
+    // 渲染依赖sx-ele
+    _$(`[xv-ele][xv-shadow="${renderId}"]`, ele).each((i, e) => {
+        renderEle(e);
+    });
+
+    // 转换 xv-span 元素
+    _$(`xv-span[xv-shadow="${renderId}"]`, ele).each((i, e) => {
+        // 替换xv-span
+        var textnode = document.createTextNode("");
+        e.parentNode.insertBefore(textnode, e);
+        e.parentNode.removeChild(e);
+
+        // 文本数据绑定
+        var svkey = e.getAttribute('svkey');
+
+        xhearObj.watch(svkey, d => {
+            textnode.textContent = d;
+        });
+    });
+
+    // 放回内容
+    let xvContentEle = _$(`[xv-content][xv-shadow="${renderId}"]`, ele);
+    if (0 in xvContentEle) {
+        // 定义$content属性
+        defineProperty(xhearObj, '$content', {
+            enumerable: true,
+            get() {
+                return createShear$(xvContentEle);
+            }
         });
 
-        // 生成元素
-        let shearProtoObj = new tagdata.Shear();
+        // 添加svParent
+        xvContentEle.prop('svParent', ele);
 
-        //挂载数据
-        ele._svData = shearProtoObj;
+        // 添加子元素
+        xvContentEle.append(childs);
 
-        // 先转换 sv-span 元素
-        _$(`sv-span[sv-shadow="${renderId}"]`, ele).each((i, e) => {
-            // 替换sv-span
-            var textnode = document.createTextNode("");
-            e.parentNode.insertBefore(textnode, e);
-            e.parentNode.removeChild(e);
-
-            // 文本数据绑定
-            var svkey = e.getAttribute(SVKEY);
-            oriWatch(shearProtoObj, svkey, (val) => {
-                textnode.textContent = val;
-            });
-        });
-
-        // 写入 $content
-        let $content = _$(`[sv-content][sv-shadow="${renderId}"]`, ele);
-        delete $content.prevObject;
-        if ($content[0]) {
-            defineProperty(shearProtoObj, '$content', {
-                enumerable: true,
-                get() {
-                    return createShear$($content);
-                }
-            });
-            // 把东西还原回content
-            $content.append(childs);
-
-            // 设置父节点
-            $content.prop('svParent', ele);
-
-            // 判断是否监听子节点变动
-            if (tagdata.childChange) {
-                let observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        let {
-                            addedNodes,
-                            removedNodes
-                        } = mutation;
-                        let obsEvent = {};
-                        (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
-                        (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
-                        tagdata.childChange(createShearObject(ele), obsEvent);
-                    });
+        // 判断是否监听子节点变动
+        if (regData.childChange) {
+            let observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    let {
+                        addedNodes,
+                        removedNodes
+                    } = mutation;
+                    let obsEvent = {};
+                    (0 in addedNodes) && (obsEvent.addedNodes = Array.from(addedNodes));
+                    (0 in removedNodes) && (obsEvent.removedNodes = Array.from(removedNodes));
+                    regData.childChange(createShearObject(ele), obsEvent);
                 });
-
-                // 监听节点
-                observer.observe($content[0], {
-                    attributes: false,
-                    childList: true,
-                    characterData: false,
-                    subtree: false,
-                });
-
-                // 设置监听属性
-                shearProtoObj.__obs = observer;
-            }
-        }
-
-        // 写入其他定义节点
-        _$(`[sv-tar][sv-shadow="${renderId}"]`, ele).each((i, e) => {
-            let eName = _$(e).attr('sv-tar');
-            defineProperty(shearProtoObj, '$' + eName, {
-                enumerable: true,
-                get() {
-                    return createShear$([e]);
-                }
             });
-        });
 
-        // 私有属性
-        let innerShearObject = createShearObject(ele);
-        let priObj = tagdata.pri;
-        if (priObj) {
-            for (let k in priObj) {
-                innerShearObject["_" + k] = priObj[k];
+            // 监听节点
+            observer.observe(xvContentEle[0], {
+                attributes: false,
+                childList: true,
+                characterData: false,
+                subtree: false,
+            });
+
+            // 设置监听属性
+            xhearObj.__obs = observer;
+        }
+    }
+
+    // 写入其他定义节点
+    _$(`[xv-tar][xv-shadow="${renderId}"]`, ele).each((i, e) => {
+        let eName = _$(e).attr('xv-tar');
+        defineProperty(xhearObj, '$' + eName, {
+            enumerable: true,
+            get() {
+                return createShear$([e]);
             }
+        });
+    });
+
+    // 等下需要设置的data
+    let rData = assign({}, regData.data);
+
+    // attrs 上的数据
+    regData.attrs.forEach(kName => {
+        // 获取属性值并设置
+        let attrVal = $ele.attr(kName);
+        if (isRealValue(attrVal)) {
+            rData[kName] = attrVal;
         }
 
-        // 等下需要设置的data
-        let rData = {};
-
-        // 基础数据
-        assign(rData, tagdata.data);
-
-        // attrs 上的数据
-        tagdata.attrs.forEach(kName => {
-            // 获取属性值并设置
-            let attrVal = $ele.attr(kName);
-            if (isRealValue(attrVal)) {
-                rData[kName] = attrVal;
-            }
-
+        // 绑定值
+        xhearObj.watch(kName, d => {
             // 绑定值
-            oriWatch(shearProtoObj, kName, (value) => {
-                $ele.attr(kName, value);
+            $ele.attr(kName, d);
+        });
+    });
+
+    // props 上的数据
+    regData.props.forEach(kName => {
+        let attrVal = $ele.attr(kName);
+        isRealValue(attrVal) && (rData[kName] = attrVal);
+    });
+
+
+    // 绑定xv-module
+    _$(`[xv-module][xv-shadow="${renderId}"]`, ele).each((i, tar) => {
+        let $tar = _$(tar);
+        let kName = $tar.attr('xv-module');
+
+        // 绑定值
+        xhearObj.watch(kName, val => {
+            tar.value = val;
+        });
+
+        // 监听改动
+        if (tar[XHEAROBJKEY]) {
+            tar[XHEAROBJKEY].watch("value", val => {
+                xhearObj.value = val;
             });
-        });
-
-        // props 上的数据
-        tagdata.props.forEach(kName => {
-            let attrVal = $ele.attr(kName);
-            isRealValue(attrVal) && (rData[kName] = attrVal);
-        });
-
-        // 绑定sv-module
-        _$(`[sv-module][sv-shadow="${renderId}"]`, ele).each((i, tar) => {
-            let $tar = _$(tar);
-            let kName = $tar.attr('sv-module');
-
-            // 绑定值
-            oriWatch(shearProtoObj, kName, (val) => {
-                tar.value = val;
+        } else {
+            $tar.on('change input', (e) => {
+                xhearObj[kName] = tar.value;
             });
+        }
+    });
 
-            // 监听改动
-            // if (tar._svData) {
-            //     $.init(tar).watch('val', (d) => {
-            //         (kName == "val") ? $ele.val(d): (shearProtoObj[kName] = d);
-            //     });
-            // } else {
-                $tar.on('change', (e) => {
-                    (kName == "val") ? $ele.val(tar.value): (shearProtoObj[kName] = tar.value);
-                });
-            // }
+    // 设置渲染完成
+    $ele.removeAttr('xv-ele').attr('xv-render', renderId);
 
-            if (tar.tagName.toLowerCase() == 'select') {
-                rData[kName] = tar.value;
+    // 补充rData
+    let watchData = regData.watch;
+    if (watchData) {
+        for (let k in watchData) {
+            if (!(k in rData)) {
+                rData[k] = undefined;
+            }
+        }
+    }
+
+    // 设置keys
+    xhearObj.set(Object.keys(rData));
+
+    // watch监听
+    if (watchData) {
+        for (let k in watchData) {
+            let tar = watchData[k];
+
+            // 两个callback
+            let getCallback, setCallback;
+
+            switch (getType(tar)) {
+                case "function":
+                    setCallback = tar;
+                    break;
+                case "object":
+                    getCallback = tar.get;
+                    setCallback = tar.set;
+                    break;
             }
 
+            getCallback && watchGetter(xhearObj, k, getCallback.bind(xhearEle));
+            setCallback && xhearObj.watch(k, setCallback.bind(xhearEle));
+        }
+    }
+
+    // 存在 value key
+    if ('value' in rData) {
+        defineProperty(ele, 'value', {
+            get() {
+                return xhearObj.value;
+            },
+            set(d) {
+                xhearObj.value = d;
+            }
         });
+    }
 
-        let valInfoData = tagdata.val;
+    // 设置数据
+    for (let k in rData) {
+        isRealValue(rData[k]) && (xhearObj[k] = rData[k]);
+    }
 
-        // 若有val，补充 get set
-        if (0 in _$(`[sv-module="val"][sv-shadow="${renderId}"]`, ele) && !valInfoData) {
-            let tempVal = "";
-            valInfoData = {
-                get: () => tempVal,
-                set: val => tempVal = val
-            };
-        }
+    // 触发callback
+    regData.inited && regData.inited.call(ele, xhearEle);
 
-        // 判断是否有value值绑定
-        if (valInfoData) {
-            let defineOptions = getDefineOptions(valInfoData, 'val', innerShearObject, shearProtoObj);
-            defineProperty(ele, 'value', defineOptions);
-        }
-
-        // 禁止val事件向上冒泡
-        $ele.on('change input', e => {
-            if (e.target !== ele) {
-                e.stopImmediatePropagation();
-            }
-        });
-
-        let computed = assign({}, tagdata.computed);
-        let computedKey = Object.keys(computed);
-
-        // 设置rData其他的 computed
-        for (let k in rData) {
-            if (!computed[k] && k !== "val") {
-                let data;
-                computed[k] = {
-                    get() {
-                        return data;
-                    },
-                    set(val) {
-                        data = val;
-                    }
-                };
-            }
-        }
-
-        // 设置computed
-        for (let key in computed) {
-            // 定义方法
-            let defineOptions = getDefineOptions(computed[key], key, innerShearObject, shearProtoObj);
-
-            defineProperty(shearProtoObj, key, defineOptions);
-        }
-
-        // 渲染完成方法
-        tagdata.render && tagdata.render(innerShearObject, rData);
-
-        // 设置值
-        for (let k in rData) {
-            if (computedKey.indexOf(k) > -1) {
-                continue;
-            }
-            setRData(rData[k], k, innerShearObject);
-        }
-        each(computedKey, k => {
-            let data = rData[k];
-            isRealValue(data) && setRData(data, k, innerShearObject);
-        });
-
-        // 初始化完成
-        tagdata.inited && tagdata.inited(innerShearObject);
-
-        // 如果是在document上，直接触发 attached 事件
-        if (ele.getRootNode() === document && tagdata.attached && !ele[ATTACHED_KEY]) {
-            tagdata.attached(innerShearObject);
-            ele[ATTACHED_KEY] = 1;
-        }
+    // attached callback
+    if (regData.attached && ele.getRootNode() === document && !ele[ATTACHED_KEY]) {
+        regData.attached.call(ele, xhearEle);
+        ele[ATTACHED_KEY] = 1;
     }
 }

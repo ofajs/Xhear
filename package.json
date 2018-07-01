@@ -1,6 +1,6 @@
 {
   "name": "Xhear.js",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "jQuery + webComponent",
   "scripts": {
     "watch": "node scripts/watch.js"

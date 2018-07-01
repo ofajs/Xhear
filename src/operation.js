@@ -1,4 +1,40 @@
-// 覆盖还原 sv-ele 数据
+const filterShadow = ($eles, exShadowId) => {
+    // 去除 shadow 元素
+    let hasShadow = 0,
+        newArr = [],
+        {
+            prevObject
+        } = $eles;
+
+    if (exShadowId) {
+        $eles.each((i, e) => {
+            if (hasAttr(e, 'xv-shadow') && e.getAttribute('xv-shadow') == exShadowId) {
+                newArr.push(e);
+                hasShadow = 1;
+            }
+        });
+    } else {
+        $eles.each((i, e) => {
+            if (hasAttr(e, 'xv-shadow')) {
+                hasShadow = 1;
+            } else {
+                newArr.push(e);
+            }
+        });
+    }
+
+    if (hasShadow) {
+        $eles = _$(newArr);
+        // 还原prevObject
+        if (prevObject) {
+            $eles.prevObject = prevObject;
+        }
+    }
+
+    return $eles;
+}
+
+// 覆盖还原 xv-ele 数据
 const matchCloneData = (tarEle, referEle) => {
     // 生成当前元素
     let tagname = tarEle[0].tagName.toLowerCase();
@@ -15,51 +51,51 @@ const matchCloneData = (tarEle, referEle) => {
     });
 }
 
-// 还原克隆sv-ele元素成html模式
+// 还原克隆xv-ele元素成html模式
 // 用的都是$fn.find
 const reduceCloneSvEle = (elem) => {
-    let renderId = elem.attr('sv-render');
+    let renderId = elem.attr('xv-render');
 
     if (renderId) {
-        // 清除所有非 sv-content 的 sv-shadow 元素
-        elem.find(`[sv-shadow="${renderId}"]:not([sv-content])`).remove();
+        // 清除所有非 xv-content 的 xv-shadow 元素
+        elem.find(`[xv-shadow="${renderId}"]:not([xv-content])`).remove();
 
-        // 将剩余的 sv-content 还原回上一级去
-        elem.find(`[sv-shadow="${renderId}"][sv-content]`).each((i, e) => {
+        // 将剩余的 xv-content 还原回上一级去
+        elem.find(`[xv-shadow="${renderId}"][xv-content]`).each((i, e) => {
             // 获取子元素数组
             _$(e).before(e.childNodes).remove();
         });
     }
 
-    // 判断是否有子sv-ele元素，并还原
-    let childsSvEle = elem.find('[sv-render]');
+    // 判断是否有子xv-ele元素，并还原
+    let childsSvEle = elem.find('[xv-render]');
     childsSvEle.each((i, e) => {
         reduceCloneSvEle(_$(e));
     });
 };
 
-// 修正content的sv-shadow属性
+// 修正content的xv-shadow属性
 const fixShadowContent = (_this, content) => {
     // 获取content类型
     let contentType = getType(content);
 
     // 如果自己是影子元素
-    if (_this.is('[sv-shadow]')) {
+    if (_this.is('[xv-shadow]')) {
         // 获取shadowId
-        let svid = _this.attr('sv-shadow');
+        let svid = _this.attr('xv-shadow');
         if ((contentType == "string" && content.search('<') > -1)) {
             let contentEle = _$(content)
-            contentEle.attr('sv-shadow', svid);
-            contentEle.find('*').attr('sv-shadow', svid);
+            contentEle.attr('xv-shadow', svid);
+            contentEle.find('*').attr('xv-shadow', svid);
             content = "";
             each(contentEle, (e) => {
                 content += e.outerHTML;
             });
         } else
         if (contentType instanceof Element) {
-            _$(content).attr('sv-shadow', svid);
+            _$(content).attr('xv-shadow', svid);
         } else if (content instanceof $) {
-            _$(Array.from(content)).attr('sv-shadow', svid);
+            _$(Array.from(content)).attr('xv-shadow', svid);
         }
     }
     return content;
@@ -67,15 +103,13 @@ const fixShadowContent = (_this, content) => {
 
 // 筛选出自身对象
 const fixSelfToContent = (_this) => {
-    if (_this.is('[sv-render]')) {
+    if (_this.is('[xv-render]')) {
         _this = _this.map((i, e) => {
             let re = e;
-            let {
-                _svData
-            } = e;
-            while (_svData && _svData.$content) {
-                re = _svData.$content[0];
-                _svData = re._svData;
+            let xvData = e[XHEAROBJKEY];
+            while (xvData && xvData.$content) {
+                re = xvData.$content[0];
+                xvData = re.xvData;
             }
             return re;
         });
@@ -87,21 +121,20 @@ const fixSelfToContent = (_this) => {
 assign(shearInitPrototype, {
     add(...args) {
         let obj = args[0];
-        if (obj instanceof glo.$ && obj.is('sv-shadow')) {
+        if (obj instanceof glo.$ && obj.is('xv-shadow')) {
             throw SHADOW_DESCRIPT_CANNOTUSE + 'add';
         }
         return $fn.add.apply(this, args);
     },
     attr(...args) {
         let [aName, aValue] = args;
-        if (aValue && this.is('[sv-render]')) {
+        if (aValue && this.is('[xv-render]')) {
             this.each((i, e) => {
-                let tagname = e.tagName.toLowerCase();
-                let tagdata = tagDatabase[tagname];
+                let tagdata = getTagData(e);
                 if (tagdata) {
                     // 查找attr内是否有他自己
                     if (tagdata.attrs.indexOf(aName) > -1) {
-                        e._svData[aName] = aValue;
+                        e[XHEAROBJKEY][aName] = aValue;
                         return;
                     }
                 }
@@ -112,7 +145,7 @@ assign(shearInitPrototype, {
         }
     },
     clone(...args) {
-        if (this.is('[sv-shadow]')) {
+        if (this.is('[xv-shadow]')) {
             throw SHADOW_DESCRIPT_CANNOTUSE + 'clone';
         }
         if (this.svRender) {
@@ -120,11 +153,11 @@ assign(shearInitPrototype, {
             // shearInitPrototype.html
             let b_html = this.html();
 
-            // 将所有 sv-render 变成 sv-ele
+            // 将所有 xv-render 变成 xv-ele
             let temDiv = _$(`<div>${b_html}</div>`);
             // $fn.find
-            temDiv.find('[sv-render]').each((i, e) => {
-                _$(e).removeAttr('sv-render').attr('sv-ele', "");
+            temDiv.find('[xv-render]').each((i, e) => {
+                _$(e).removeAttr('xv-render').attr('xv-ele', "");
             });
             b_html = temDiv.html();
 
@@ -133,17 +166,17 @@ assign(shearInitPrototype, {
 
             // 生成克隆元素
             let cloneEle = this[0].cloneNode();
-            _$(cloneEle).removeAttr('sv-render').attr('sv-ele', "").html(b_html);
+            _$(cloneEle).removeAttr('xv-render').attr('xv-ele', "").html(b_html);
             renderEle(cloneEle);
             let tar = createShearObject(cloneEle);
 
             // 还原数据
             matchCloneData(tar, this);
 
-            // 判断content是否还有sv-ele，渲染内部
-            let bRenderEles = _$('[sv-render]:not([sv-shadow])', this);
+            // 判断content是否还有xv-ele，渲染内部
+            let bRenderEles = _$('[xv-render]:not([xv-shadow])', this);
             if (0 in bRenderEles) {
-                let aRenderEles = _$('[sv-render]:not([sv-shadow])', tar);
+                let aRenderEles = _$('[xv-render]:not([xv-shadow])', tar);
                 // 确认数量匹配
                 if (aRenderEles.length == bRenderEles.length) {
                     aRenderEles.each((i, e) => {
@@ -152,7 +185,7 @@ assign(shearInitPrototype, {
 
                         // 确认tag匹配
                         if (referEle.tagName !== e.tagName) {
-                            console.warn('cloned sv-ele data does not match');
+                            console.warn('cloned xv-ele data does not match');
                             return false;
                         }
 
@@ -164,8 +197,8 @@ assign(shearInitPrototype, {
 
             return tar;
         } else {
-            let isSvRender = this.is('[sv-render]');
-            let hasSvRender = 0 in this.find('[sv-render]');
+            let isSvRender = this.is('[xv-render]');
+            let hasSvRender = 0 in this.find('[xv-render]');
             if (isSvRender || hasSvRender) {
                 // 抽出来
                 let tar = _$(Array.from(this));
@@ -177,11 +210,11 @@ assign(shearInitPrototype, {
                 reduceCloneSvEle(cloneEle);
 
                 // 重新渲染克隆元素
-                cloneEle.find('[sv-render]').removeAttr('sv-render').attr('sv-ele', "");
+                cloneEle.find('[xv-render]').removeAttr('xv-render').attr('xv-ele', "");
                 renderAllSvEle(cloneEle);
 
                 tar.each((i, e) => {
-                    if (hasAttr(e, 'sv-render')) {
+                    if (hasAttr(e, 'xv-render')) {
                         cloneEle[i] = createShearObject(e).clone()[0];
                     }
                 });
@@ -202,8 +235,8 @@ assign(shearInitPrototype, {
                 };
 
                 // 还原克隆svele
-                cloneFun('[sv-render]:not([sv-shadow])');
-                cloneFun('[sv-render][sv-shadow]');
+                cloneFun('[xv-render]:not([xv-shadow])');
+                cloneFun('[xv-render][xv-shadow]');
 
                 this.prevObject && (cloneEle.prevObject = this);
 
@@ -272,7 +305,7 @@ assign(shearInitPrototype, {
     // unwrap需要重做
     unwrap() {
         let pNode = _$(this).parent();
-        if (pNode.is('[sv-content]')) {
+        if (pNode.is('[xv-content]')) {
             pNode.each((i, e) => {
                 let {
                     svParent
@@ -299,7 +332,6 @@ assign(shearInitPrototype, {
 each(['after', 'before', 'wrap', 'wrapAll', 'replaceWith'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (content) {
-
         // 继承旧的方法
         oldFunc.call(this, fixShadowContent(this, content));
 
@@ -315,7 +347,7 @@ each(['insertAfter', 'insertBefore', 'replaceAll'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (content) {
         // 影子元素不能做这个操作
-        if (this.is('[sv-shadow]')) {
+        if (this.is('[xv-shadow]')) {
             throw SHADOW_DESCRIPT_CANNOTUSE + kName;
         }
 
@@ -346,13 +378,13 @@ each(['appendTo', 'prependTo'], kName => {
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (content) {
         // 影子元素不能做这个操作
-        if (this.is('[sv-shadow]')) {
+        if (this.is('[xv-shadow]')) {
             throw SHADOW_DESCRIPT_CANNOTUSE + kName;
         }
 
         let $con = _$(content);
 
-        if ($con.is('[sv-shadow]')) {
+        if ($con.is('[xv-shadow]')) {
             fixShadowContent($con, this);
         }
 
@@ -370,15 +402,15 @@ each(['find', 'children'], kName => {
     oldFunc && (shearInitPrototype[kName] = function (expr) {
         let reObj = oldFunc.call(fixSelfToContent(this), expr);
 
-        let svData = (reObj.length == 1) && reObj[0]._svData;
+        let svData = (reObj.length == 1) && reObj[0][XHEAROBJKEY];
 
         if (svData) {
             reObj = createShearObject(reObj[0]);
         } else {
-            if (this.is('[sv-shadow]')) {
-                reObj = filterShadow(reObj, this.attr('sv-shadow'));
+            if (this.is('[xv-shadow]')) {
+                reObj = filterShadow(reObj, this.attr('xv-shadow'));
             } else {
-                // 如果前一级不是sv-shaodw，就去除查找后的带sv-shadow
+                // 如果前一级不是xv-shaodw，就去除查找后的带xv-shadow
                 reObj = filterShadow(reObj);
             }
             reObj = createShear$(reObj);
@@ -394,10 +426,6 @@ each(['eq', 'first', 'last', 'filter', 'has', 'not', 'slice', 'next', 'nextAll',
     let oldFunc = $fn[kName];
     oldFunc && (shearInitPrototype[kName] = function (...args) {
         let reObj = $fn[kName].apply(this, args);
-        // let tar = reObj[0];
-        // if (reObj.length === 1 && tar._svData) {
-        //     reObj = createShearObject(tar);
-        // }
         reObj = createShear$(reObj);
         return reObj;
     });
@@ -416,7 +444,7 @@ each(['html', 'text'], kName => {
 
             // 判断是否存在 shear控件
             // $fn.find
-            if (0 in elem.find('[sv-shadow]')) {
+            if (0 in elem.find('[xv-shadow]')) {
                 // 先复制一个出来
                 let cloneElem = _$(elem[0].cloneNode(true));
 
