@@ -2552,6 +2552,16 @@
                 $fn.unwrap.call(this);
             }
             return this;
+        },
+        // 查找所有元素（包含影子元素）
+        findReal(...args) {
+            return createShear$($fn.find.apply(this, args));
+        },
+        // 只查找自己的影子元素
+        findShadow(...args) {
+            let reObj = $fn.find.apply(this, args);
+            reObj = filterShadow(reObj, this.attr('xv-render'));
+            return createShear$(reObj);
         }
     });
 
