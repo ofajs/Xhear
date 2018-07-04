@@ -148,7 +148,9 @@ const renderEle = (ele) => {
         // 监听改动
         if (tar[XHEAROBJKEY]) {
             tar[XHEAROBJKEY].watch("value", val => {
-                xhearObj.value = val;
+                // kName;
+                // tar;
+                xhearObj[kName] = val;
             });
         } else {
             $tar.on('change input', (e) => {
