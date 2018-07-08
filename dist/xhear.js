@@ -2030,7 +2030,7 @@
         syncData: {
             value(obj, options) {
                 if (!(obj instanceof XData) && !obj.svRender) {
-                    throw 'error';
+                    throw 'the arg1 is not xdata';
                 }
                 switch (getType(options)) {
                     case "object":
@@ -2053,6 +2053,7 @@
                             }
                         }
                 }
+                return this;
             }
         },
         // 带中转的同步数据方法
@@ -2099,6 +2100,9 @@
                         d = resverObj[d];
                         this[key] = d;
                     });
+
+                    // 先设置一次
+                    defaults.target[defaults.targetKey] = trans[this[defaults.key]];
                 } else {
                     if (get) {
                         target.watch(targetKey, d => {
@@ -2113,6 +2117,8 @@
                         });
                     }
                 }
+
+                return this;
             }
         }
     };
