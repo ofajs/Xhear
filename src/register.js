@@ -45,6 +45,8 @@ const register = (options) => {
     // 生成新的数据对象
     let XHear = function () {
         XData.call(this);
+        // 安全需要，删除xdata
+        delete this.xdata;
     }
 
     let inXHearFn = XHearFn;

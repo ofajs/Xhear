@@ -30,6 +30,9 @@ const renderEle = (ele) => {
 
     let xhearEle = createShearObject(ele);
 
+    // 还原xdata
+    xhearEle.xdata = xhearEle[XDATA_DATAOBJ];
+
     // 设置渲染id
     $ele.removeAttr('xv-ele').attr('xv-render', renderId);
     $ele.find(`*`).attr('xv-shadow', renderId);

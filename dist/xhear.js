@@ -1569,6 +1569,7 @@
     const XHEAROBJKEY = getRandomId() + "_xhearobj";
     const ATTACHED_KEY = getRandomId() + "_attached";
     const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
+    const XDATA_DATAOBJ = getRandomId() + "xdatas";
 
 
     // business fucntion 
@@ -1653,6 +1654,9 @@
         ele[XHEAROBJKEY] = xhearObj;
 
         let xhearEle = createShearObject(ele);
+
+        // 还原xdata
+        xhearEle.xdata = xhearEle[XDATA_DATAOBJ];
 
         // 设置渲染id
         $ele.removeAttr('xv-ele').attr('xv-render', renderId);
@@ -1928,9 +1932,17 @@
         defineProperty(this, SWATCH, {
             value: {}
         });
+
+        defineProperty(this, XDATA_DATAOBJ, {
+            value: {}
+        });
+        // 设置xdata
+        this.xdata = this[XDATA_DATAOBJ];
+
         defineProperty(this, SWATCHGET, {
             value: {}
         });
+
         defineProperty(this, OBSERVERKEYS, {
             value: []
         });
@@ -1969,8 +1981,11 @@
                     return;
             }
 
+            // 寄存对象
+            let regObj = this[XDATA_DATAOBJ];
+
             // 寄放处
-            let oriValue = value;
+            regObj[key] = value;
 
             // 定义函数
             defineProperty(this, key, {
@@ -1978,16 +1993,29 @@
                 get() {
                     // get操作频繁，比重建数组的each快
                     getWatchObj(this, key, SWATCHGET).forEach(callFunc => {
-                        callFunc(oriValue);
+                        callFunc(regObj[key]);
                     });
-                    return oriValue;
+                    return regObj[key];
                 },
                 set(d) {
-                    let oldVal = oriValue;
-                    oriValue = d;
+                    let oldVal = regObj[key];
+                    regObj[key] = d;
 
-                    // 防止重复值触发改动
+                    // 判断是否对象类型
+                    // let oldValType = getType(oldVal),
+                    //     oriValueType = getType(regObj[key]);
+
+                    let canEmit = 0;
+
+                    // if ((oldValType == "object" || oriValueType == "array") && oriValueType == oldValType && JSON.stringify(oldVal) !== JSON.stringify(oriValueue)) {
+                    //     canEmit = 1;
+                    // } else 
                     if (oldVal !== d) {
+                        canEmit = 1;
+                    }
+
+                    if (canEmit) {
+                        // 防止重复值触发改动
                         emitChange(this, key, d, oldVal);
                     }
                 }
@@ -2192,6 +2220,8 @@
         // 生成新的数据对象
         let XHear = function () {
             XData.call(this);
+            // 安全需要，删除xdata
+            delete this.xdata;
         }
 
         let inXHearFn = XHearFn;
