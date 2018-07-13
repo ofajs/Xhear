@@ -90,4 +90,24 @@
     tester.ok(d2.b === "I am b", "syncData ok 2");
 
     tester.ok(d3.kk === "change a 2_to_d3", "transData ok 1");
+
+    // 测试对象数据设置，会进行拷贝
+    // let d3_cc = {
+    //     val: "I am d3cc"
+    // };
+
+    // d3.set('cc', d3_cc);
+
+    // d3.watch('cc', d => {
+    //     throw "can not trigger cc watch";
+    // });
+
+    // // 不相等
+    // tester.ok(d3.cc != d3_cc, "objectData ok 1");
+
+    // // 再次赋值一样对象型的无效
+    // d3.cc = {
+    //     val: "I am d3cc"
+    // };
+
 })();

@@ -1573,7 +1573,6 @@
 
 
     // business fucntion 
-
     const getTagData = (ele) => {
         let tagname = ele.tagName.toLowerCase();
         return tagDatabase[tagname];
@@ -1999,20 +1998,31 @@
                 },
                 set(d) {
                     let oldVal = regObj[key];
-                    regObj[key] = d;
 
                     // 判断是否对象类型
                     // let oldValType = getType(oldVal),
-                    //     oriValueType = getType(regObj[key]);
+                    //     oriValueType = getType(d);
+
+                    // // 对象类型就进行深复制
+                    // if (oriValueType == "object") {
+                    //     d = Object.assign({}, d);
+                    // } else if (oriValueType == "array") {
+                    //     d = d.slice();
+                    // }
+
+                    regObj[key] = d;
 
                     let canEmit = 0;
 
-                    // if ((oldValType == "object" || oriValueType == "array") && oriValueType == oldValType && JSON.stringify(oldVal) !== JSON.stringify(oriValueue)) {
-                    //     canEmit = 1;
-                    // } else 
+                    // if ((oriValueType == "object" || oriValueType == "array") && oriValueType == oldValType) {
+                    //     if (JSON.stringify(oldVal) !== JSON.stringify(d)) {
+                    //         canEmit = 1;
+                    //     }
+                    // } else {
                     if (oldVal !== d) {
                         canEmit = 1;
                     }
+                    // }
 
                     if (canEmit) {
                         // 防止重复值触发改动
@@ -2025,6 +2035,10 @@
 
             // 设置值
             this[key] = value;
+        },
+        // 直接触发
+        emit(key) {
+            emitChange(this, key, this[key], this[key]);
         },
         // 观察
         observe(callback) {

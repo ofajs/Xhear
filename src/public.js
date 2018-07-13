@@ -65,7 +65,6 @@ const XDATA_DATAOBJ = getRandomId() + "xdatas";
 
 
 // business fucntion 
-
 const getTagData = (ele) => {
     let tagname = ele.tagName.toLowerCase();
     return tagDatabase[tagname];
