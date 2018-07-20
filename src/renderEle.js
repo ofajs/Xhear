@@ -25,13 +25,14 @@ const renderEle = (ele) => {
     // 生成renderId
     let renderId = ++rid;
 
-    let xhearObj = new regData.XHear();
+    // 初始化对象
+    let xhearOriObj = new regData.XHear();
+    xhearOriObj._canEmitWatch = 1;
+    // xhearOriObj._exkeys = [];
+    let xhearObj = new Proxy(xhearOriObj, XObjectHandler);
     ele[XHEAROBJKEY] = xhearObj;
 
     let xhearEle = createShearObject(ele);
-
-    // 还原xdata
-    xhearEle.xdata = xhearEle[XDATA_DATAOBJ];
 
     // 设置渲染id
     $ele.removeAttr('xv-ele').attr('xv-render', renderId);
@@ -176,7 +177,7 @@ const renderEle = (ele) => {
     }
 
     // 设置keys
-    xhearObj.set(Object.keys(rData));
+    xhearOriObj._exkeys = Object.keys(rData);
 
     // watch监听
     if (watchData) {
@@ -212,6 +213,12 @@ const renderEle = (ele) => {
             }
         });
     }
+
+    // 先铺设数据
+    // xhearObj.set();
+    each(Object.keys(rData), k => {
+        xhearObj[k] = undefined;
+    });
 
     // 设置数据
     for (let k in rData) {
