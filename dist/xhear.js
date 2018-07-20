@@ -1840,9 +1840,9 @@
 
         // 先铺设数据
         // xhearObj.set();
-        each(Object.keys(rData), k => {
-            xhearObj[k] = undefined;
-        });
+        // each(Object.keys(rData), k => {
+        //     xhearObj[k] = undefined;
+        // });
 
         // 设置数据
         for (let k in rData) {
