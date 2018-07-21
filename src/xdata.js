@@ -145,7 +145,7 @@ const unSyncData = (xdata1, xdata2, options) => {
 }
 
 // 触发改动
-let emitChange = (data, key, val, oldVal, type = "update") => {
+let emitChange = (data, key, val, oldVal, type = "update", uphostOptions) => {
     // 判断能否触发
     if (!data._canEmitWatch) {
         return;
@@ -159,28 +159,30 @@ let emitChange = (data, key, val, oldVal, type = "update") => {
     let watchArr = data._watch[key];
     if (watchArr) {
         watchArr.forEach(func => {
-            func(val, {
+            let watchOptions = {
                 oldVal,
                 type
-            });
+            }
+            uphostOptions && (watchOptions.uphost = assign({}, uphostOptions));
+            func(val, watchOptions);
         });
     }
 
     data['_obs'].forEach(func => {
-        func({
+        let obsOption = {
             target: data,
             type,
             key,
             val,
             oldVal
-        });
+        };
+        uphostOptions && (obsOption.uphost = assign({}, uphostOptions));
+        func(obsOption);
     });
 
     let {
         _host
     } = data;
-
-    _host && emitChange(_host.target, _host.key, data, data, "uphost");
 
     // 触发变动参数监听
     if (type !== "uphost") {
@@ -199,16 +201,21 @@ let emitChange = (data, key, val, oldVal, type = "update") => {
             // 加入key
             trendKeys.unshift(aKey);
 
+            let uphostOption = {
+                key: trendKeys,
+                val: XDataToObject(val),
+                oldVal: XDataToObject(oldVal),
+                type
+            };
+
             _trend.forEach(func => {
-                func({
-                    key: trendKeys,
-                    val: XDataToObject(val),
-                    oldVal: XDataToObject(oldVal),
-                    type
-                });
+                func(assign({}, uphostOption));
             });
 
             if (_host) {
+                // 触发uphost
+                emitChange(_host.target, _host.key, _host.target[_host.key], _host.target[_host.key], "uphost", uphostOption)
+
                 _trend = _host.target._trend;
                 aKey = _host.key;
                 _host = _host.target._host;
