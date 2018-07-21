@@ -731,15 +731,33 @@
     let XObjectFn = {
         // 监听
         watch(key, func) {
-            let watchArr = this._watch[key] || (this._watch[key] = []);
-            func && watchArr.push(func);
+            switch (getType(key)) {
+                case "string":
+                    let watchArr = this._watch[key] || (this._watch[key] = []);
+                    func && watchArr.push(func);
+                    break;
+                case "object":
+                    for (let i in key) {
+                        this.watch(i, key[i]);
+                    }
+                    break;
+            }
             return this;
         },
         // 取消监听
         unwatch(key, func) {
-            let watchArr = this._watch[key] || (this._watch[key] = []);
-            let id = watchArr.indexOf(func);
-            id > -1 && watchArr.splice(id, 1);
+            switch (getType(key)) {
+                case "string":
+                    let watchArr = this._watch[key] || (this._watch[key] = []);
+                    let id = watchArr.indexOf(func);
+                    id > -1 && watchArr.splice(id, 1);
+                    break;
+                case "object":
+                    for (let i in key) {
+                        this.watch(i, key[i]);
+                    }
+                    break;
+            }
             return this;
         },
         // 视奸
