@@ -2048,8 +2048,13 @@
             return;
         }
 
-        // 判断值是否相等
+        // uphost通行
         if (type !== "uphost" && val === oldVal) {
+            return;
+        }
+
+        // 对象级数据更新，判断对象是否相等
+        if (type == "update" && isXData(val) && isXData(oldVal) && val.stringify() === oldVal.stringify()) {
             return;
         }
 
