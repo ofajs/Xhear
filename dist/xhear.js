@@ -2042,7 +2042,7 @@
     }
 
     // 触发改动
-    let emitChange = (data, key, val, oldVal, type = "update", uphostOptions) => {
+    let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
         // 判断能否触发
         if (!data._canEmitWatch) {
             return;
@@ -2065,7 +2065,12 @@
                     oldVal,
                     type
                 }
-                uphostOptions && (watchOptions.uphost = assign({}, uphostOptions));
+                if (type == 'uphost') {
+                    watchOptions.uphost = assign({}, eOption);
+                } else if (type == "uparray") {
+                    watchOptions.uparray = assign({}, eOption);
+                    delete watchOptions.oldVal;
+                }
                 func(val, watchOptions);
             });
         }
@@ -2078,7 +2083,12 @@
                 val,
                 oldVal
             };
-            uphostOptions && (obsOption.uphost = assign({}, uphostOptions));
+            if (type == 'uphost') {
+                obsOption.uphost = assign({}, eOption);
+            } else if (type == "uparray") {
+                obsOption.uparray = assign({}, eOption);
+                delete obsOption.oldVal;
+            }
             func(obsOption);
         });
 
@@ -2103,20 +2113,26 @@
                 // 加入key
                 trendKeys.unshift(aKey);
 
-                let uphostOption = {
+                let options = {
                     key: trendKeys,
                     val: XDataToObject(val),
                     oldVal: XDataToObject(oldVal),
                     type
                 };
 
+                if (type == "uparray") {
+                    options.uparray = eOption;
+                }
+
                 _trend.forEach(func => {
-                    func(assign({}, uphostOption));
+                    func(assign({}, options));
                 });
 
                 if (_host) {
+                    let tar = _host.target[_host.key];
+
                     // 触发uphost
-                    emitChange(_host.target, _host.key, _host.target[_host.key], _host.target[_host.key], "uphost", uphostOption)
+                    emitChange(_host.target, _host.key, tar, tar, "uphost", options)
 
                     _trend = _host.target._trend;
                     aKey = _host.key;
@@ -2139,7 +2155,8 @@
 
                 // 不能设置xdata
                 if (isXData(value)) {
-                    throw `cann't set xdata`;
+                    // throw `cann't set xdata`;
+                    value = value.toObject();
                 }
 
                 // 判断value是否object
@@ -2237,6 +2254,33 @@
         }
     }
 
+    // 定位trendData
+    const detrend = (tar, trendData) => {
+        let lastId = trendData.key.length - 1;
+        let reTar, reKey;
+        trendData.key.forEach((key, i) => {
+            // 没有对象就别再执行了
+            if (tar instanceof Object && i <= lastId) {
+
+                // 最后那个才设置
+                if (i == lastId) {
+                    reTar = tar;
+                    reKey = key;
+                    // if (trendData.type == "delete") {
+                    //     delete tar[key];
+                    // } else {
+                    //     tar[key] = trendData.val;
+                    // }
+                }
+
+                // 修正对象
+                tar = tar[key];
+            }
+        });
+
+        return [reTar, reKey];
+    }
+
     let XObjectFn = {
         // 监听
         watch(key, func) {
@@ -2313,25 +2357,38 @@
         },
         // 流入变动字符串流数据
         entrend(trendData) {
-            let tar = this;
-            let lastId = trendData.key.length - 1;
-            trendData.key.forEach((key, i) => {
-                // 没有对象就别再执行了
-                if (tar instanceof Object && i <= lastId) {
+            let [tar, key] = detrend(this, trendData);
 
-                    // 最后那个才设置
-                    if (i == lastId) {
-                        if (trendData.type == "delete") {
-                            delete tar[key];
-                        } else {
-                            tar[key] = trendData.val;
-                        }
+            switch (trendData.type) {
+                case "delete":
+                    // 删除
+                    delete tar[key];
+                    break;
+                case "uparray":
+                    let {
+                        args,
+                        fname
+                    } = trendData.uparray;
+
+                    // 获取目标数组
+                    let tarArr = tar[trendData.key.slice(-1)[0]];
+
+                    if (tarArr[fname]) {
+                        // 关闭阀门
+                        this._canEmitWatch = 0;
+
+                        // 继承方法
+                        tarArr[fname](...args);
+
+                        // 打开阀门
+                        this._canEmitWatch = 1;
+                        break;
                     }
+                default:
+                    //默认update和new
+                    tar[key] = trendData.val;
+            }
 
-                    // 修正对象
-                    tar = tar[key];
-                }
-            });
             return this;
         },
         // 取消数据变动字符串流监听
@@ -2441,6 +2498,53 @@
         });
     }
 
+    // 数组方法添加特殊标识
+    ['splice', 'push', 'unshift', 'pop', 'shift', 'sort', 'reverse', 'fill'].forEach(k => {
+        let old_func = XArrayFn[k];
+        if (old_func) {
+            defineProperty(XArrayFn, k, {
+                value(...args) {
+                    // 进程id
+                    let taskId = getRandomId()
+
+                    // 禁止触发
+                    this._canEmitWatch = 0;
+
+                    // 继承旧的方法
+                    let redata = old_func.apply(this, args);
+
+                    // 开始触发
+                    this._canEmitWatch = 1;
+
+                    // 手动触发emitChange
+                    // 参数
+                    let methodOptions = defineProperties({}, {
+                        fname: {
+                            enumerable: true,
+                            value: k
+                        },
+                        tid: {
+                            enumerable: true,
+                            value: taskId
+                        },
+                        args: {
+                            enumerable: true,
+                            value: args
+                        }
+                    });
+
+                    let {
+                        _host
+                    } = this;
+
+                    emitChange(_host.target, _host.key, this, "", "uparray", methodOptions);
+
+                    return redata;
+                }
+            });
+        }
+    });
+
     XArray.prototype = XArrayFn;
 
     // 生成数组型对象
@@ -2450,7 +2554,7 @@
         let reObj = new Proxy(xarr, XObjectHandler);
 
         // 合并数据
-        reObj.splice(0, 0, ...arr);
+        Array.prototype.splice.call(reObj, 0, 0, ...arr);
 
         // 打开阀门
         xarr._canEmitWatch = 1;
