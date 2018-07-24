@@ -676,3 +676,4 @@ let createXData = (obj, root, host, key) => {
 }
 
 $.xdata = obj => createXData(obj);
+$.detrend = detrend;

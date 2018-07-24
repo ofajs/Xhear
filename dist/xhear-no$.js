@@ -1076,6 +1076,7 @@
     }
 
     $.xdata = obj => createXData(obj);
+    $.detrend = detrend;
 
     // function
 
