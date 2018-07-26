@@ -168,12 +168,12 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
                 oldVal,
                 type
             }
-            if (type == 'uphost') {
-                watchOptions.uphost = assign({}, eOption);
-            } else if (type == "uparray") {
-                watchOptions.uparray = assign({}, eOption);
-                delete watchOptions.oldVal;
-            }
+            // if (type == 'uphost') {
+            watchOptions.uphost = assign({}, eOption);
+            // } else if (type == "uparray") {
+            //     watchOptions.uparray = assign({}, eOption);
+            //     delete watchOptions.oldVal;
+            // }
             func(val, watchOptions);
         });
     }
@@ -186,12 +186,12 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
             val,
             oldVal
         };
-        if (type == 'uphost') {
-            obsOption.uphost = assign({}, eOption);
-        } else if (type == "uparray") {
-            obsOption.uparray = assign({}, eOption);
-            delete obsOption.oldVal;
-        }
+        // if (type == 'uphost') {
+        obsOption.uphost = assign({}, eOption);
+        // } else if (type == "uparray") {
+        //     obsOption.uparray = assign({}, eOption);
+        //     delete obsOption.oldVal;
+        // }
         func(obsOption);
     });
 
@@ -223,9 +223,9 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
                 type
             };
 
-            if (type == "uparray") {
-                options.uparray = eOption;
-            }
+            // if (type == "uparray") {
+            //     options.uparray = eOption;
+            // }
 
             _trend.forEach(func => {
                 func(assign({}, options));
@@ -369,11 +369,6 @@ const detrend = (tar, trendData) => {
             if (i == lastId) {
                 reTar = tar;
                 reKey = key;
-                // if (trendData.type == "delete") {
-                //     delete tar[key];
-                // } else {
-                //     tar[key] = trendData.val;
-                // }
             }
 
             // 修正对象
@@ -467,26 +462,6 @@ let XObjectFn = {
                 // 删除
                 delete tar[key];
                 break;
-            case "uparray":
-                let {
-                    args,
-                    fname
-                } = trendData.uparray;
-
-                // 获取目标数组
-                let tarArr = tar[trendData.key.slice(-1)[0]];
-
-                if (tarArr[fname]) {
-                    // 关闭阀门
-                    this._canEmitWatch = 0;
-
-                    // 继承方法
-                    tarArr[fname](...args);
-
-                    // 打开阀门
-                    this._canEmitWatch = 1;
-                    break;
-                }
             default:
                 //默认update和new
                 tar[key] = trendData.val;
@@ -600,53 +575,6 @@ for (let k in XObjectFn) {
         value: XObjectFn[k]
     });
 }
-
-// 数组方法添加特殊标识
-['splice', 'push', 'unshift', 'pop', 'shift', 'sort', 'reverse', 'fill'].forEach(k => {
-    let old_func = XArrayFn[k];
-    if (old_func) {
-        defineProperty(XArrayFn, k, {
-            value(...args) {
-                // 进程id
-                let taskId = getRandomId()
-
-                // 禁止触发
-                this._canEmitWatch = 0;
-
-                // 继承旧的方法
-                let redata = old_func.apply(this, args);
-
-                // 开始触发
-                this._canEmitWatch = 1;
-
-                // 手动触发emitChange
-                // 参数
-                let methodOptions = defineProperties({}, {
-                    fname: {
-                        enumerable: true,
-                        value: k
-                    },
-                    tid: {
-                        enumerable: true,
-                        value: taskId
-                    },
-                    args: {
-                        enumerable: true,
-                        value: args
-                    }
-                });
-
-                let {
-                    _host
-                } = this;
-
-                emitChange(_host.target, _host.key, this, "", "uparray", methodOptions);
-
-                return redata;
-            }
-        });
-    }
-});
 
 XArray.prototype = XArrayFn;
 
