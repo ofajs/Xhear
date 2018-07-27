@@ -779,6 +779,42 @@
         return [reTar, reKey];
     }
 
+    const findById_b = (tarObj, id) => {
+        let reobj;
+
+        // 查询是否相等
+        if (tarObj._id === id) {
+            reobj = tarObj;
+        } else {
+            // 继续递归
+            reobj = findById(tarObj, id);
+        }
+
+        return reobj;
+    }
+
+    // 查找对象
+    const findById = (data, id) => {
+        let reobj;
+        if (data instanceof XObject) {
+            for (let k in data) {
+                reobj = findById_b(data[k], id);
+                if (reobj) {
+                    break;
+                }
+            }
+        } else if (data instanceof XArray) {
+            data.some(tar => {
+                reobj = findById_b(tar, id);
+                if (reobj) {
+                    return true;
+                }
+            });
+        }
+
+        return reobj;
+    }
+
     let XObjectFn = {
         // 监听
         watch(key, func) {
@@ -937,6 +973,10 @@
             let obj = XDataToObject(this);
             let reObj = JSON.stringify(obj);
             return reObj;
+        },
+        // 查找相应id的数据对象
+        find(id) {
+            return findById(this, id);
         }
     };
 
