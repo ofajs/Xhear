@@ -779,37 +779,58 @@
         return [reTar, reKey];
     }
 
-    const seekById_b = (tarObj, id) => {
-        let reobj;
+    const seekByProp = (tarObj, value, prop) => {
+        let reobj = [];
 
-        // 查询是否相等
-        if (tarObj._id === id) {
-            reobj = tarObj;
-        } else {
-            // 继续递归
-            reobj = seekById(tarObj, id);
+        if (isXData(tarObj)) {
+            // 查询是否相等
+            if (value && tarObj[prop] === value) {
+                reobj.push(tarObj);
+            } else if (tarObj instanceof XArray) {
+                // 继续递归
+                reobj = seekData(tarObj, value, prop);
+            } else if (!value) {
+                // 不存在value
+                if (tarObj.hasOwnProperty(prop)) {
+                    reobj.push(tarObj);
+                }
+            }
         }
 
         return reobj;
     }
 
     // 查找对象
-    const seekById = (data, id) => {
-        let reobj;
+    const seekData = (data, value, prop = "_id") => {
+        let reobj = [];
         if (data instanceof XObject) {
-            for (let k in data) {
-                reobj = seekById_b(data[k], id);
-                if (reobj) {
-                    break;
+            if (prop == "_id") {
+                for (let k in data) {
+                    reobj = seekByProp(data[k], value, prop);
+                    if (0 in reobj) {
+                        break;
+                    }
+                }
+            } else {
+                for (let k in data) {
+                    let temp = seekByProp(data[k], value, prop);
+                    reobj.splice(reobj.length, 0, ...temp);
                 }
             }
         } else if (data instanceof XArray) {
-            data.some(tar => {
-                reobj = seekById_b(tar, id);
-                if (reobj) {
-                    return true;
-                }
-            });
+            if (prop == "_id") {
+                data.some(tar => {
+                    reobj = seekByProp(tar, value, prop);
+                    if (0 in reobj) {
+                        return true;
+                    }
+                });
+            } else {
+                data.forEach(tar => {
+                    let temp = seekByProp(tar, value, prop);
+                    reobj.splice(reobj.length, 0, ...temp);
+                });
+            }
         }
 
         return reobj;
@@ -974,9 +995,53 @@
             let reObj = JSON.stringify(obj);
             return reObj;
         },
-        // 查找相应id的数据对象
-        seek(id) {
-            return seekById(this, id);
+        // 查找相应prop的数据对象
+        seek(prop) {
+            let reData;
+            let propMatch = prop.match(/\[.+?\]/g);
+            if (propMatch) {
+                // 临时函数
+                let temFunc = (i, tempArr) => {
+                    // 替换成当前数组
+                    if (i === 0) {
+                        reData = tempArr;
+                    } else {
+                        // 替换数组
+                        let newArr = [];
+
+                        // 取并集
+                        tempArr.forEach(e => {
+                            if (reData.indexOf(e) > -1) {
+                                newArr.push(e);
+                            }
+                        });
+
+                        // 替换
+                        reData = newArr;
+                    }
+                }
+
+                propMatch.forEach((e, i) => {
+                    if (e.search('=') > -1) {
+                        let props = e.match(/\[(.+?)=(.+?)\]/);
+                        let key = props[1],
+                            value = props[2];
+                        let tempArr = seekData(this, value, key);
+
+                        temFunc(i, tempArr);
+                    } else {
+                        let key = e.replace('[', "").replace(']', "").replace('=', "");
+                        let tempArr = seekData(this, undefined, key);
+
+                        temFunc(i, tempArr);
+                    }
+                });
+
+                temFunc = null;
+            } else {
+                reData = seekData(this, prop)[0];
+            }
+            return reData;
         }
     };
 
