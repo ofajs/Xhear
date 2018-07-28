@@ -384,17 +384,15 @@ const seekByProp = (tarObj, value, prop) => {
 
     if (isXData(tarObj)) {
         // 查询是否相等
-        if (value && tarObj[prop] === value) {
+        if (value && tarObj[prop] == value) {
             reobj.push(tarObj);
-        } else if (tarObj instanceof XArray) {
-            // 继续递归
-            reobj = seekData(tarObj, value, prop);
-        } else if (!value) {
-            // 不存在value
-            if (tarObj.hasOwnProperty(prop)) {
-                reobj.push(tarObj);
-            }
+        } else if (!value && tarObj.hasOwnProperty(prop)) {
+            reobj.push(tarObj);
         }
+
+        // 同时查询内部
+        let tObjs = seekData(tarObj, value, prop);
+        reobj.splice(0, 0, ...tObjs);
     }
 
     return reobj;
