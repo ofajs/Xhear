@@ -1354,6 +1354,7 @@
                     }
                     $fn.attr.apply(_$(e), args);
                 });
+                return this;
             } else {
                 return $fn.attr.apply(this, args);
             }
