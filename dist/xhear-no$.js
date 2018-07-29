@@ -656,14 +656,17 @@
 
                 let type = target.hasOwnProperty(key) ? "update" : "new";
 
+                let id;
+
                 // 不能设置xdata
                 if (isXData(value)) {
                     // throw `cann't set xdata`;
+                    id = value._id;
                     value = value.toObject();
                 }
 
                 // 判断value是否object
-                value = createXData(value, target._root || target, target, key);
+                value = createXData(value, target._root || target, target, key, id);
 
                 // 继承行为
                 let reValue = !0;
@@ -710,10 +713,10 @@
     }
 
     // 主体xObject
-    function XObject(root, host, key) {
+    function XObject(root, host, key, id) {
         defineProperties(this, {
             '_id': {
-                value: getRandomId()
+                value: id || getRandomId()
             },
             '_obs': {
                 value: []
@@ -1051,9 +1054,9 @@
     }
 
     // 生成对象
-    let createXObject = (obj, root, host, key) => {
+    let createXObject = (obj, root, host, key, id) => {
         // 转换对象数据
-        let xobj = new XObject(root, host, key);
+        let xobj = new XObject(root, host, key, id);
 
         let reObj = new Proxy(xobj, XObjectHandler)
 
@@ -1082,8 +1085,8 @@
     XArray.prototype = XArrayFn;
 
     // 生成数组型对象
-    let createXArray = (arr, root, host, key) => {
-        let xarr = new XArray(root, host, key);
+    let createXArray = (arr, root, host, key, id) => {
+        let xarr = new XArray(root, host, key, id);
 
         let reObj = new Proxy(xarr, XObjectHandler);
 
@@ -1096,12 +1099,12 @@
         return reObj;
     }
 
-    let createXData = (obj, root, host, key) => {
+    let createXData = (obj, root, host, key, id) => {
         switch (getType(obj)) {
             case "object":
-                return createXObject(obj, root, host, key);
+                return createXObject(obj, root, host, key, id);
             case "array":
-                return createXArray(obj, root, host, key);
+                return createXArray(obj, root, host, key, id);
         }
         return obj;
     }
