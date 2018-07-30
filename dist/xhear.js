@@ -2153,7 +2153,9 @@
 
                 let type = target.hasOwnProperty(key) ? "update" : "new";
 
-                let id;
+                let id = getRandomId(),
+                    valueType = getType(value),
+                    backValue = value;
 
                 // 不能设置xdata
                 if (isXData(value)) {
@@ -2164,6 +2166,12 @@
 
                 // 判断value是否object
                 value = createXData(value, target._root || target, target, key, id);
+
+                // 初始化对象后暴露id
+                if (!isXData(backValue) && (valueType == "object" || valueType == "array")) {
+                    // 把id暴露出去
+                    backValue._id = id;
+                }
 
                 // 继承行为
                 let reValue = !0;
@@ -2184,7 +2192,6 @@
                     // 触发改动事件
                     emitChange(target, key, value, oldVal, type);
                 }
-
                 // 返回行为值
                 return reValue;
             } else {
@@ -2597,13 +2604,21 @@
     }
 
     let createXData = (obj, root, host, key, id) => {
-        switch (getType(obj)) {
+        let reobj = obj;
+        let valueType = getType(obj);
+        switch (valueType) {
             case "object":
-                return createXObject(obj, root, host, key, id);
+                reobj = createXObject(obj, root, host, key, id);
+                break;
             case "array":
-                return createXArray(obj, root, host, key, id);
+                reobj = createXArray(obj, root, host, key, id);
+                break;
         }
-        return obj;
+        if (!isXData(obj) && (valueType == "object" || valueType == "array")) {
+            // 把id暴露出去
+            obj._id = reobj._id;
+        }
+        return reobj;
     }
 
     $.xdata = obj => createXData(obj);
