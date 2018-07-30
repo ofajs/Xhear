@@ -2153,25 +2153,16 @@
 
                 let type = target.hasOwnProperty(key) ? "update" : "new";
 
-                let id = getRandomId(),
-                    valueType = getType(value),
-                    backValue = value;
+                let id;
 
                 // 不能设置xdata
                 if (isXData(value)) {
-                    // throw `cann't set xdata`;
                     id = value._id;
                     value = value.toObject();
                 }
 
                 // 判断value是否object
                 value = createXData(value, target._root || target, target, key, id);
-
-                // 初始化对象后暴露id
-                if (!isXData(backValue) && (valueType == "object" || valueType == "array")) {
-                    // 把id暴露出去
-                    backValue._id = id;
-                }
 
                 // 继承行为
                 let reValue = !0;
