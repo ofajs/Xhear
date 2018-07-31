@@ -1898,13 +1898,13 @@
     let isXData = (obj) => (obj instanceof XObject) || (obj instanceof XArray);
 
     // 将xdata转换成字符串
-    let XDataToObject = (xdata) => {
+    let XDataToObject = (xdata, options) => {
         let reObj = xdata;
         if (xdata instanceof Array) {
             reObj = [];
             xdata.forEach(e => {
                 if (isXData(e)) {
-                    reObj.push(XDataToObject(e));
+                    reObj.push(XDataToObject(e, options));
                 } else {
                     reObj.push(e);
                 }
@@ -1914,7 +1914,7 @@
             for (let k in xdata) {
                 let tar = xdata[k];
                 if (isXData(tar)) {
-                    reObj[k] = XDataToObject(tar);
+                    reObj[k] = XDataToObject(tar, options);
                 } else {
                     reObj[k] = tar;
                 }
@@ -2065,12 +2065,7 @@
                     oldVal,
                     type
                 }
-                // if (type == 'uphost') {
                 watchOptions.uphost = assign({}, eOption);
-                // } else if (type == "uparray") {
-                //     watchOptions.uparray = assign({}, eOption);
-                //     delete watchOptions.oldVal;
-                // }
                 func(val, watchOptions);
             });
         }
@@ -2083,12 +2078,7 @@
                 val,
                 oldVal
             };
-            // if (type == 'uphost') {
             obsOption.uphost = assign({}, eOption);
-            // } else if (type == "uparray") {
-            //     obsOption.uparray = assign({}, eOption);
-            //     delete obsOption.oldVal;
-            // }
             func(obsOption);
         });
 
@@ -2101,7 +2091,8 @@
             // 只有根节点才有权trend
             let {
                 _trend,
-                _host
+                _host,
+                _hostkey
             } = data;
 
             // key数组
@@ -2120,23 +2111,21 @@
                     type
                 };
 
-                // if (type == "uparray") {
-                //     options.uparray = eOption;
-                // }
-
                 _trend.forEach(func => {
                     func(assign({}, options));
                 });
 
                 if (_host) {
-                    let tar = _host.target[_host.key];
+                    // debugger
+                    let tar = _host[_hostkey];
 
                     // 触发uphost
-                    emitChange(_host.target, _host.key, tar, tar, "uphost", options)
+                    emitChange(_host, _hostkey, tar, tar, "uphost", options)
 
-                    _trend = _host.target._trend;
-                    aKey = _host.key;
-                    _host = _host.target._host;
+                    _trend = _host._trend;
+                    aKey = _hostkey;
+                    _host && (_hostkey = _host._hostkey);
+                    _host = _host._host;
                 } else {
                     _trend = null
                 }
@@ -2162,7 +2151,7 @@
                 }
 
                 // 判断value是否object
-                value = createXData(value, target._root || target, target, key, id);
+                value = createXData(value, target._root || target, receiver, key, id);
 
                 // 继承行为
                 let reValue = !0;
@@ -2243,10 +2232,10 @@
                 value: root
             });
             defineProperty(this, '_host', {
-                value: {
-                    target: host,
-                    key
-                }
+                value: host
+            });
+            defineProperty(this, '_hostkey', {
+                value: key
             });
         } else {
             defineProperty(this, '_cache', {
