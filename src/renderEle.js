@@ -25,7 +25,11 @@ const renderEle = (ele) => {
     // 生成renderId
     let renderId = ++rid;
 
-    let xhearObj = new regData.XHear();
+    // 初始化对象
+    let xhearOriObj = new regData.XHear();
+    xhearOriObj._canEmitWatch = 1;
+    // xhearOriObj._exkeys = [];
+    let xhearObj = new Proxy(xhearOriObj, XObjectHandler);
     ele[XHEAROBJKEY] = xhearObj;
 
     let xhearEle = createShearObject(ele);
@@ -148,7 +152,9 @@ const renderEle = (ele) => {
         // 监听改动
         if (tar[XHEAROBJKEY]) {
             tar[XHEAROBJKEY].watch("value", val => {
-                xhearObj.value = val;
+                // kName;
+                // tar;
+                xhearObj[kName] = val;
             });
         } else {
             $tar.on('change input', (e) => {
@@ -171,7 +177,7 @@ const renderEle = (ele) => {
     }
 
     // 设置keys
-    xhearObj.set(Object.keys(rData));
+    xhearOriObj._exkeys = Object.keys(rData);
 
     // watch监听
     if (watchData) {
@@ -207,6 +213,12 @@ const renderEle = (ele) => {
             }
         });
     }
+
+    // 先铺设数据
+    // xhearObj.set();
+    // each(Object.keys(rData), k => {
+    //     xhearObj[k] = undefined;
+    // });
 
     // 设置数据
     for (let k in rData) {

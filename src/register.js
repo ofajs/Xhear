@@ -1,3 +1,5 @@
+// function
+
 // 原型对象
 let XHearFn = Object.create(shearInitPrototype);
 
@@ -5,7 +7,22 @@ let XHearFn = Object.create(shearInitPrototype);
 XHearFn.svRender = !0;
 
 // 合并数据
-assign(XHearFn, XDataFn);
+// assign(XHearFn, XDataFn);
+for (let k in XObjectFn) {
+    defineProperty(XHearFn, k, {
+        value: XObjectFn[k]
+    });
+}
+
+defineProperty(XHearFn, 'set', {
+    value(key, value) {
+        let id = this._exkeys.indexOf(key);
+        if (id === -1) {
+            this._exkeys.push(key);
+        }
+        this[key] = value;
+    }
+});
 
 const register = (options) => {
     let defaults = {
@@ -43,8 +60,8 @@ const register = (options) => {
     props.push('value');
 
     // 生成新的数据对象
-    let XHear = function () {
-        XData.call(this);
+    let XHear = function (...args) {
+        XObject.apply(this, args);
     }
 
     let inXHearFn = XHearFn;

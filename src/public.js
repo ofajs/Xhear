@@ -61,10 +61,10 @@ const OBSERVERKEYS = RANDOMID + "_observer";
 const XHEAROBJKEY = getRandomId() + "_xhearobj";
 const ATTACHED_KEY = getRandomId() + "_attached";
 const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
+// const XDATA_DATAOBJ = getRandomId() + "xdatas";
 
 
 // business fucntion 
-
 const getTagData = (ele) => {
     let tagname = ele.tagName.toLowerCase();
     return tagDatabase[tagname];
