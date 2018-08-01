@@ -69,7 +69,23 @@ const register = (options) => {
     // 判断是否有公用方法
     if (proto) {
         inXHearFn = create(XHearFn);
-        assign(inXHearFn, proto);
+        for (let k in proto) {
+            let {
+                get,
+                set
+            } = Object.getOwnPropertyDescriptor(proto, k);
+
+            if (get || set) {
+                defineProperty(inXHearFn, k, {
+                    set,
+                    get
+                });
+            } else {
+                inXHearFn[k] = proto[k];
+            }
+
+        }
+        // assign(inXHearFn, proto);
     }
 
     // 赋值原型对象
