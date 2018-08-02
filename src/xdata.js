@@ -1,4 +1,5 @@
 let isXData = (obj) => (obj instanceof XObject) || (obj instanceof XArray);
+let deepClone = obj => obj && JSON.parse(JSON.stringify(obj));
 
 // 将xdata转换成字符串
 let XDataToObject = (xdata, options) => {
@@ -70,7 +71,8 @@ const syncData = (xdata1, xdata2, options) => {
 
                 if (keys1.indexOf(key) > -1) {
                     // 深复制
-                    e = Object.assign({}, e);
+                    // e = Object.assign({}, e);
+                    e = deepClone(e);
 
                     // 修正keyname
                     e.key[0] = keys2[keys1.indexOf(key)];
@@ -84,7 +86,8 @@ const syncData = (xdata1, xdata2, options) => {
 
                 if (keys2.indexOf(key) > -1) {
                     // 深复制
-                    e = Object.assign({}, e);
+                    // e = Object.assign({}, e);
+                    e = deepClone(e);
 
                     // 修正keyname
                     e.key[0] = keys1[keys2.indexOf(key)];
@@ -168,7 +171,9 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
                 oldVal,
                 type
             }
-            watchOptions.uphost = assign({}, eOption);
+            // watchOptions.uphost = assign({}, eOption);
+            watchOptions.uphost = deepClone(eOption);
+
             func(val, watchOptions);
         });
     }
@@ -181,7 +186,8 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
             val,
             oldVal
         };
-        obsOption.uphost = assign({}, eOption);
+        // obsOption.uphost = assign({}, eOption);
+        obsOption.uphost = deepClone(eOption);
         func(obsOption);
     });
 
@@ -215,7 +221,7 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
             };
 
             _trend.forEach(func => {
-                func(assign({}, options));
+                func(deepClone(options));
             });
 
             if (_host) {
@@ -524,7 +530,7 @@ let XObjectFn = {
     },
     // 同步数据
     sync(xdata, options) {
-        xdata.reset(this.toObject());
+        // xdata.reset(this.toObject());
         syncData(this, xdata, options);
         return this;
     },
