@@ -12,6 +12,11 @@ xhear.register({
             console.log(val);
         }
     },
+    proto: {
+        get aa() {
+            return this.a;
+        }
+    },
     attrs: ['a'],
     temp: `
         <div style="color:red;">content: {{a}} </div>

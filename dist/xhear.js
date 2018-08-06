@@ -1896,6 +1896,7 @@
     }, _$);
 
     let isXData = (obj) => (obj instanceof XObject) || (obj instanceof XArray);
+    let deepClone = obj => obj && JSON.parse(JSON.stringify(obj));
 
     // 将xdata转换成字符串
     let XDataToObject = (xdata, options) => {
@@ -1967,7 +1968,8 @@
 
                     if (keys1.indexOf(key) > -1) {
                         // 深复制
-                        e = Object.assign({}, e);
+                        // e = Object.assign({}, e);
+                        e = deepClone(e);
 
                         // 修正keyname
                         e.key[0] = keys2[keys1.indexOf(key)];
@@ -1981,7 +1983,8 @@
 
                     if (keys2.indexOf(key) > -1) {
                         // 深复制
-                        e = Object.assign({}, e);
+                        // e = Object.assign({}, e);
+                        e = deepClone(e);
 
                         // 修正keyname
                         e.key[0] = keys1[keys2.indexOf(key)];
@@ -2065,7 +2068,9 @@
                     oldVal,
                     type
                 }
-                watchOptions.uphost = assign({}, eOption);
+                // watchOptions.uphost = assign({}, eOption);
+                watchOptions.uphost = deepClone(eOption);
+
                 func(val, watchOptions);
             });
         }
@@ -2078,7 +2083,8 @@
                 val,
                 oldVal
             };
-            obsOption.uphost = assign({}, eOption);
+            // obsOption.uphost = assign({}, eOption);
+            obsOption.uphost = deepClone(eOption);
             func(obsOption);
         });
 
@@ -2112,7 +2118,7 @@
                 };
 
                 _trend.forEach(func => {
-                    func(assign({}, options));
+                    func(deepClone(options));
                 });
 
                 if (_host) {
@@ -2228,14 +2234,16 @@
         });
 
         if (root) {
-            defineProperty(this, '_root', {
-                value: root
-            });
-            defineProperty(this, '_host', {
-                value: host
-            });
-            defineProperty(this, '_hostkey', {
-                value: key
+            defineProperties(this, {
+                '_root': {
+                    value: root
+                },
+                '_host': {
+                    value: host
+                },
+                '_hostkey': {
+                    value: key
+                }
             });
         } else {
             defineProperty(this, '_cache', {
@@ -2419,7 +2427,7 @@
         },
         // 同步数据
         sync(xdata, options) {
-            xdata.reset(this.toObject());
+            // xdata.reset(this.toObject());
             syncData(this, xdata, options);
             return this;
         },
@@ -2542,10 +2550,28 @@
         // 转换对象数据
         let xobj = new XObject(root, host, key, id);
 
-        let reObj = new Proxy(xobj, XObjectHandler)
+        let reObj = new Proxy(xobj, XObjectHandler);
 
         // 合并数据
-        assign(reObj, obj);
+        // assign(reObj, obj);
+        for (let k in obj) {
+            // 判断是否 get set 属性
+            let {
+                get,
+                set
+            } = Object.getOwnPropertyDescriptor(obj, k);
+
+            if (get || set) {
+                // get set 设置
+                defineProperty(reObj, k, {
+                    get,
+                    set
+                });
+            } else {
+                // 直接属性赋值
+                reObj[k] = obj[k];
+            }
+        }
 
         // 打开阀门
         xobj._canEmitWatch = 1;
@@ -2675,7 +2701,23 @@
         // 判断是否有公用方法
         if (proto) {
             inXHearFn = create(XHearFn);
-            assign(inXHearFn, proto);
+            for (let k in proto) {
+                let {
+                    get,
+                    set
+                } = Object.getOwnPropertyDescriptor(proto, k);
+
+                if (get || set) {
+                    defineProperty(inXHearFn, k, {
+                        set,
+                        get
+                    });
+                } else {
+                    inXHearFn[k] = proto[k];
+                }
+
+            }
+            // assign(inXHearFn, proto);
         }
 
         // 赋值原型对象

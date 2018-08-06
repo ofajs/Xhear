@@ -1,4 +1,5 @@
 let isXData = (obj) => (obj instanceof XObject) || (obj instanceof XArray);
+let deepClone = obj => obj && JSON.parse(JSON.stringify(obj));
 
 // 将xdata转换成字符串
 let XDataToObject = (xdata, options) => {
@@ -70,7 +71,8 @@ const syncData = (xdata1, xdata2, options) => {
 
                 if (keys1.indexOf(key) > -1) {
                     // 深复制
-                    e = Object.assign({}, e);
+                    // e = Object.assign({}, e);
+                    e = deepClone(e);
 
                     // 修正keyname
                     e.key[0] = keys2[keys1.indexOf(key)];
@@ -84,7 +86,8 @@ const syncData = (xdata1, xdata2, options) => {
 
                 if (keys2.indexOf(key) > -1) {
                     // 深复制
-                    e = Object.assign({}, e);
+                    // e = Object.assign({}, e);
+                    e = deepClone(e);
 
                     // 修正keyname
                     e.key[0] = keys1[keys2.indexOf(key)];
@@ -168,7 +171,9 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
                 oldVal,
                 type
             }
-            watchOptions.uphost = assign({}, eOption);
+            // watchOptions.uphost = assign({}, eOption);
+            watchOptions.uphost = deepClone(eOption);
+
             func(val, watchOptions);
         });
     }
@@ -181,7 +186,8 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
             val,
             oldVal
         };
-        obsOption.uphost = assign({}, eOption);
+        // obsOption.uphost = assign({}, eOption);
+        obsOption.uphost = deepClone(eOption);
         func(obsOption);
     });
 
@@ -215,7 +221,7 @@ let emitChange = (data, key, val, oldVal, type = "update", eOption) => {
             };
 
             _trend.forEach(func => {
-                func(assign({}, options));
+                func(deepClone(options));
             });
 
             if (_host) {
@@ -331,14 +337,16 @@ function XObject(root, host, key, id) {
     });
 
     if (root) {
-        defineProperty(this, '_root', {
-            value: root
-        });
-        defineProperty(this, '_host', {
-            value: host
-        });
-        defineProperty(this, '_hostkey', {
-            value: key
+        defineProperties(this, {
+            '_root': {
+                value: root
+            },
+            '_host': {
+                value: host
+            },
+            '_hostkey': {
+                value: key
+            }
         });
     } else {
         defineProperty(this, '_cache', {
@@ -522,7 +530,7 @@ let XObjectFn = {
     },
     // 同步数据
     sync(xdata, options) {
-        xdata.reset(this.toObject());
+        // xdata.reset(this.toObject());
         syncData(this, xdata, options);
         return this;
     },
@@ -645,10 +653,28 @@ let createXObject = (obj, root, host, key, id) => {
     // 转换对象数据
     let xobj = new XObject(root, host, key, id);
 
-    let reObj = new Proxy(xobj, XObjectHandler)
+    let reObj = new Proxy(xobj, XObjectHandler);
 
     // 合并数据
-    assign(reObj, obj);
+    // assign(reObj, obj);
+    for (let k in obj) {
+        // 判断是否 get set 属性
+        let {
+            get,
+            set
+        } = Object.getOwnPropertyDescriptor(obj, k);
+
+        if (get || set) {
+            // get set 设置
+            defineProperty(reObj, k, {
+                get,
+                set
+            });
+        } else {
+            // 直接属性赋值
+            reObj[k] = obj[k];
+        }
+    }
 
     // 打开阀门
     xobj._canEmitWatch = 1;
