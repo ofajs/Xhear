@@ -516,8 +516,15 @@ let XObjectFn = {
                 delete tar[key];
                 break;
             default:
-                //默认update和new
-                tar[key] = trendData.val;
+                // 同属对象类型
+                if (isXData(tar[key]) && trendData.val instanceof Object) {
+                    if (tar[key].stringify() !== JSON.stringify(trendData.val)) {
+                        tar[key] = trendData.val;
+                    }
+                } else if (tar[key] !== trendData.val) {
+                    //默认update和new
+                    tar[key] = trendData.val;
+                }
         }
 
         return this;
@@ -725,7 +732,9 @@ let createXData = (obj, root, host, key, id) => {
     }
     if (!isXData(obj) && (valueType == "object" || valueType == "array")) {
         // 把id暴露出去
-        obj._id = reobj._id;
+        defineProperty(obj, '_id', {
+            value: reobj._id
+        });
     }
     return reobj;
 }
