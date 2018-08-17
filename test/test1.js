@@ -38,7 +38,7 @@
     });
 
     // 观察
-    d1.observe(obsFunc = e => {
+    d1.watch(obsFunc = e => {
         tester.ok(e.key === "a", 'key ok');
         tester.ok(e.oldVal === "I am a", 'oldVal ok');
         tester.ok(e.val === "change a", 'val ok');
@@ -53,13 +53,13 @@
 
     // 取消监听
     d1.unwatch('a', watchFunc);
-    d1.unobserve(obsFunc);
+    d1.unwatch(obsFunc);
 
     // 确认再次修改不会触发
     d1.a = "change a 2";
 
     // 观察
-    d1.observe(obsFunc = e => {
+    d1.watch(obsFunc = e => {
         tester.ok(e.key === "c", 'new set key ok');
         tester.ok(!e.oldVal, 'new set oldVal ok');
         tester.ok(e.val === "I am c", 'new set val ok');
@@ -71,8 +71,8 @@
     d1.c = "I am c";
 
     // 新观察
-    d1.unobserve(obsFunc);
-    d1.observe(obsFunc = e => {
+    d1.unwatch(obsFunc);
+    d1.watch(obsFunc = e => {
         tester.ok(e.key === "c", 'c key ok');
         tester.ok(e.oldVal == "I am c", 'c oldVal ok');
         tester.ok(e.val === "change c", 'c val ok');
@@ -85,27 +85,5 @@
     console.log(d1);
 
     tester.ok(d2.a === "change a 2", "syncData ok 1");
-    tester.ok(d2.b === "I am b", "syncData ok 2");
-
-    // tester.ok(d3.kk === "change a 2_to_d3", "transData ok 1");
-
-    // 测试对象数据设置，会进行拷贝
-    // let d3_cc = {
-    //     val: "I am d3cc"
-    // };
-
-    // d3.set('cc', d3_cc);
-
-    // d3.watch('cc', d => {
-    //     throw "can not trigger cc watch";
-    // });
-
-    // // 不相等
-    // tester.ok(d3.cc != d3_cc, "objectData ok 1");
-
-    // // 再次赋值一样对象型的无效
-    // d3.cc = {
-    //     val: "I am d3cc"
-    // };
-
+    tester.ok(d2.b === "", "no sync ok 2");
 })();

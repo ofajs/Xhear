@@ -26,10 +26,10 @@ const renderEle = (ele) => {
     let renderId = ++rid;
 
     // 初始化对象
-    let xhearOriObj = new regData.XHear();
+    let xhearOriObj = new regData.XHear({});
     xhearOriObj._canEmitWatch = 1;
     // xhearOriObj._exkeys = [];
-    let xhearObj = new Proxy(xhearOriObj, XObjectHandler);
+    let xhearObj = new Proxy(xhearOriObj, XDataHandler);
     ele[XHEAROBJKEY] = xhearObj;
 
     let xhearEle = createShearObject(ele);
@@ -213,12 +213,6 @@ const renderEle = (ele) => {
             }
         });
     }
-
-    // 先铺设数据
-    // xhearObj.set();
-    // each(Object.keys(rData), k => {
-    //     xhearObj[k] = undefined;
-    // });
 
     // 设置数据
     for (let k in rData) {
