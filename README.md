@@ -1,3 +1,3 @@
-# Xhear 2.0
+# Xhear 3.0
 
- Xhear 1.0 使用过程中发现很多问题，需要精简很多没用和容易出错的功能，干脆重构；
+如果说 Xhear1 和 Xhear2 是脱胎于jQuery，那 Xhear3 是脱胎于 stanz 和 xque
