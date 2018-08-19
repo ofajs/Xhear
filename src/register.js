@@ -8,9 +8,9 @@ XHearFn.svRender = !0;
 
 // 合并数据
 // assign(XHearFn, XDataFn);
-for (let k in XObjectFn) {
+for (let k in XDataProto) {
     defineProperty(XHearFn, k, {
-        value: XObjectFn[k]
+        value: XDataProto[k]
     });
 }
 
@@ -61,7 +61,7 @@ const register = (options) => {
 
     // 生成新的数据对象
     let XHear = function (...args) {
-        XObject.apply(this, args);
+        XData.apply(this, args);
     }
 
     let inXHearFn = XHearFn;
