@@ -1954,9 +1954,9 @@ const seekData = (data, key, sVal) => {
         arr.push(data);
     }
 
-    Object.keys(data).forEach(k => {
+    for (let k in data) {
         let val = data[k];
-        if (val instanceof Object) {
+        if (val instanceof XData) {
             let sData = seekData(val, key, sVal);
             sData.forEach(e => {
                 if (!arr.includes(e)) {
@@ -1964,7 +1964,7 @@ const seekData = (data, key, sVal) => {
                 }
             });
         }
-    });
+    }
 
     return arr;
 }
@@ -2061,7 +2061,13 @@ function XData(obj, host, hostkey) {
         });
     }
 
-    Object.keys(obj).forEach(k => {
+    // 获取关键key数组
+    let keys = Object.keys(obj);
+    if (getType(obj) === "array") {
+        keys.push('length');
+    }
+
+    keys.forEach(k => {
         // 获取值，getter,setter
         let {
             get,
@@ -2594,7 +2600,7 @@ const emitChange = (tar, key, val, oldVal, type, trend) => {
 }
 
 // Handler
-const XDataHandler = { 
+const XDataHandler = {
     set(target, key, value, receiver) {
         // 判断不是下划线开头的属性，才触发改动事件
         if (!/^_.+/.test(key)) {
@@ -2612,6 +2618,7 @@ const XDataHandler = {
                     target[key] = newValue;
                 } else {
                     canEmit = 0;
+                    Reflect.set(target, key, newValue, receiver);
                 }
             } else {
                 // 执行默认操作
@@ -2655,15 +2662,20 @@ const XDataHandler = {
 
 // main
 const createXData = (obj, host, hostkey) => {
-    if (obj instanceof Object) {
-        let xdata = new XData(obj, host, hostkey);
-        return new Proxy(xdata, XDataHandler);
+    switch (getType(obj)) {
+        case "array":
+        case "object":
+            if (obj instanceof XData) {
+                return obj;
+            }
+            let xdata = new XData(obj, host, hostkey);
+            return new Proxy(xdata, XDataHandler);
     }
     return obj;
 }
 
-$.xdata = obj => createXData(obj);
-$.detrend = detrend;
+    $.xdata = obj => createXData(obj);
+    $.detrend = detrend;
 
     // function
 

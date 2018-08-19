@@ -54,6 +54,9 @@
 
     //<!--xdata-->
 
+    $.xdata = obj => createXData(obj);
+    $.detrend = detrend;
+
     //<!--register-->
 
     //<!--operation-->
