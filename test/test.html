@@ -13,7 +13,9 @@
     <!-- <script src="../dist/xhear-no$.js"></script> -->
     <script src="../dist/xhear.js"></script>
     <style>
-        testtag {
+        testtag,
+        t1,
+        t2 {
             display: block;
         }
     </style>
@@ -25,10 +27,59 @@
     </testtag>
     <br>
     <stext xv-ele pattern="\D+"></stext>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <t1 xv-ele id="t1">I am t1</t1>
 </body>
 <script src="js/stext.js"></script>
 <script src="js/testtag.js"></script>
 <script src="test1.js"></script>
 <script src="test2.js"></script>
+<script>
+    $('#t1').render = [{
+        tag: "t1",
+        tname: "A",
+        0: {
+            tag: "t1",
+            tname: "B",
+            0: {
+                tag: "t1",
+                tname: "C"
+            },
+            length: 1
+        },
+        1: {
+            tag: "t2",
+            tname: "D"
+        },
+        length: 2
+    }];
+
+    setTimeout(() => {
+        $('#t1').render[0].splice(0, 1, {
+            tag: "t2",
+            tname: "E",
+            0: {
+                tag: "t1",
+                tname: "F"
+            },
+            length: 1
+        })
+
+        // $('#t1').render[0][1] = {
+        //     tag: "t2",
+        //     tname: "t22222",
+        //     0: {
+        //         tag: "t1",
+        //         tname: "t1_hahahaha"
+        //     },
+        //     length: 1
+        // };
+    }, 1000);
+</script>
 
 </html>

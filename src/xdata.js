@@ -125,19 +125,19 @@ function XData(obj, host, hostkey) {
         },
         // 事件寄宿对象
         [XDATAEVENTS]: {
-            value: {}
+            value: obj[XDATAEVENTS] || {}
         },
         // 数据绑定记录
         [XDATASYNCS]: {
-            value: []
+            value: obj[XDATASYNCS] || []
         },
         // entrend id 记录
         [XDATATRENDIDS]: {
-            value: []
+            value: obj[XDATATRENDIDS] || []
         },
         // listen 记录
         [LISTEN]: {
-            value: []
+            value: obj[LISTEN] || []
         },
         // 是否开启trend清洁
         "_trendClear": {
@@ -176,6 +176,9 @@ function XData(obj, host, hostkey) {
         keys.push('length');
     }
 
+    // 需要返回的值
+    let _this = new Proxy(this, XDataHandler);
+
     keys.forEach(k => {
         // 获取值，getter,setter
         let {
@@ -190,9 +193,11 @@ function XData(obj, host, hostkey) {
                 set
             });
         } else {
-            this[k] = createXData(value, this, k);
+            this[k] = createXData(value, _this, k);
         }
     });
+
+    return _this;
 }
 
 // xdata的原型
@@ -550,7 +555,7 @@ let XDataProto = {
         }
     },
     // 删除自己或子元素
-    remove(...args) {
+    clear(...args) {
         let [keyName] = args;
         if (0 in args) {
             if (getType(keyName) === "number") {
@@ -679,6 +684,10 @@ const emitChange = (tar, key, val, oldVal, type, trend) => {
             type
         };
 
+        if (oldVal instanceof XData) {
+            trend.oldId = oldVal._id;
+        }
+
         // 自身添加该tid
         trendClear(tar, tid);
 
@@ -774,11 +783,7 @@ const createXData = (obj, host, hostkey) => {
     switch (getType(obj)) {
         case "array":
         case "object":
-            if (obj instanceof XData) {
-                return obj;
-            }
-            let xdata = new XData(obj, host, hostkey);
-            return new Proxy(xdata, XDataHandler);
+            return new XData(obj, host, hostkey);
     }
     return obj;
 }

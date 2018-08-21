@@ -1,6 +1,55 @@
 // 元素自定义组件id
 let rid = 100;
 
+// 定制专用深复制方法
+let customCloneXVObject = (data) => {
+    // 获取深复制，删除tag、数字和length
+    let cData = {};
+    Object.keys(data).forEach(k => {
+        if (/\D/.test(k)) {
+            cData[k] = data[k];
+        }
+    });
+    delete cData.tag;
+    delete cData.length;
+
+    return cData;
+}
+
+// 填充 value tag
+const appendInData = (data, callback) => {
+    // 获取tag
+    let {
+        tag
+    } = data;
+
+    // 获取深复制，删除tag、数字和length
+    let cData = {};
+    Object.keys(data).forEach(k => {
+        if (/\D/.test(k)) {
+            cData[k] = data[k];
+        }
+    });
+    delete cData.tag;
+    delete cData.length;
+
+    // 生成元素
+    let xEle = $(`<${tag} xv-ele xv-rid="${data._id}"></${tag}>`);
+
+    // 合并数据
+    assign(xEle, cData);
+
+    // 执行callback
+    callback(xEle);
+
+    // 递归添加子元素
+    Array.from(data).forEach(data => {
+        appendInData(data, (cEle) => {
+            xEle.append(cEle);
+        });
+    });
+}
+
 const renderEle = (ele) => {
     if (!hasAttr(ele, 'xv-ele')) {
         return;
@@ -27,8 +76,6 @@ const renderEle = (ele) => {
 
     // 初始化对象
     let xhearOriObj = new regData.XHear({});
-    xhearOriObj._canEmitWatch = 1;
-    // xhearOriObj._exkeys = [];
     let xhearObj = new Proxy(xhearOriObj, XDataHandler);
     ele[XHEAROBJKEY] = xhearObj;
 
@@ -176,8 +223,130 @@ const renderEle = (ele) => {
         }
     }
 
+    // 创建渲染器
+    xhearEle.watch("render", (childsData, e) => {
+        if (e.type === "new") {
+            // 新添加
+            xhearEle.empty();
+
+            // 添加进元素
+            childsData.forEach(data => {
+                appendInData(data, xEle => {
+                    // 首个填入
+                    xhearEle.append(xEle);
+                });
+            });
+            return;
+        }
+        // 后续修改操作，就没有必要全部渲染一遍了
+        // 针对性渲染
+
+        // 获取目标对象、key和值
+        let {
+            trend
+        } = e;
+        let [target, keyName] = $.detrend(xhearEle, trend);
+        let value = target[keyName];
+
+        if (trend.type == "array-method") {
+            // 三个基本要素
+            let index, removeCount, newDatas;
+
+            // 获取目标元素
+            let tarDataEle = xhearEle.find(`[xv-rid="${value._id}"]`);
+
+            switch (trend.methodName) {
+                case "splice":
+                    // 先获取要删减的数量
+                    [index, removeCount, ...newDatas] = trend.args;
+                    break;
+                case 'shift':
+                    index = 0;
+                    removeCount = 1;
+                    break;
+                case 'unshfit':
+                    index = 0;
+                    removeCount = 0;
+                    newDatas = trend.args;
+                    break;
+                case 'push':
+                    index = tarDataEle.children().length;
+                    removeCount = 0;
+                    newDatas = trend.args;
+                    break;
+                case 'pop':
+                    index = tarDataEle.children().length;
+                    removeCount = 1;
+                    break;
+                case 'copyWithin':
+                case 'fill':
+                case 'reverse':
+                case 'sort':
+                    return;
+            };
+            // 走splice通用流程
+            // 最后的id
+            let lastRemoveId = index + removeCount;
+
+            // 根据数据删除
+            (removeCount > 0) && tarDataEle.children().each((i, e) => {
+                if (i >= index && i < lastRemoveId) {
+                    $(e).remove();
+                }
+            });
+
+            // 获取相应id的元素
+            let indexEle = tarDataEle.children().eq(index);
+
+            // 后置数据添加
+            newDatas && newDatas.forEach(data => {
+                appendInData(data, (xEle) => {
+                    if (0 in indexEle) {
+                        // before
+                        indexEle.before(xEle);
+                    } else {
+                        // append
+                        tarDataEle.append(xEle);
+                    }
+                });
+            });
+        } else {
+            if (/\D/.test(keyName)) {
+                // 改变属性值
+                // 获取元素
+                let targetEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+
+                // 修改值
+                targetEle[keyName] = value;
+            } else {
+                // 替换旧元素
+                let {
+                    oldId
+                } = trend;
+
+                if (oldId) {
+                    // 获取元素
+                    let oldEle = xhearEle.find(`[xv-rid="${oldId}"]`);
+
+                    // 向后添加元素
+                    appendInData(value, (xEle) => {
+                        oldEle.after(xEle);
+                    });
+
+                    // 删除旧元素
+                    oldEle.remove();
+                }
+            }
+        }
+
+    });
+
     // 设置keys
-    xhearOriObj._exkeys = Object.keys(rData);
+    // 将value和render添加进key里
+    let exkeys = Object.keys(rData);
+    exkeys.includes('value') || (exkeys.push('value'));
+    exkeys.includes('render') || (exkeys.push('render'));
+    xhearOriObj._exkeys = exkeys;
 
     // watch监听
     if (watchData) {
@@ -202,17 +371,14 @@ const renderEle = (ele) => {
         }
     }
 
-    // 存在 value key
-    if ('value' in rData) {
-        defineProperty(ele, 'value', {
-            get() {
-                return xhearObj.value;
-            },
-            set(d) {
-                xhearObj.value = d;
-            }
-        });
-    }
+    defineProperty(ele, 'value', {
+        get() {
+            return xhearObj.value;
+        },
+        set(d) {
+            xhearObj.value = d;
+        }
+    });
 
     // 设置数据
     for (let k in rData) {
