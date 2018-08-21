@@ -60,7 +60,7 @@
     }];
 
     setTimeout(() => {
-        $('#t1').render[0].splice(0, 1, {
+        $('#t1').render[0].push({
             tag: "t2",
             tname: "E",
             0: {
@@ -69,6 +69,15 @@
             },
             length: 1
         })
+        // $('#t1').render[0].splice(0, 1, {
+        //     tag: "t2",
+        //     tname: "E",
+        //     0: {
+        //         tag: "t1",
+        //         tname: "F"
+        //     },
+        //     length: 1
+        // })
 
         // $('#t1').render[0][1] = {
         //     tag: "t2",

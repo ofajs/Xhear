@@ -128,21 +128,6 @@ const renderAllSvEle = (jqObj) => {
     // 元素自定义组件id
 let rid = 100;
 
-// 定制专用深复制方法
-let customCloneXVObject = (data) => {
-    // 获取深复制，删除tag、数字和length
-    let cData = {};
-    Object.keys(data).forEach(k => {
-        if (/\D/.test(k)) {
-            cData[k] = data[k];
-        }
-    });
-    delete cData.tag;
-    delete cData.length;
-
-    return cData;
-}
-
 // 填充 value tag
 const appendInData = (data, callback) => {
     // 获取tag
@@ -173,6 +158,20 @@ const appendInData = (data, callback) => {
     Array.from(data).forEach(data => {
         appendInData(data, (cEle) => {
             xEle.append(cEle);
+        });
+    });
+}
+
+// 重新填充元素
+const resetInData = (xhearEle, childsData) => {
+    // 新添加
+    xhearEle.empty();
+
+    // 添加进元素
+    childsData.forEach(data => {
+        appendInData(data, xEle => {
+            // 首个填入
+            xhearEle.append(xEle);
         });
     });
 }
@@ -353,16 +352,17 @@ const renderEle = (ele) => {
     // 创建渲染器
     xhearEle.watch("render", (childsData, e) => {
         if (e.type === "new") {
-            // 新添加
-            xhearEle.empty();
+            // // 新添加
+            // xhearEle.empty();
 
-            // 添加进元素
-            childsData.forEach(data => {
-                appendInData(data, xEle => {
-                    // 首个填入
-                    xhearEle.append(xEle);
-                });
-            });
+            // // 添加进元素
+            // childsData.forEach(data => {
+            //     appendInData(data, xEle => {
+            //         // 首个填入
+            //         xhearEle.append(xEle);
+            //     });
+            // });
+            resetInData(xhearEle, childsData);
             return;
         }
         // 后续修改操作，就没有必要全部渲染一遍了
@@ -390,6 +390,7 @@ const renderEle = (ele) => {
                 case 'shift':
                     index = 0;
                     removeCount = 1;
+                    newDatas = [];
                     break;
                 case 'unshfit':
                     index = 0;
@@ -404,10 +405,15 @@ const renderEle = (ele) => {
                 case 'pop':
                     index = tarDataEle.children().length;
                     removeCount = 1;
+                    newDatas = [];
                     break;
                 case 'copyWithin':
                 case 'fill':
+                    // 重新填充数据
+                    resetInData(xhearEle, childsData);
+                    return;
                 case 'reverse':
+                    return
                 case 'sort':
                     return;
             };
@@ -426,7 +432,7 @@ const renderEle = (ele) => {
             let indexEle = tarDataEle.children().eq(index);
 
             // 后置数据添加
-            newDatas && newDatas.forEach(data => {
+            newDatas.forEach(data => {
                 appendInData(data, (xEle) => {
                     if (0 in indexEle) {
                         // before
