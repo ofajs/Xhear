@@ -310,7 +310,11 @@ let XDataProto = {
                 setInMethod(this, "array-" + methodName);
 
                 // 继承方法
-                Array.prototype[methodName].apply(tar, args);
+                if (methodName === "copyWithin") {
+                    XDataFnCopyWithin.apply(tar, args);
+                } else {
+                    Array.prototype[methodName].apply(tar, args);
+                }
                 break;
             default:
                 // 禁止事件驱动 type:设置值
@@ -623,10 +627,47 @@ Object.keys(XDataProto).forEach(k => {
     });
 });
 
+// copyWithin
+let XDataFnCopyWithin = function (target, start, end) {
+    // 范围内的数据
+    let areaData = this.slice(start, end);
+
+    let hasXData = areaData.some(e => e instanceof XData);
+    let lastId = this.length - 1;
+
+    if (hasXData) {
+        let areaId = 0;
+        // 覆盖
+        this.forEach((e, i) => {
+            if (i >= target && i < lastId) {
+                let d = areaData[areaId];
+                if (d instanceof XData) {
+                    d = createXData(d.object, this, i);
+                }
+                this[i] = d;
+                areaId++;
+            }
+        });
+        return this;
+    } else {
+        // 没有XData的话，还是原生性能好点
+        return Array.prototype.copyWithin.call(this, target, start, end);
+    }
+}
+
+// 特殊方法 copyWithin
+defineProperty(XDataFn, 'copyWithin', {
+    writable: true,
+    value(...args) {
+        // throw `can't use copyWithin`;
+        return XDataFnCopyWithin.apply(this, args);
+    }
+});
+
 // 更新数组方法
 // 参数不会出现函数的方法
-['splice', 'shift', 'unshfit', 'push', 'pop', 'copyWithin', 'fill', 'reverse'].forEach(k => {
-    let oldFunc = Array.prototype[k];
+['splice', 'shift', 'unshfit', 'push', 'pop', 'fill', , 'reverse', 'copyWithin'].forEach(k => {
+    let oldFunc = XDataFn[k];
     oldFunc && defineProperty(XDataFn, k, {
         value(...args) {
             // 设定禁止事件驱动

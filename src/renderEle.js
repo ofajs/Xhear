@@ -37,6 +37,8 @@ const appendInData = (data, callback) => {
 
 // 重新填充元素
 const resetInData = (xhearEle, childsData) => {
+    xhearEle.hide();
+
     // 新添加
     xhearEle.empty();
 
@@ -47,6 +49,8 @@ const resetInData = (xhearEle, childsData) => {
             xhearEle.append(xEle);
         });
     });
+
+    xhearEle.show();
 }
 
 const renderEle = (ele) => {
@@ -225,16 +229,6 @@ const renderEle = (ele) => {
     // 创建渲染器
     xhearEle.watch("render", (childsData, e) => {
         if (e.type === "new") {
-            // // 新添加
-            // xhearEle.empty();
-
-            // // 添加进元素
-            // childsData.forEach(data => {
-            //     appendInData(data, xEle => {
-            //         // 首个填入
-            //         xhearEle.append(xEle);
-            //     });
-            // });
             resetInData(xhearEle, childsData);
             return;
         }
@@ -249,6 +243,17 @@ const renderEle = (ele) => {
         let value = target[keyName];
 
         if (trend.type == "array-method") {
+            // 先处理特殊的
+            switch (trend.methodName) {
+                case 'copyWithin':
+                case 'fill':
+                case 'reverse':
+                case 'sort':
+                    // 重新填充数据
+                    resetInData(xhearEle, childsData);
+                    return;
+            }
+
             // 三个基本要素
             let index, removeCount, newDatas;
 
@@ -280,15 +285,6 @@ const renderEle = (ele) => {
                     removeCount = 1;
                     newDatas = [];
                     break;
-                case 'copyWithin':
-                case 'fill':
-                    // 重新填充数据
-                    resetInData(xhearEle, childsData);
-                    return;
-                case 'reverse':
-                    return
-                case 'sort':
-                    return;
             };
             // 走splice通用流程
             // 最后的id
