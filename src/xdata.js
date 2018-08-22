@@ -33,6 +33,13 @@ let clearTick;
 })();
 
 // business function
+const trendClone = trend => {
+    let newTrend = deepClone(trend);
+    if (trend.args) {
+        newTrend.args = trend.args.slice();
+    }
+    return newTrend;
+}
 // trend清理器
 const trendClear = (tar, tid) => {
     tar[XDATATRENDIDS].push(tid);
@@ -344,6 +351,7 @@ let XDataProto = {
                 for (let k in options) {
                     reverseOptions[options[k]] = k;
                 }
+                // 不需要保留trend的参数，所以直接深复制
                 func1 = e => {
                     let trendData = deepClone(e.trend);
                     let replaceKey = reverseOptions[e.key];
@@ -364,31 +372,31 @@ let XDataProto = {
             case "array":
                 func1 = e => {
                     if (options.includes(e.key)) {
-                        this.entrend(e.trend);
+                        this.entrend(deepClone(e.trend));
                     }
                 }
                 func2 = e => {
                     if (options.includes(e.key)) {
-                        target.entrend(e.trend);
+                        target.entrend(deepClone(e.trend));
                     }
                 }
                 break;
             case "string":
                 func1 = e => {
                     if (e.key === options) {
-                        this.entrend(e.trend);
+                        this.entrend(deepClone(e.trend));
                     }
                 }
                 func2 = e => {
                     if (e.key === options) {
-                        target.entrend(e.trend);
+                        target.entrend(deepClone(e.trend));
                     }
                 }
                 break;
             default:
                 // undefined
-                func1 = e => this.entrend(e.trend);
-                func2 = e => target.entrend(e.trend);
+                func1 = e => this.entrend(deepClone(e.trend));
+                func2 = e => target.entrend(deepClone(e.trend));
         }
 
         // 绑定函数
@@ -754,7 +762,7 @@ const emitChange = (tar, key, val, oldVal, type, trend) => {
     } = tar;
 
     if (host) {
-        emitChange(host, hostkey, tar, tar, "update", deepClone(trend));
+        emitChange(host, hostkey, tar, tar, "update", trendClone(trend));
     }
 }
 
