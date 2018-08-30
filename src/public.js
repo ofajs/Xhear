@@ -74,7 +74,9 @@ const getTagData = (ele) => {
 const createShearObject = (ele) => {
     let xvData = ele[XHEAROBJKEY];
     let e = create(xvData);
+    xvData._pausedEmit = 1;
     e.push(ele);
+    delete xvData._pausedEmit;
     return e;
 }
 

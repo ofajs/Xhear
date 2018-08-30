@@ -2,7 +2,7 @@
 let rid = 100;
 
 // 填充 value tag
-const appendInData = (data, callback) => {
+const getXEleByData = (data) => {
     // 获取tag
     let {
         tag
@@ -24,15 +24,12 @@ const appendInData = (data, callback) => {
     // 合并数据
     assign(xEle, cData);
 
-    // 执行callback
-    callback(xEle);
-
     // 递归添加子元素
     Array.from(data).forEach(data => {
-        appendInData(data, (cEle) => {
-            xEle.append(cEle);
-        });
+        xEle.append(getXEleByData(data));
     });
+
+    return xEle;
 }
 
 // 重新填充元素
@@ -44,10 +41,7 @@ const resetInData = (xhearEle, childsData) => {
 
     // 添加进元素
     childsData.forEach(data => {
-        appendInData(data, xEle => {
-            // 首个填入
-            xhearEle.append(xEle);
-        });
+        xhearEle.append(getXEleByData(data));
     });
 
     xhearEle.show();
@@ -228,19 +222,24 @@ const renderEle = (ele) => {
 
     // 创建渲染器
     xhearEle.watch("render", (childsData, e) => {
-        if (e.type === "new") {
+        // 获取目标对象、key和值
+        let {
+            trend
+        } = e;
+
+        if (e.type === "new" || (trend && trend.keys.length === 1)) {
             resetInData(xhearEle, childsData);
             return;
         }
         // 后续修改操作，就没有必要全部渲染一遍了
         // 针对性渲染
-
-        // 获取目标对象、key和值
+        // let [target, keyName] = $.detrend(xhearEle, trend);
+        // let value = target[keyName];
         let {
-            trend
-        } = e;
-        let [target, keyName] = $.detrend(xhearEle, trend);
-        let value = target[keyName];
+            target,
+            key,
+            value
+        } = detrend(xhearEle, trend);
 
         if (trend.type == "array-method") {
             // 先处理特殊的
@@ -258,7 +257,7 @@ const renderEle = (ele) => {
             let index, removeCount, newDatas;
 
             // 获取目标元素
-            let tarDataEle = xhearEle.find(`[xv-rid="${value._id}"]`);
+            let tarDataEle = xhearEle.find(`[xv-rid="${target._id}"]`);
 
             switch (trend.methodName) {
                 case "splice":
@@ -302,24 +301,24 @@ const renderEle = (ele) => {
 
             // 后置数据添加
             newDatas.forEach(data => {
-                appendInData(data, (xEle) => {
-                    if (0 in indexEle) {
-                        // before
-                        indexEle.before(xEle);
-                    } else {
-                        // append
-                        tarDataEle.append(xEle);
-                    }
-                });
+                let xEle = getXEleByData(data);
+
+                if (0 in indexEle) {
+                    // before
+                    indexEle.before(xEle);
+                } else {
+                    // append
+                    tarDataEle.append(xEle);
+                }
             });
         } else {
-            if (/\D/.test(keyName)) {
+            if (/\D/.test(key)) {
                 // 改变属性值
                 // 获取元素
                 let targetEle = xhearEle.find(`[xv-rid="${target._id}"]`);
 
                 // 修改值
-                targetEle[keyName] = value;
+                targetEle[key] = value;
             } else {
                 // 替换旧元素
                 let {
@@ -331,12 +330,22 @@ const renderEle = (ele) => {
                     let oldEle = xhearEle.find(`[xv-rid="${oldId}"]`);
 
                     // 向后添加元素
-                    appendInData(value, (xEle) => {
-                        oldEle.after(xEle);
-                    });
+                    oldEle.after(getXEleByData(value));
 
                     // 删除旧元素
                     oldEle.remove();
+                } else {
+                    // 直接替换数组，而不是通过push添加的
+                    // 直接向后添加元素
+                    let xEle = getXEleByData(value);
+
+                    // 在render数组下的数据
+                    if (target._host._id === xhearEle._id) {
+                        xhearEle.append(xEle);
+                    } else {
+                        let parEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+                        parEle.append(getXEleByData(value));
+                    }
                 }
             }
         }
