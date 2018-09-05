@@ -233,31 +233,28 @@ const renderEle = (ele) => {
         }
         // 后续修改操作，就没有必要全部渲染一遍了
         // 针对性渲染
-        // let [target, keyName] = $.detrend(xhearEle, trend);
-        // let value = target[keyName];
         let {
             target,
             key,
             value
         } = detrend(xhearEle, trend);
 
+        // 获取目标元素
+        let tarDataEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+
         if (trend.type == "array-method") {
             // 先处理特殊的
             switch (trend.methodName) {
-                case 'copyWithin':
                 case 'fill':
                 case 'reverse':
                 case 'sort':
                     // 重新填充数据
-                    resetInData(xhearEle, childsData);
+                    resetInData(tarDataEle, target);
                     return;
             }
 
             // 三个基本要素
             let index, removeCount, newDatas;
-
-            // 获取目标元素
-            let tarDataEle = xhearEle.find(`[xv-rid="${target._id}"]`);
 
             switch (trend.methodName) {
                 case "splice":
@@ -322,8 +319,10 @@ const renderEle = (ele) => {
             } else {
                 // 替换旧元素
                 let {
-                    oldId
+                    oldVal
                 } = trend;
+
+                let oldId = oldVal._id;
 
                 if (oldId) {
                     // 获取元素
