@@ -2949,44 +2949,91 @@
             return reData;
         },
         // 异步监听数据变动
-        listen(expr, callback, reduceTime = 10) {
+        // listen(expr, callback, reduceTime = 10) {
+        listen(prop, expr, callback, reduceTime = 10) {
+            // 主体watch监听函数
             let watchFunc;
-            if (callback) {
-                // 先记录一次值
-                let data = JSON.stringify(this.seek(expr).map(e => e._id));
 
-                let timer;
+            // 修正参数
+            let propType = getType(prop);
+            if (propType.search('function') > -1) {
+                // 函数
+                callback = prop;
+                prop = null;
+                expr = null;
+            } else if (propType === "string" || propType == "number") {
+                // 判断是expr还是prop
+                if (/\[.+\]/.test(prop)) {
+                    callback = expr;
+                    expr = prop;
+                    prop = null;
+                } else {
+                    // prop就位
+                    let exprType = getType(expr);
+                    if (exprType.search('function') > -1) {
+                        callback = expr;
+                        expr = null;
+                    }
+                }
+            }
 
-                this.watch(watchFunc = e => {
-                    let tempData = this.seek(expr);
-                    let tempId = tempData.map(e => e._id);
+            let timer;
 
-                    if (JSON.stringify(tempId) !== data) {
+            // 判断是否有expr，存在的话先记录一次id
+            let backupData;
+            // 新增和删除的
+            let addArr = [],
+                removeArr = [];
+            if (expr) {
+                if (prop) {
+                    let tar = this[prop];
+                    isXData(tar) && (backupData = JSON.stringify(tar.seek(expr).map(e => e._id)));
+                } else {
+                    backupData = JSON.stringify(this.seek(expr).map(e => e._id));
+                }
+            }
+
+            // 主体监听函数
+            this.watch(watchFunc = (e) => {
+                if (expr) {
+                    let tempData, tempId;
+
+                    // prop存在且不等的情况，就不跑了
+                    if (prop) {
+                        // 重新获取 tar[prop]
+                        let tar = this[prop];
+                        // 不是相应key就返回
+                        if (prop != e.trend.keys[0] || !isXData(tar)) {
+                            return;
+                        }
+
+                        // 查找数据
+                        tempData = tar.seek(expr);
+                        tempId = tempData.map(e => e._id);
+
+                    } else {
+                        tempData = this.seek(expr);
+                        tempId = tempData.map(e => e._id);
+                    }
+
+                    if (JSON.stringify(tempId) !== backupData) {
                         clearTimeout(timer);
                         timer = setTimeout(() => {
                             callback(tempData);
                         }, reduceTime);
                     }
-                });
-            } else if (expr) {
-                callback = expr;
+                } else {
+                    // prop存在且不等的情况，就不跑了
+                    if (prop && prop != e.trend.keys[0]) {
+                        return;
+                    }
 
-                let timer;
-
-                // 新增和删除的
-                let addArr = [],
-                    removeArr = [];
-
-                this.watch(watchFunc = function (e) {
                     // 清除计时器
                     clearTimeout(timer);
 
-                    // 解析 trend 数据
-                    let trendData = this.detrend(e.trend);
-
                     // 新家新增和删除列表
-                    addArr.push(...trendData.add);
-                    removeArr.push(...trendData.remove);
+                    addArr.push(...e.trend.add);
+                    removeArr.push(...e.trend.remove);
 
                     // 设置计时器
                     timer = setTimeout(() => {
@@ -3001,27 +3048,30 @@
                         addArr = [];
                         removeArr = [];
                     }, reduceTime);
-                });
-            }
+                }
+            });
 
             this[LISTEN].push({
-                expr,
+                // prop,
+                // expr,
                 callback,
                 watchFunc
             });
             return this;
         },
         // 取消监听数据变动
-        unlisten(expr, callback) {
-            this[LISTEN].forEach(o => {
-                if (o.expr === expr && o.callback === callback) {
+        unlisten(callback) {
+            let index;
+            this[LISTEN].forEach((o, i) => {
+                if (o.callback === callback) {
                     let {
                         watchFunc
                     } = o;
-
+                    index = i;
                     this.unwatch(watchFunc);
                 }
             });
+            this[LISTEN].splice(index, 1);
             return this;
         },
         // 转换数据
