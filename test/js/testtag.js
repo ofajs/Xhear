@@ -66,3 +66,39 @@ xhear.register({
     //     }
     // }
 });
+
+
+xhear.register({
+    tag: "testsyncele",
+    temp: `
+        <div xv-content></div>
+    `,
+    renderMap: {
+        t1: "t11",
+        t2: "t22"
+    }
+});
+
+
+xhear.register({
+    tag: "t11",
+    data: {
+        tname: "t11 default",
+    },
+    temp: `
+        <div style="color:yellow;">title:{{tname}}</div>
+        <div xv-content style="padding-left:15px;border-left:yellow solid 1px;"></div>
+        <div style="color:yellow;">footer:{{tname}} </div>
+    `
+});
+xhear.register({
+    tag: "t22",
+    data: {
+        tname: "t22 default",
+    },
+    temp: `
+        <div style="color:blue;">title:{{tname}}</div>
+        <div xv-content style="padding-left:15px;border-left:blue solid 1px;"></div>
+        <div style="color:blue;">footer:{{tname}} </div>
+    `
+});

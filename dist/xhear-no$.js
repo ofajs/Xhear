@@ -131,11 +131,15 @@
     let rid = 100;
 
     // 填充 value tag
-    const getXEleByData = (data) => {
+    const getXEleByData = (data, tagMap) => {
         // 获取tag
         let {
             tag
         } = data;
+
+        if (tagMap && tagMap[tag]) {
+            tag = tagMap[tag];
+        }
 
         // 获取深复制，删除tag、数字和length
         let cData = {};
@@ -155,14 +159,14 @@
 
         // 递归添加子元素
         Array.from(data).forEach(data => {
-            xEle.append(getXEleByData(data));
+            xEle.append(getXEleByData(data, tagMap));
         });
 
         return xEle;
     }
 
     // 重新填充元素
-    const resetInData = (xhearEle, childsData) => {
+    const resetInData = (xhearEle, childsData, tagMap) => {
         xhearEle.hide();
 
         // 新添加
@@ -170,7 +174,7 @@
 
         // 添加进元素
         childsData.forEach(data => {
-            xhearEle.append(getXEleByData(data));
+            xhearEle.append(getXEleByData(data, tagMap));
         });
 
         xhearEle.show();
@@ -357,7 +361,7 @@
             } = e;
 
             if (e.type === "new" || (trend && trend.keys.length === 1)) {
-                resetInData(xhearEle, childsData);
+                resetInData(xhearEle, childsData, regData.renderMap);
                 return;
             }
             // 后续修改操作，就没有必要全部渲染一遍了
@@ -378,7 +382,7 @@
                     case 'reverse':
                     case 'sort':
                         // 重新填充数据
-                        resetInData(tarDataEle, target);
+                        resetInData(tarDataEle, target, regData.renderMap);
                         return;
                 }
 
@@ -427,7 +431,7 @@
 
                 // 后置数据添加
                 newDatas.forEach(data => {
-                    let xEle = getXEleByData(data);
+                    let xEle = getXEleByData(data, regData.renderMap);
 
                     if (0 in indexEle) {
                         // before
@@ -458,21 +462,21 @@
                         let oldEle = xhearEle.find(`[xv-rid="${oldId}"]`);
 
                         // 向后添加元素
-                        oldEle.after(getXEleByData(value));
+                        oldEle.after(getXEleByData(value, regData.renderMap));
 
                         // 删除旧元素
                         oldEle.remove();
                     } else {
                         // 直接替换数组，而不是通过push添加的
                         // 直接向后添加元素
-                        let xEle = getXEleByData(value);
+                        let xEle = getXEleByData(value, regData.renderMap);
 
                         // 在render数组下的数据
                         if (target._host._id === xhearEle._id) {
                             xhearEle.append(xEle);
                         } else {
                             let parEle = xhearEle.find(`[xv-rid="${target._id}"]`);
-                            parEle.append(getXEleByData(value));
+                            parEle.append(getXEleByData(value, regData.renderMap));
                         }
                     }
                 }
@@ -1777,8 +1781,8 @@
             data: {},
             // 直接监听属性变动对象
             watch: {},
-            // 是否渲染value
-            // renderValue: 0,
+            // render tag 映射
+            // renderMap:{},
             // 原型链上的方法
             // proto: {},
             // 初始化完成后触发的事件

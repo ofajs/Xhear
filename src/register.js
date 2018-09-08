@@ -37,8 +37,8 @@ const register = (options) => {
         data: {},
         // 直接监听属性变动对象
         watch: {},
-        // 是否渲染value
-        // renderValue: 0,
+        // render tag 映射
+        // renderMap:{},
         // 原型链上的方法
         // proto: {},
         // 初始化完成后触发的事件
