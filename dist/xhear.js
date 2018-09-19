@@ -913,7 +913,7 @@ const initEvent = event => {
 }
 
 let MOUSEEVENT = MouseEvent;
-let TOUCHEVENT = TouchEvent;
+let TOUCHEVENT = glo.TouchEvent || Event;
 // 修正 Event class 用的数据表
 let eventsMap = {
     click: MOUSEEVENT,
@@ -3019,11 +3019,13 @@ let XDataProto = {
                     tempId = tempData.map(e => e._id);
                 }
 
-                if (JSON.stringify(tempId) !== backupData) {
+                let b_data = JSON.stringify(tempId);
+                if (b_data !== backupData) {
                     clearTimeout(timer);
                     timer = setTimeout(() => {
                         callback(tempData);
                     }, reduceTime);
+                    backupData = b_data;
                 }
             } else {
                 // prop存在且不等的情况，就不跑了
@@ -3207,7 +3209,7 @@ Object.keys(XDataProto).forEach(k => {
         value(...args) {
             // 数组方法
             return setXData({
-                xdata: this[GETXDATA], 
+                xdata: this[GETXDATA],
                 receiver: this,
                 type: "array-method",
                 methodName,
