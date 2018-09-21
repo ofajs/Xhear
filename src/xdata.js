@@ -1052,13 +1052,39 @@ let XDataProto = {
         if (0 in args) {
             if (getType(keyName) === "number") {
                 // 删除数组内相应index的数据
-                this.splice(keyName, 1);
+                let reData = this.splice(keyName, 1)[0];
+
+                if (isXData(reData)) {
+                    reData._host = null;
+                    reData.clear();
+                }
             } else {
-                delete this[keyName];
+                if (isXData(this[keyName])) {
+                    this[keyName].clear();
+                } else {
+                    delete this[keyName];
+                }
             }
         } else {
             if (this.host) {
                 delete this.host[this.hostkey];
+            }
+
+            // 清除内部绑定的函数
+            // 清除 listen
+            this[LISTEN].forEach(e => {
+                this.unlisten(e.callback);
+            });
+
+            // 清除 sync
+            this[XDATASYNCS].forEach(e => {
+                this.unsync(e.opp, e.options);
+            });
+
+            // 清除 watch
+            let xdataEvents = this[XDATAEVENTS];
+            for (let k in xdataEvents) {
+                delete xdataEvents[k];
             }
         }
     },
