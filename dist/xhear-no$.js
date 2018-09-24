@@ -360,7 +360,7 @@
                 trend
             } = e;
 
-            if (e.type === "new" || (trend && trend.keys.length === 1)) {
+            if (e.type === "new" || (trend && !trend.methodName && trend.keys.length === 1)) {
                 resetInData(xhearEle, childsData, regData.renderMap);
                 return;
             }
@@ -373,7 +373,13 @@
             } = detrend(xhearEle, trend);
 
             // 获取目标元素
-            let tarDataEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+            let tarDataEle;
+
+            if (trend.keys.length == 1 && trend.keys[0] == "render") {
+                tarDataEle = xhearEle;
+            } else {
+                tarDataEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+            }
 
             if (trend.type == "array-method") {
                 // 先处理特殊的
@@ -417,7 +423,7 @@
                 };
                 // 走splice通用流程
                 // 最后的id
-                let lastRemoveId = index + removeCount;
+                let lastRemoveId = parseInt(index) + parseInt(removeCount);
 
                 // 根据数据删除
                 (removeCount > 0) && tarDataEle.children().each((i, e) => {
