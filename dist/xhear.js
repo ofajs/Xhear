@@ -2162,6 +2162,26 @@
     // business function
     const isXData = obj => obj instanceof XData;
 
+    // 清除xdata的临时数据
+    const clearXData = tar => {
+        // 清除内部绑定的函数
+        // 清除 listen
+        tar[LISTEN].forEach(e => {
+            tar.unlisten(e.callback);
+        });
+
+        // 清除 sync
+        tar[XDATASYNCS].forEach(e => {
+            tar.unsync(e.opp, e.options);
+        });
+
+        // 清除 watch
+        let xdataEvents = tar[XDATAEVENTS];
+        for (let k in xdataEvents) {
+            delete xdataEvents[k];
+        }
+    }
+
     // 获取事件寄宿对象
     const getEventObj = (tar, eventName) => tar[XDATAEVENTS][eventName] || (tar[XDATAEVENTS][eventName] = []);
 
@@ -3123,41 +3143,25 @@
         clear(...args) {
             let [keyName] = args;
             if (0 in args) {
-                if (getType(keyName) === "number") {
+                if (!/\D/.test(keyName)) {
                     // 删除数组内相应index的数据
                     let reData = this.splice(keyName, 1)[0];
 
                     if (isXData(reData)) {
                         reData._host = null;
-                        reData.clear();
+                        clearXData(reData);
                     }
                 } else {
-                    if (isXData(this[keyName])) {
-                        this[keyName].clear();
-                    } else {
-                        delete this[keyName];
+                    let tar = this[keyName];
+                    delete this[keyName];
+
+                    if (isXData(tar)) {
+                        clearXData(tar);
                     }
                 }
             } else {
-                if (this.host) {
-                    delete this.host[this.hostkey];
-                }
-
-                // 清除内部绑定的函数
-                // 清除 listen
-                this[LISTEN].forEach(e => {
-                    this.unlisten(e.callback);
-                });
-
-                // 清除 sync
-                this[XDATASYNCS].forEach(e => {
-                    this.unsync(e.opp, e.options);
-                });
-
-                // 清除 watch
-                let xdataEvents = this[XDATAEVENTS];
-                for (let k in xdataEvents) {
-                    delete xdataEvents[k];
+                if (this._host) {
+                    this._host.clear(this._hostkey);
                 }
             }
         },
@@ -3452,7 +3456,7 @@
             // 将剩余的 xv-content 还原回上一级去
             elem.find(`[xv-shadow="${renderId}"][xv-content]`).each((i, e) => {
                 // 获取子元素数组
-                _$(e).before(e.childNodes).remove();
+                0 in e.childNodes && (_$(e).before(e.childNodes).remove());
             });
         }
 
