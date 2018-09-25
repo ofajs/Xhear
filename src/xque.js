@@ -913,7 +913,7 @@ const initEvent = event => {
 }
 
 let MOUSEEVENT = MouseEvent;
-let TOUCHEVENT = TouchEvent;
+let TOUCHEVENT = glo.TouchEvent || Event;
 // 修正 Event class 用的数据表
 let eventsMap = {
     click: MOUSEEVENT,

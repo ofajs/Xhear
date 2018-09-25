@@ -63,7 +63,7 @@ const reduceCloneSvEle = (elem) => {
         // 将剩余的 xv-content 还原回上一级去
         elem.find(`[xv-shadow="${renderId}"][xv-content]`).each((i, e) => {
             // 获取子元素数组
-            _$(e).before(e.childNodes).remove();
+            0 in e.childNodes && (_$(e).before(e.childNodes).remove());
         });
     }
 

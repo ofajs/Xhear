@@ -1,6 +1,56 @@
 // 元素自定义组件id
 let rid = 100;
 
+// 填充 value tag
+const getXEleByData = (data, tagMap) => {
+    // 获取tag
+    let {
+        tag
+    } = data;
+
+    if (tagMap && tagMap[tag]) {
+        tag = tagMap[tag];
+    }
+
+    // 获取深复制，删除tag、数字和length
+    let cData = {};
+    Object.keys(data).forEach(k => {
+        if (/\D/.test(k)) {
+            cData[k] = data[k];
+        }
+    });
+    delete cData.tag;
+    delete cData.length;
+
+    // 生成元素
+    let xEle = $(`<${tag} xv-ele xv-rid="${data._id}"></${tag}>`);
+
+    // 合并数据
+    assign(xEle, cData);
+
+    // 递归添加子元素
+    Array.from(data).forEach(data => {
+        xEle.append(getXEleByData(data, tagMap));
+    });
+
+    return xEle;
+}
+
+// 重新填充元素
+const resetInData = (xhearEle, childsData, tagMap) => {
+    xhearEle.hide();
+
+    // 新添加
+    xhearEle.empty();
+
+    // 添加进元素
+    childsData.forEach(data => {
+        xhearEle.append(getXEleByData(data, tagMap));
+    });
+
+    xhearEle.show();
+}
+
 const renderEle = (ele) => {
     if (!hasAttr(ele, 'xv-ele')) {
         return;
@@ -27,8 +77,6 @@ const renderEle = (ele) => {
 
     // 初始化对象
     let xhearOriObj = new regData.XHear({});
-    xhearOriObj._canEmitWatch = 1;
-    // xhearOriObj._exkeys = [];
     let xhearObj = new Proxy(xhearOriObj, XDataHandler);
     ele[XHEAROBJKEY] = xhearObj;
 
@@ -176,8 +224,149 @@ const renderEle = (ele) => {
         }
     }
 
+    // 创建渲染器
+    xhearEle.watch("render", (childsData, e) => {
+        // 获取目标对象、key和值
+        let {
+            trend
+        } = e;
+
+        if (e.type === "new" || (trend && !trend.methodName && trend.keys.length === 1)) {
+            resetInData(xhearEle, childsData, regData.renderMap);
+            return;
+        }
+        // 后续修改操作，就没有必要全部渲染一遍了
+        // 针对性渲染
+        let {
+            target,
+            key,
+            value
+        } = detrend(xhearEle, trend);
+
+        // 获取目标元素
+        let tarDataEle;
+
+        if (trend.keys.length == 1 && trend.keys[0] == "render") {
+            tarDataEle = xhearEle;
+        } else {
+            tarDataEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+        }
+
+        if (trend.type == "array-method") {
+            // 先处理特殊的
+            switch (trend.methodName) {
+                case 'fill':
+                case 'reverse':
+                case 'sort':
+                    // 重新填充数据
+                    resetInData(tarDataEle, target, regData.renderMap);
+                    return;
+            }
+
+            // 三个基本要素
+            let index, removeCount, newDatas;
+
+            switch (trend.methodName) {
+                case "splice":
+                    // 先获取要删减的数量
+                    [index, removeCount, ...newDatas] = trend.args;
+                    break;
+                case 'shift':
+                    index = 0;
+                    removeCount = 1;
+                    newDatas = [];
+                    break;
+                case 'unshfit':
+                    index = 0;
+                    removeCount = 0;
+                    newDatas = trend.args;
+                    break;
+                case 'push':
+                    index = tarDataEle.children().length;
+                    removeCount = 0;
+                    newDatas = trend.args;
+                    break;
+                case 'pop':
+                    index = tarDataEle.children().length;
+                    removeCount = 1;
+                    newDatas = [];
+                    break;
+            };
+            // 走splice通用流程
+            // 最后的id
+            let lastRemoveId = parseInt(index) + parseInt(removeCount);
+
+            // 根据数据删除
+            (removeCount > 0) && tarDataEle.children().each((i, e) => {
+                if (i >= index && i < lastRemoveId) {
+                    $(e).remove();
+                }
+            });
+
+            // 获取相应id的元素
+            let indexEle = tarDataEle.children().eq(index);
+
+            // 后置数据添加
+            newDatas.forEach(data => {
+                let xEle = getXEleByData(data, regData.renderMap);
+
+                if (0 in indexEle) {
+                    // before
+                    indexEle.before(xEle);
+                } else {
+                    // append
+                    tarDataEle.append(xEle);
+                }
+            });
+        } else {
+            if (/\D/.test(key)) {
+                // 改变属性值
+                // 获取元素
+                let targetEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+
+                // 修改值
+                targetEle[key] = value;
+            } else {
+                // 替换旧元素
+                let {
+                    oldVal
+                } = trend;
+
+                let oldId = oldVal._id;
+
+                if (oldId) {
+                    // 获取元素
+                    let oldEle = xhearEle.find(`[xv-rid="${oldId}"]`);
+
+                    // 向后添加元素
+                    oldEle.after(getXEleByData(value, regData.renderMap));
+
+                    // 删除旧元素
+                    oldEle.remove();
+                } else {
+                    // 直接替换数组，而不是通过push添加的
+                    // 直接向后添加元素
+                    let xEle = getXEleByData(value, regData.renderMap);
+
+                    // 在render数组下的数据
+                    if (target._host._id === xhearEle._id) {
+                        xhearEle.append(xEle);
+                    } else {
+                        let parEle = xhearEle.find(`[xv-rid="${target._id}"]`);
+                        parEle.append(getXEleByData(value, regData.renderMap));
+                    }
+                }
+            }
+        }
+
+    });
+
     // 设置keys
-    xhearOriObj._exkeys = Object.keys(rData);
+    // 将value和render添加进key里
+    let exkeys = Object.keys(rData);
+    exkeys.includes('value') || (exkeys.push('value'));
+    exkeys.includes('render') || (exkeys.push('render'));
+    xhearOriObj._exkeys = exkeys;
 
     // watch监听
     if (watchData) {
@@ -202,17 +391,14 @@ const renderEle = (ele) => {
         }
     }
 
-    // 存在 value key
-    if ('value' in rData) {
-        defineProperty(ele, 'value', {
-            get() {
-                return xhearObj.value;
-            },
-            set(d) {
-                xhearObj.value = d;
-            }
-        });
-    }
+    defineProperty(ele, 'value', {
+        get() {
+            return xhearObj.value;
+        },
+        set(d) {
+            xhearObj.value = d;
+        }
+    });
 
     // 设置数据
     for (let k in rData) {
