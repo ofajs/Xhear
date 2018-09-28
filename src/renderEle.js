@@ -23,7 +23,7 @@ const getXEleByData = (data, tagMap) => {
     delete cData.length;
 
     // 生成元素
-    let xEle = $(`<${tag} xv-ele xv-rid="${data._id}"></${tag}>`);
+    let xEle = $(`<${tag} xv-ele xv-render-ele xv-rid="${data._id}"></${tag}>`);
 
     // 合并数据
     assign(xEle, cData);
@@ -282,12 +282,12 @@ const renderEle = (ele) => {
                     newDatas = trend.args;
                     break;
                 case 'push':
-                    index = tarDataEle.children().length;
+                    index = tarDataEle.children('[xv-render-ele').length;
                     removeCount = 0;
                     newDatas = trend.args;
                     break;
                 case 'pop':
-                    index = tarDataEle.children().length;
+                    index = tarDataEle.children('[xv-render-ele').length;
                     removeCount = 1;
                     newDatas = [];
                     break;
@@ -297,14 +297,14 @@ const renderEle = (ele) => {
             let lastRemoveId = parseInt(index) + parseInt(removeCount);
 
             // 根据数据删除
-            (removeCount > 0) && tarDataEle.children().each((i, e) => {
+            (removeCount > 0) && tarDataEle.children('[xv-render-ele').each((i, e) => {
                 if (i >= index && i < lastRemoveId) {
                     $(e).remove();
                 }
             });
 
             // 获取相应id的元素
-            let indexEle = tarDataEle.children().eq(index);
+            let indexEle = tarDataEle.children('[xv-render-ele').eq(index);
 
             // 后置数据添加
             newDatas.forEach(data => {
