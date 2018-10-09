@@ -869,6 +869,9 @@ let XDataProto = {
     },
     // 超找数据
     seek(expr) {
+        if (!expr) {
+            return;
+        }
         let reData;
         let propMatch = expr.match(/\[.+?\]/g);
         if (!propMatch) {
