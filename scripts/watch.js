@@ -32,21 +32,10 @@ let mainFun = async () => {
     beforeCode = basefile;
 
     // 写入最终文件
-    fs.writeFile('dist/xhear-no$.js', basefile, 'utf8', (err) => {
+    fs.writeFile('dist/xhear.js', basefile, 'utf8', (err) => {
         if (err) throw err;
-        console.log('xhear-no$.js write succeed!' + count++);
+        console.log('xhear.js write succeed!' + count++);
     });
-
-    // 写入完整版
-    (async () => {
-        let code = await readFile('src/xque.js');
-        basefile = basefile.replace('// ----jQueryCode----', code);
-
-        fs.writeFile('dist/xhear.js', basefile, 'utf8', (err) => {
-            if (err) throw err;
-            console.log('xhear.js write succeed!' + count++);
-        });
-    })();
 }
 
 let readFileTimer;

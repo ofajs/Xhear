@@ -1,784 +1,1329 @@
-// COMMON
-// 事件key
-const XDATAEVENTS = "_events_" + getRandomId();
-// 数据绑定记录
-const XDATASYNCS = "_syncs_" + getRandomId();
-// 数据entrend id记录
-const XDATATRENDIDS = "_trend_" + getRandomId();
-// listen 记录
-const LISTEN = "_listen_" + getRandomId();
-
-// function
-let deepClone = obj => obj instanceof Object ? JSON.parse(JSON.stringify(obj)) : obj;
-// 异步执行的清理函数
-// 执行函数后，5000毫秒清理一次
-let clearTick;
-(() => {
-    // 函数容器
-    let funcs = [];
-    // 异步是否开启
-    let runing = 0;
-    clearTick = callback => {
-        funcs.push(callback);
-        if (!runing) {
-            setTimeout(() => {
-                runing = 0;
-                let b_funcs = funcs;
-                funcs = [];
-                b_funcs.forEach(func => func());
-            }, 5000);
-        }
-        runing = 1;
-    }
-})();
+// common
+const EVES = "_eves_" + getRandomId();
+const RUNARRMETHOD = "_runarrmethod_" + getRandomId();
+const WATCHHOST = "_watch_" + getRandomId();
+const SYNCHOST = "_synchost_" + getRandomId();
+const MODIFYHOST = "_modify_" + getRandomId();
+const MODIFYTIMER = "_modify_timer_" + getRandomId();
 
 // business function
-// trend清理器
-const trendClear = (tar, tid) => {
-    tar[XDATATRENDIDS].push(tid);
-    if (!tar._trendClear) {
-        tar._trendClear = 1;
-        clearTick(() => {
-            tar[XDATATRENDIDS].length = 0;
-            tar._trendClear = 0;
+// 是否XData
+let isXData = obj => obj instanceof XData;
+
+// 生成xdata对象
+const createXData = (obj, options) => {
+    let redata = obj;
+    switch (getType(obj)) {
+        case "object":
+        case "array":
+            redata = new XData(obj, options);
+            break;
+    }
+
+    return redata;
+};
+
+// 销毁数据绑定的事件函数
+const clearXdata = (xdata) => {
+    if (isXData(xdata)) {
+        // 更新状态
+        xdata.parent = null;
+        xdata.hostkey = null;
+        xdata.status = "readyDestory";
+
+        nextTick(() => {
+            if (xdata.parent && xdata.hostkey && xdata.status != "root") {
+                // 挂载其他对象上成功，修正状态
+                xdata.status = "binding";
+                return;
+            }
+
+            // 开始清扫所有绑定
+            // 先清扫 sync
+            xdata[SYNCHOST].forEach(e => {
+                xdata.unsync(e.opp);
+            });
+
+            // 清扫 watch
+            xdata[WATCHHOST] = {};
+
+            // 清扫 on
+            xdata[EVES] = {};
+
+            xdata[MODIFYHOST] = [];
+            clearTimeout(xdata[MODIFYTIMER]);
         });
     }
 }
 
-// 设置_inMethod属性
-const setInMethod = (obj, value) => defineProperty(obj, "_inMethod", {
-    configurable: true,
-    value
-});
-
-// 查找数据
-const seekData = (data, key, sVal) => {
-    let arr = [];
-
-    if (sVal === undefined) {
-        if (data.hasOwnProperty(key)) {
-            arr.push(data);
-        }
-    } else if (data[key] == sVal) {
-        arr.push(data);
+// 判断两个xdata数据是否相等
+let isXDataEqual = (xd1, xd2) => {
+    if (xd1 === xd2) {
+        return true;
     }
+}
+
+// virData用的数据映射方法
+const mapData = (data, options) => {
+    options.forEach(e => {
+        switch (e.type) {
+            case "map":
+                if (!isUndefined(data[e.key])) {
+                    data[e.toKey] = data[e.key];
+                    delete data[e.key];
+                }
+                break;
+        }
+    });
 
     for (let k in data) {
-        let val = data[k];
-        if (val instanceof XData) {
-            let sData = seekData(val, key, sVal);
-            sData.forEach(e => {
-                if (!arr.includes(e)) {
-                    arr.push(e);
-                }
-            });
+        let d = data[k];
+
+        if (d instanceof Object) {
+            mapData(d, options);
         }
     }
+}
 
+// 按条件判断数据是否符合条件
+const conditData = (exprKey, exprValue, exprType, exprEqType, tarData) => {
+    let reData = 0;
+
+    // 搜索数据
+    switch (exprType) {
+        case "keyValue":
+            let tarValue = tarData[exprKey];
+            switch (exprEqType) {
+                case "=":
+                    if (tarValue == exprValue) {
+                        reData = 1;
+                    }
+                    break;
+                case ":=":
+                    if (isXData(tarValue) && tarValue.findIndex(e => e == exprValue) > -1) {
+                        reData = 1;
+                    }
+                    break;
+                case "*=":
+                    if (getType(tarValue) == "string" && tarValue.search(exprValue) > -1) {
+                        reData = 1;
+                    }
+                    break;
+                case "~=":
+                    if (getType(tarValue) == "string" && tarValue.split(' ').findIndex(e => e == exprValue) > -1) {
+                        reData = 1;
+                    }
+                    break;
+            }
+            break;
+        case "hasValue":
+            switch (exprEqType) {
+                case "=":
+                    if (Object.values(tarData).findIndex(e => e == exprValue) > -1) {
+                        reData = 1;
+                    }
+                    break;
+                case ":=":
+                    Object.values(tarData).some(tarValue => {
+                        if (isXData(tarValue) && tarValue.findIndex(e => e == exprValue) > -1) {
+                            reData = 1;
+                            return true;
+                        }
+                    });
+                    break;
+                case "*=":
+                    Object.values(tarData).some(tarValue => {
+                        if (getType(tarValue) == "string" && tarValue.search(exprValue) > -1) {
+                            reData = 1;
+                            return true;
+                        }
+                    });
+                    break;
+                case "~=":
+                    Object.values(tarData).some(tarValue => {
+                        if (getType(tarValue) == "string" && tarValue.split(' ').findIndex(e => e == exprValue) > -1) {
+                            reData = 1;
+                            return true;
+                        }
+                    });
+                    break;
+            }
+            break;
+        case "hasKey":
+            if (tarData.hasOwnProperty(exprKey)) {
+                reData = 1;
+            }
+            break;
+    }
+
+    return reData;
+}
+
+// 查找数据
+let seekData = (data, exprObj) => {
+    let arr = [];
+
+    // 关键数据
+    let exprKey = exprObj.k,
+        exprValue = exprObj.v,
+        exprType = exprObj.type,
+        exprEqType = exprObj.eqType;
+
+    Object.keys(data).forEach(k => {
+        let tarData = data[k];
+
+        if (isXData(tarData)) {
+            // 判断是否可添加
+            let canAdd = conditData(exprKey, exprValue, exprType, exprEqType, tarData);
+
+            // 允许就添加
+            canAdd && arr.push(tarData);
+
+            // 查找子项
+            let newArr = seekData(tarData, exprObj);
+            arr.push(...newArr);
+        }
+    });
     return arr;
 }
 
-// 解析 trend data 到最终对象
-const detrend = (tar, trendData) => {
-    let key;
+// modifyId清理设置
+let readyClearModifyId = (xdata, modifyId) => {
+    let modifyHost = xdata[MODIFYHOST];
+    modifyHost.push(modifyId);
 
-    // 数组last id
-    let lastId = trendData.keys.length - 1;
-    trendData.keys.forEach((tKey, i) => {
-        if (i < lastId) {
-            tar = tar[tKey];
-        }
-        key = tKey;
-    });
-
-    return [tar, key];
+    // 适时回收
+    clearTimeout(xdata[MODIFYTIMER]);
+    xdata[MODIFYTIMER] = setTimeout(() => {
+        modifyHost.length = 0;
+        modifyHost = null;
+    }, 5000);
 }
 
-// 获取事件寄宿对象
-const getEventObj = (tar, eventName) => tar[XDATAEVENTS][eventName] || (tar[XDATAEVENTS][eventName] = []);
+// 获取或制作modifyId
+let getModifyId = (_this) => {
+    let {
+        _entrendModifyId
+    } = _this;
 
-// 触发事件
-const emitXDataEvent = (tar, eventName, args) => {
-    let eveArr = getEventObj(tar, eventName);
+    if (_entrendModifyId) {
+        // 拿到数据立刻删除
+        delete _this._entrendModifyId;
+    } else {
+        _entrendModifyId = getRandomId();
 
-    // 遍历事件对象
-    eveArr.forEach(callback => {
-        callback(...args);
-    });
+        readyClearModifyId(_this, _entrendModifyId);
+    }
+
+    return _entrendModifyId;
 }
 
-// 绑定事件
-const onXDataEvent = (tar, eventName, callback) => getEventObj(tar, eventName).push(callback);
-
-// 注销事件
-const unXDataEvent = (tar, eventName, callback) => {
-    let eveArr = getEventObj(tar, eventName);
-    let id = eveArr.indexOf(callback);
-    eveArr.splice(id, 1);
-};
-
-// class
-function XData(obj, host, hostkey) {
+// main class
+function XDataEvent(type, target) {
+    let enumerable = true;
     defineProperties(this, {
-        "_id": {
-            value: obj._id || getRandomId()
+        type: {
+            enumerable,
+            value: type
         },
-        // 事件寄宿对象
-        [XDATAEVENTS]: {
-            value: {}
-        },
-        // 数据绑定记录
-        [XDATASYNCS]: {
+        keys: {
+            enumerable,
             value: []
         },
-        // entrend id 记录
-        [XDATATRENDIDS]: {
-            value: []
+        target: {
+            enumerable,
+            value: target
         },
-        // listen 记录
-        [LISTEN]: {
-            value: []
-        },
-        // 是否开启trend清洁
-        "_trendClear": {
+        bubble: {
+            enumerable,
             writable: true,
-            value: 0
-        }
-    });
-
-    // 设置id
-    if (!obj._id) {
-        defineProperty(obj, "_id", {
-            value: this._id
-        });
-    }
-
-    // 判断是否有host
-    if (host) {
-        defineProperties(this, {
-            // 根对象
-            "root": {
-                value: host.root || host
-            },
-            // 父层对象
-            "host": {
-                value: host
-            },
-            "hostkey": {
-                value: hostkey
-            }
-        });
-    }
-
-    // 获取关键key数组
-    let keys = Object.keys(obj);
-    if (getType(obj) === "array") {
-        keys.push('length');
-    }
-
-    keys.forEach(k => {
-        // 获取值，getter,setter
-        let {
-            get,
-            set,
-            value
-        } = Object.getOwnPropertyDescriptor(obj, k);
-
-        if (get || set) {
-            defineProperty(this, k, {
-                get,
-                set
-            });
-        } else {
-            this[k] = createXData(value, this, k);
+            value: true
+        },
+        cancel: {
+            enumerable,
+            writable: true,
+            value: false
+        },
+        currentTarget: {
+            enumerable,
+            writable: true,
+            value: target
         }
     });
 }
 
-// xdata的原型
-let XDataFn = Object.create(Array.prototype);
-defineProperties(XDataFn, {
-    // 直接获取字符串
-    "string": {
+defineProperties(XDataEvent.prototype, {
+    // trend数据，用于给其他数据同步用的
+    trend: {
         get() {
-            return JSON.stringify(this);
-        }
-    },
-    // 直接获取对象类型
-    "object": {
-        get() {
-            return deepClone(this);
+            let {
+                modify
+            } = this;
+
+            if (!modify) {
+                return;
+            }
+
+            let reobj = {
+                genre: modify.genre,
+                keys: this.keys.slice()
+            };
+
+            defineProperty(reobj, "oldVal", {
+                value: modify.oldVal
+            });
+
+            switch (modify.genre) {
+                case "arrayMethod":
+                    var {
+                        methodName,
+                        args,
+                        modifyId
+                    } = modify;
+
+                    assign(reobj, {
+                        methodName,
+                        args,
+                        modifyId
+                    });
+                    break;
+                default:
+                    var {
+                        value,
+                        modifyId
+                    } = modify;
+
+                    if (isXData(value)) {
+                        value = value.object;
+                    }
+                    assign(reobj, {
+                        key: modify.key,
+                        value,
+                        modifyId
+                    });
+                    break;
+            }
+
+            return reobj;
         }
     }
 });
 
-// 原型链衔接
-XData.prototype = XDataFn;
+function WatchData(data) {
+    this.type = "watch";
+    assign(this, data);
+}
 
-// 原型链上的方法
-let XDataProto = {
-    // 监听变化
-    watch(key, callback) {
-        let arg1Type = getType(key);
-        if (arg1Type === "object") {
-            for (let k in key) {
-                this.watch(k, key[k]);
+function XData(obj, options = {}) {
+    // 生成代理对象
+    let proxyThis = new Proxy(this, XDataHandler);
+
+    // 数组的长度
+    let length = 0;
+
+    // 非数组数据合并
+    Object.keys(obj).forEach(k => {
+        // 值
+        let value = obj[k];
+
+        if (!/\D/.test(k)) {
+            // 数字key
+            k = parseInt(k);
+
+            if (k >= length) {
+                length = k + 1;
             }
-            return this;
-        } else if (arg1Type.search('function') > -1) {
-            callback = key;
-            key = "";
         }
-        onXDataEvent(this, 'watch-' + key, callback);
+
+        // 设置值
+        this[k] = createXData(value, {
+            parent: proxyThis,
+            hostkey: k
+        });
+    });
+
+    let opt = {
+        // status: "root",
+        // 设置数组长度
+        length,
+        // 事件寄宿对象
+        [EVES]: {},
+        // watch寄宿对象
+        [WATCHHOST]: {},
+        // sync 寄宿对象
+        [SYNCHOST]: [],
+        [MODIFYHOST]: [],
+        [MODIFYTIMER]: ""
+    };
+
+    // 设置不可枚举数据
+    setNotEnumer(this, opt);
+
+    // if (options.parent) {
+    defineProperties(this, {
+        status: {
+            writable: true,
+            value: options.parent ? "binding" : "root"
+        },
+        parent: {
+            writable: true,
+            value: options.parent
+        },
+        hostkey: {
+            writable: true,
+            value: options.hostkey
+        }
+    });
+    // }
+
+    // 返回Proxy对象
+    return proxyThis;
+}
+let XDataFn = XData.prototype = {};
+
+// 数组通用方法
+// 可运行的方法
+['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'includes'].forEach(methodName => {
+    let arrayFnFunc = Array.prototype[methodName];
+    if (arrayFnFunc) {
+        defineProperty(XDataFn, methodName, {
+            writable: true,
+            value(...args) {
+                return arrayFnFunc.apply(this, args);
+            }
+        });
+    }
+});
+
+// 会影响数组结构的方法
+// sort参数会出现函数，会导致不能sync数据的情况
+['pop', 'push', 'reverse', 'splice', 'shift', 'unshift'].forEach(methodName => {
+    let arrayFnFunc = Array.prototype[methodName];
+    if (arrayFnFunc) {
+        defineProperty(XDataFn, methodName, {
+            writable: true,
+            value(...args) {
+                // 设置不可执行setHandler
+                this[RUNARRMETHOD] = 1;
+
+                let mid = getModifyId(this);
+
+                let redata = arrayFnFunc.apply(this, args);
+
+                // 根据方法添加删除装填
+                switch (methodName) {
+                    case "shift":
+                    case "pop":
+                    case "splice":
+                        redata.forEach(oldVal => {
+                            clearXdata(oldVal);
+                        });
+                        break;
+                }
+
+                // 事件实例生成
+                let eveObj = new XDataEvent('update', this);
+
+                // 判断添加方法上是否有xdata，存在就干掉它
+                switch (methodName) {
+                    case "splice":
+                    case "unshift":
+                    case "push":
+                        args = args.map(e => {
+                            if (isXData(e)) {
+                                return e.object;
+                            }
+                            return e;
+                        });
+                }
+
+                eveObj.modify = {
+                    genre: "arrayMethod",
+                    methodName,
+                    args,
+                    modifyId: mid
+                };
+
+                this.emit(eveObj);
+
+                // 还原可执行setHandler
+                delete this[RUNARRMETHOD];
+
+                return redata;
+            }
+        });
+    }
+});
+
+// 获取事件数组
+const getEvesArr = (tar, eventName) => {
+    let eves = tar[EVES];
+    let redata = eves[eventName] || (eves[eventName] = []);
+    return redata;
+};
+
+const sortMethod = Array.prototype.sort;
+
+// 设置数组上的方法
+setNotEnumer(XDataFn, {
+    // sort单独处理
+    sort(sFunc) {
+        // 设置不可执行setHandler
+        this[RUNARRMETHOD] = 1;
+
+        let mid = getModifyId(this);
+
+        // 传送的后期参数
+        let args;
+
+        if (sFunc instanceof Array) {
+            args = [sFunc];
+
+            // 先做备份
+            let backThis = Array.from(this);
+
+            sFunc.forEach((eid, i) => {
+                this[i] = backThis[eid];
+            });
+        } else {
+            // 记录顺序的数组
+            let orders = [];
+            args = [orders];
+
+            // 先做备份
+            let backThis = Array.from(this);
+
+            // 执行默认方法
+            sortMethod.call(this, sFunc);
+
+            // 记录顺序
+            this.forEach(e => orders.push(backThis.indexOf(e)));
+        }
+
+        // 事件实例生成
+        let eveObj = new XDataEvent('update', this);
+
+        eveObj.modify = {
+            genre: "arrayMethod",
+            methodName: "sort",
+            args,
+            modifyId: mid
+        };
+
+        this.emit(eveObj);
+
+        // 还原可执行setHandler
+        delete this[RUNARRMETHOD];
+
         return this;
     },
-    // 取消监听
-    unwatch(key, callback) {
-        let arg1Type = getType(key);
-        if (arg1Type === "object") {
-            for (let k in key) {
-                this.unwatch(k, key[k]);
-            }
-            return this;
-        } else if (arg1Type.search('function') > -1) {
-            callback = key;
-            key = "";
+    // 事件注册
+    on(eventName, callback, options = {}) {
+        let eves = getEvesArr(this, eventName);
+
+        // 判断是否相应id的事件绑定
+        let oid = options.id;
+        if (!isUndefined(oid)) {
+            let tarId = eves.findIndex(e => e.eventId == oid);
+            (tarId > -1) && eves.splice(tarId, 1);
         }
-        unXDataEvent(this, 'watch-' + key, callback);
+
+        // 事件数据记录
+        callback && eves.push({
+            callback,
+            eventId: options.id,
+            onData: options.data,
+            one: options.one
+        });
+
         return this;
     },
-    // 重置数据
+    one(eventName, callback, options = {}) {
+        options.one = 1;
+        return this.on(eventName, callback, options);
+    },
+    off(eventName, callback, options = {}) {
+        let eves = getEvesArr(this, eventName);
+        eves.some((opt, index) => {
+            // 想等值得删除
+            if (opt.callback === callback && opt.eventId === options.id && opt.onData === options.data) {
+                eves.splice(index, 1);
+                return true;
+            }
+        });
+        return this;
+    },
+    emit(eventName, emitData, options = {}) {
+        let eves, eventObj;
+
+        if (eventName instanceof XDataEvent) {
+            // 直接获取对象
+            eventObj = eventName;
+
+            // 修正事件名变量
+            eventName = eventName.type;
+        } else {
+            // 生成emitEvent对象
+            eventObj = new XDataEvent(eventName, this);
+        }
+
+        // 设置emit上的bubble
+        if (options.bubble == false) {
+            eventObj.bubble = false;
+        }
+
+        // 修正currentTarget
+        eventObj.currentTarget = this;
+
+        // 获取事件队列数组
+        eves = getEvesArr(this, eventName);
+
+        // 删除的个数
+        let deleteCount = 0;
+
+        // 事件数组触发
+        Array.from(eves).some((opt, index) => {
+            // 触发callback
+            // 如果cancel就不执行了
+            if (eventObj.cancel) {
+                return true;
+            }
+
+            // 添加数据
+            let args = [eventObj];
+            !isUndefined(opt.onData) && (eventObj.data = opt.onData);
+            !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
+            !isUndefined(opt.one) && (eventObj.one = opt.one);
+            !isUndefined(emitData) && (args.push(emitData));
+
+            opt.callback.apply(this, args);
+
+            // 删除多余数据
+            delete eventObj.data;
+            delete eventObj.eventId;
+            delete eventObj.one;
+
+            // 判断one
+            if (opt.one) {
+                eves.splice(index - deleteCount, 1);
+                deleteCount++;
+            }
+        });
+
+        // 冒泡触发
+        if (eventObj.bubble && !eventObj.cancel) {
+            let {
+                parent
+            } = this;
+            if (parent) {
+                eventObj.keys.unshift(this.hostkey);
+                parent.emit(eventObj, emitData);
+            }
+        }
+
+        return this;
+    },
+    seek(expr) {
+        // 代表式的组织化数据
+        let exprObjArr = [];
+
+        let hostKey;
+        let hostKeyArr = expr.match(/(^[^\[\]])\[.+\]/);
+        if (hostKeyArr && hostKeyArr.length >= 2) {
+            hostKey = hostKeyArr[1];
+        }
+
+        // 分析expr字符串数据
+        let garr = expr.match(/\[.+?\]/g);
+
+        garr.forEach(str => {
+            str = str.replace(/\[|\]/g, "");
+            let strarr = str.split(/(=|\*=|:=|~=)/);
+
+            let param_first = strarr[0];
+
+            switch (strarr.length) {
+                case 3:
+                    if (param_first) {
+                        exprObjArr.push({
+                            type: "keyValue",
+                            k: param_first,
+                            eqType: strarr[1],
+                            v: strarr[2]
+                        });
+                    } else {
+                        exprObjArr.push({
+                            type: "hasValue",
+                            eqType: strarr[1],
+                            v: strarr[2]
+                        });
+                    }
+                    break;
+                case 1:
+                    exprObjArr.push({
+                        type: "hasKey",
+                        k: param_first
+                    });
+                    break;
+            }
+        });
+
+        // 要返回的数据
+        let redata;
+
+        exprObjArr.forEach((exprObj, i) => {
+            let exprKey = exprObj.k,
+                exprValue = exprObj.v,
+                exprType = exprObj.type,
+                exprEqType = exprObj.eqType;
+
+            switch (i) {
+                case 0:
+                    // 初次查找数据
+                    redata = seekData(this, exprObj);
+                    break;
+                default:
+                    // 筛选数据
+                    redata = redata.filter(tarData => conditData(exprKey, exprValue, exprType, exprEqType, tarData) ? tarData : undefined);
+            }
+        });
+
+        // hostKey过滤
+        if (hostKey) {
+            redata = redata.filter(e => (e.hostkey == hostKey) ? e : undefined);
+        }
+
+        return redata;
+    },
+    // 插入trend数据
+    entrend(options) {
+        // 目标数据
+        let target = this;
+
+        let {
+            modifyId
+        } = options;
+
+        // 获取target
+        options.keys.forEach(k => {
+            target = target[k];
+        });
+
+        // 判断是否运行过
+        if (modifyId) {
+            if (this[MODIFYHOST].includes(modifyId)) {
+                return this;
+            } else {
+                readyClearModifyId(this, modifyId);
+                // 临时记录数据
+                target._entrendModifyId = modifyId;
+            }
+        }
+
+        switch (options.genre) {
+            case "arrayMethod":
+                target[options.methodName](...options.args);
+                break;
+            case "delete":
+                delete target[options.key];
+                break;
+            default:
+                target[options.key] = options.value;
+                break;
+        }
+
+        if (modifyId) {
+            // 删除临时记录数据
+            delete target._entrendModifyId;
+        }
+
+        return this;
+    },
+    watch(expr, callback) {
+        let arg1Type = getType(expr);
+        if (/function/.test(arg1Type)) {
+            callback = expr;
+            expr = "_";
+        }
+
+        let watchType;
+
+        if (expr == "_") {
+            watchType = "watchOri";
+        } else if (/\[.+\]/.test(expr)) {
+            watchType = "seekOri";
+        } else {
+            watchType = "watchKey";
+        }
+
+        // 获取相应队列数据
+        let tarExprObj = this[WATCHHOST][expr] || (this[WATCHHOST][expr] = {
+            // 是否已经有nextTick
+            isNextTick: 0,
+            // 事件函数存放数组
+            arr: [],
+            // 空expr使用的数据
+            modifys: [],
+            // 注册的update事件函数
+            // updateFunc
+        });
+
+        // 判断是否注册了update事件函数
+        if (!tarExprObj.updateFunc) {
+            this.on('update', tarExprObj.updateFunc = e => {
+                // 如果是 _ 添加modify
+                switch (watchType) {
+                    case "watchOri":
+                        tarExprObj.modifys.push(e.trend);
+                        break;
+                    case "watchKey":
+                        let keyOne = e.keys[0];
+                        isUndefined(keyOne) && (keyOne = e.modify.key);
+
+                        if (keyOne != expr) {
+                            return
+                        }
+
+                        if (!isUndefined(keyOne) && keyOne == expr) {
+                            tarExprObj.modifys.push(e.trend);
+                        }
+                        break;
+                }
+
+                // 判断是否进入nextTick
+                if (tarExprObj.isNextTick) {
+                    return;
+                }
+
+                // 锁上
+                tarExprObj.isNextTick = 1;
+
+                nextTick(() => {
+                    switch (watchType) {
+                        case "watchOri":
+                            // 监听整个数据
+                            tarExprObj.arr.forEach(callback => {
+                                callback.call(this, new WatchData({
+                                    modifys: Array.from(tarExprObj.modifys)
+                                }));
+                            });
+                            // 事后清空
+                            tarExprObj.modifys.length = 0;
+                            break;
+                        case "watchKey":
+                            tarExprObj.arr.forEach(callback => {
+                                callback.call(this, new WatchData({
+                                    expr,
+                                    val: this[expr],
+                                    modifys: Array.from(tarExprObj.modifys)
+                                }));
+                            });
+                            // 事后清空
+                            tarExprObj.modifys.length = 0;
+                            break;
+                        case "seekOri":
+                            // 监听动态数据
+                            // 带有expr的
+                            let sData = this.seek(expr);
+                            let {
+                                oldVals
+                            } = tarExprObj;
+
+                            // 判断是否相等
+                            let isEq = 1;
+                            if (sData.length != oldVals.length) {
+                                isEq = 0;
+                            }
+                            isEq && sData.some((e, i) => {
+                                if (!isXDataEqual(oldVals[i], e)) {
+                                    isEq = 0;
+                                    return true;
+                                }
+                            });
+
+                            // 不相等就触发callback
+                            if (!isEq) {
+                                tarExprObj.arr.forEach(callback => {
+                                    callback.call(this, new WatchData({
+                                        expr,
+                                        old: oldVals,
+                                        val: sData
+                                    }));
+                                });
+                                tarExprObj.oldVals = sData;
+                            }
+                            break;
+                    }
+
+                    // 开放nextTick
+                    tarExprObj.isNextTick = 0;
+                });
+            });
+        }
+
+        // 添加callback
+        tarExprObj.arr.push(callback);
+
+        // 判断是否expr
+        if (watchType == "seekOri") {
+            let sData = this.seek(expr);
+            callback(new WatchData({
+                expr,
+                val: sData
+            }));
+            tarExprObj.oldVals = sData;
+        }
+
+        return this;
+    },
+    // 注销watch
+    unwatch(expr, callback) {
+        let arg1Type = getType(expr);
+        if (/function/.test(arg1Type)) {
+            callback = expr;
+            expr = "_";
+        }
+
+        let tarExprObj = this[WATCHHOST][expr];
+
+        if (tarExprObj) {
+            let tarId = tarExprObj.arr.indexOf(callback);
+            if (tarId > -1) {
+                tarExprObj.arr.splice(tarId, 1);
+            }
+
+            // 判断arr是否清空，是的话回收update事件绑定
+            if (!tarExprObj.arr.length) {
+                this.off('update', tarExprObj.updateFunc);
+                delete tarExprObj.updateFunc;
+                delete this[WATCHHOST][expr];
+            }
+        }
+
+        return this;
+    },
+    // 同步数据
+    sync(xdataObj, options) {
+        let optionsType = getType(options);
+
+        let watchFunc, oppWatchFunc;
+
+        switch (optionsType) {
+            case "string":
+                this.watch(watchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        let keysOne = isUndefined(trend.keys[0]) ? trend.key : trend.keys[0];
+                        if (keysOne == options) {
+                            xdataObj.entrend(trend);
+                        }
+                    });
+                });
+                xdataObj.watch(oppWatchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        let keysOne = isUndefined(trend.keys[0]) ? trend.key : trend.keys[0];
+                        if (keysOne == options) {
+                            this.entrend(trend);
+                        }
+                    });
+                });
+                break;
+            case "array":
+                this.watch(watchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        let keysOne = isUndefined(trend.keys[0]) ? trend.key : trend.keys[0];
+                        if (options.includes(keysOne)) {
+                            xdataObj.entrend(trend);
+                        }
+                    });
+                });
+                xdataObj.watch(oppWatchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        let keysOne = isUndefined(trend.keys[0]) ? trend.key : trend.keys[0];
+                        if (options.includes(keysOne)) {
+                            this.entrend(trend);
+                        }
+                    });
+                });
+                break;
+            case "object":
+                let resOptions = {};
+                Object.keys(options).forEach(k => {
+                    resOptions[options[k]] = k;
+                });
+
+                this.watch(watchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        trend = cloneObject(trend);
+                        let keysOne = trend.keys[0];
+
+                        keysOne = isUndefined(keysOne) ? trend.key : keysOne;
+
+                        if (options.hasOwnProperty(keysOne)) {
+                            if (isUndefined(trend.keys[0])) {
+                                trend.key = options[keysOne];
+                            } else {
+                                trend.keys[0] = options[keysOne];
+                            }
+                            xdataObj.entrend(trend);
+                        }
+                    });
+                });
+
+                xdataObj.watch(watchFunc = e => {
+                    e.modifys.forEach(trend => {
+
+                        trend = cloneObject(trend);
+
+                        let keysOne = trend.keys[0];
+
+                        keysOne = isUndefined(keysOne) ? trend.key : keysOne;
+
+                        if (resOptions.hasOwnProperty(keysOne)) {
+                            if (isUndefined(trend.keys[0])) {
+                                trend.key = resOptions[keysOne];
+                            } else {
+                                trend.keys[0] = resOptions[keysOne];
+                            }
+                            this.entrend(trend);
+                        }
+                    });
+                });
+
+                break;
+            default:
+                // undefined
+                this.watch(watchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        xdataObj.entrend(trend);
+                    });
+                });
+                xdataObj.watch(oppWatchFunc = e => {
+                    e.modifys.forEach(trend => {
+                        this.entrend(trend);
+                    });
+                });
+                break;
+        }
+
+        this[SYNCHOST].push({
+            opp: xdataObj,
+            oppWatchFunc,
+            watchFunc
+        });
+
+        return this;
+    },
+    // 注销sync绑定
+    unsync(xdataObj) {
+        let tarIndex = this[SYNCHOST].findIndex(e => e.opp == xdataObj);
+        if (tarIndex > -1) {
+            let tarObj = this[SYNCHOST][tarIndex];
+
+            // 注销watch事件
+            this.unwatch(tarObj.watchFunc);
+            tarObj.opp.unwatch(tarObj.oppWatchFunc);
+
+            // 去除记录数据
+            this[SYNCHOST].splice(tarIndex, 1);
+        } else {
+            console.warn("not found => ", xdataObj);
+        }
+
+        return this;
+    },
+    virData(options) {
+        let cloneData = this.object;
+
+        // 重置数据
+        mapData(cloneData, options);
+
+        // 提取关键数据
+        let keyMapObj = {};
+        let reserveKeyMapObj = {};
+        options.forEach(c => {
+            switch (c.type) {
+                case "map":
+                    keyMapObj[c.key] = c.toKey;
+                    reserveKeyMapObj[c.toKey] = c.key;
+                    break;
+            }
+        });
+
+        // 转换为xdata
+        cloneData = createXData(cloneData);
+
+        let _thisUpdateFunc;
+        this.on('update', _thisUpdateFunc = e => {
+            let {
+                trend
+            } = e;
+
+            let tarKey = keyMapObj[trend.key];
+            if (!isUndefined(tarKey)) {
+                // 修正trend数据
+                trend.key = tarKey;
+                cloneData.entrend(trend);
+            }
+        });
+
+        cloneData.on('update', e => {
+            let {
+                trend
+            } = e;
+
+            let tarKey = reserveKeyMapObj[trend.key];
+
+            if (!isUndefined(tarKey)) {
+                trend.key = tarKey;
+                this.entrend(trend);
+            }
+        });
+
+        // 修正remove方法
+        defineProperty(cloneData, "remove", {
+            value(...args) {
+                if (!args.length) {
+                    // 确认删除自身，清除this的函数
+                    this.off('update', _thisUpdateFunc);
+                }
+                XDataFn.remove.call(cloneData, ...args);
+            }
+        });
+
+        return cloneData;
+    },
+    // 删除相应Key的值
+    removeByKey(key) {
+        // 删除子数据
+        if (/\D/.test(key)) {
+            // 非数字
+            delete this[key];
+        } else {
+            // 纯数字，术语数组内元素，通过splice删除
+            this.splice(parseInt(key), 1);
+        }
+    },
+    // 删除值
+    remove(value) {
+        if (isUndefined(value)) {
+            // 删除自身
+            let {
+                parent
+            } = this;
+
+            if (parent) {
+                // 删除
+                parent.removeByKey(this.hostkey);
+            } else {
+                clearXdata(this);
+            }
+        } else {
+            if (isXData(value)) {
+                (value.parent == this) && this.removeByKey(value.hostkey);
+            } else {
+                let tarId = this.indexOf(value);
+                if (tarId > -1) {
+                    this.removeByKey(tarId);
+                }
+            }
+        }
+    },
+    clone() {
+        return createXData(this.object);
+    },
+    // push的去重版本
+    add(data) {
+        !this.includes(data) && this.push(data);
+    },
     reset(value) {
         let valueKeys = Object.keys(value);
 
         // 删除本身不存在的key
         Object.keys(this).forEach(k => {
-            if (!valueKeys.includes(k)) {
+            if (!valueKeys.includes(k) && k !== "length") {
                 delete this[k];
             }
         });
 
         assign(this, value);
         return this;
-    },
-    // 传送器入口
-    entrend(trendData) {
-        // 判断tid
-        if (!trendData.tid) {
-            throw "trendData invalid";
-        }
-        if (this[XDATATRENDIDS].includes(trendData.tid)) {
-            return;
-        }
-
-        // tid记录器 和 定时清理 entrend 记录器
-        trendClear(this, trendData.tid);
-
-        // 获取目标和目标key
-        let [tar, key] = detrend(this, trendData);
-
-        // 临时数组
-        let tempArr = tar.slice();
-
-        switch (trendData.type) {
-            case "sort":
-                // 禁止事件驱动 type:排序
-                setInMethod(this, "sort");
-
-                // 修正顺序
-                trendData.order.forEach((e, i) => {
-                    tar[e] = tempArr[i];
-                });
-                break;
-            case "delete":
-                // 禁止事件驱动 type:设置值
-                setInMethod(this, "delete");
-
-                delete tar[key];
-                break;
-            case "array-method":
-                let {
-                    methodName,
-                    args
-                } = trendData;
-                // 禁止事件驱动 type:设置值
-                setInMethod(this, "array-" + methodName);
-
-                // 继承方法
-                Array.prototype[methodName].apply(tar, args);
-                break;
-            default:
-                // 禁止事件驱动 type:设置值
-                setInMethod(this, "default");
-
-                // 最终设置
-                tar[key] = deepClone(trendData.val);
-        }
-
-        // 开启事件驱动
-        delete this._inMethod;
-
-        // 延续trend
-        this[XDATASYNCS].forEach(o => {
-            o.func({
-                trend: trendData
-            });
-        });
-        return this;
-    },
-    // 同步数据
-    sync(target, options) {
-        let func1, func2;
-        switch (getType(options)) {
-            case "object":
-                let reverseOptions = {};
-                for (let k in options) {
-                    reverseOptions[options[k]] = k;
-                }
-                func1 = e => {
-                    let trendData = deepClone(e.trend);
-                    let replaceKey = reverseOptions[e.key];
-                    if (replaceKey !== undefined) {
-                        trendData.keys[0] = replaceKey;
-                        this.entrend(trendData);
-                    }
-                }
-                func2 = e => {
-                    let trendData = deepClone(e.trend);
-                    let replaceKey = options[e.key];
-                    if (replaceKey !== undefined) {
-                        trendData.keys[0] = replaceKey;
-                        target.entrend(trendData);
-                    }
-                }
-                break;
-            case "array":
-                func1 = e => {
-                    if (options.includes(e.key)) {
-                        this.entrend(e.trend);
-                    }
-                }
-                func2 = e => {
-                    if (options.includes(e.key)) {
-                        target.entrend(e.trend);
-                    }
-                }
-                break;
-            case "string":
-                func1 = e => {
-                    if (e.key === options) {
-                        this.entrend(e.trend);
-                    }
-                }
-                func2 = e => {
-                    if (e.key === options) {
-                        target.entrend(e.trend);
-                    }
-                }
-                break;
-            default:
-                // undefined
-                func1 = e => this.entrend(e.trend);
-                func2 = e => target.entrend(e.trend);
-        }
-
-        // 绑定函数
-        target.watch(func1);
-        this.watch(func2);
-
-        let bid = getRandomId();
-
-        // 留下案底
-        target[XDATASYNCS].push({
-            bid,
-            options,
-            opp: this,
-            func: func1
-        });
-        this[XDATASYNCS].push({
-            bid,
-            options,
-            opp: target,
-            func: func2
-        });
-        return this;
-    },
-    // 取消数据同步
-    unsync(target, options) {
-        // 内存对象和行为id
-        let syncObjId = this[XDATASYNCS].findIndex(e => e.opp === target && e.options === options);
-
-        if (syncObjId > -1) {
-            let syncObj = this[XDATASYNCS][syncObjId];
-
-            // 查找target相应绑定的数据
-            let tarSyncObjId = target[XDATASYNCS].findIndex(e => e.bid === syncObj.bid);
-            let tarSyncObj = target[XDATASYNCS][tarSyncObjId];
-
-            // 取消绑定函数
-            this.unwatch(syncObj.func);
-            target.unwatch(tarSyncObj.func);
-
-            // 各自从数组删除
-            this[XDATASYNCS].splice(syncObjId, 1);
-            target[XDATASYNCS].splice(tarSyncObjId, 1);
-        } else {
-            console.log('not found =>', target);
-        }
-        return this;
-    },
-    // 超找数据
-    seek(expr) {
-        let reData;
-        let propMatch = expr.match(/\[.+?\]/g);
-        if (!propMatch) {
-            // 查找_id
-            reData = seekData(this, "_id", expr)[0];
-        } else {
-            propMatch.forEach((expr, i) => {
-                let [key, value] = expr.replace(/[\[]|[\]]/g, "").split("=");
-                let tempData = seekData(this, key, value);
-                if (i === 0) {
-                    reData = tempData;
-                } else {
-                    // 取代返回值得数组
-                    let replaceData = [];
-
-                    // 从新组合交集
-                    tempData.forEach(e => {
-                        if (reData.includes(e)) {
-                            replaceData.push(e);
-                        }
-                    });
-
-                    // 替代旧的
-                    reData = replaceData;
-                }
-            });
-        }
-        return reData;
-    },
-    // 异步监听数据变动
-    listen(expr, callback, reduceTime = 10) {
-        let watchFunc;
-        if (expr) {
-            // 先记录一次值
-            let data = JSON.stringify(this.seek(expr).map(e => e._id));
-
-            let timer;
-
-            this.watch(watchFunc = e => {
-                let tempData = this.seek(expr);
-                let tempId = tempData.map(e => e._id);
-
-                if (JSON.stringify(tempId) !== data) {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => {
-                        callback(tempData);
-                    }, reduceTime);
-                }
-            });
-        } else {
-            let timer;
-
-            this.watch(watchFunc = e => {
-                clearTimeout(timer);
-                timer = setTimeout(() => {
-                    callback(tempData);
-                }, reduceTime);
-            });
-        }
-
-        this[LISTEN].push({
-            expr,
-            callback,
-            watchFunc
-        });
-        return this;
-    },
-    // 取消监听数据变动
-    unlisten(expr, callback) {
-        this[LISTEN].forEach(o => {
-            if (o.expr === expr && o.callback === callback) {
-                let {
-                    watchFunc
-                } = o;
-
-                this.unwatch(watchFunc);
-            }
-        });
-        return this;
-    },
-    // 转换数据
-    transData(options) {
-        let defaults = {
-            // 自身key监听
-            key: "",
-            // 目标数据对象
-            target: "",
-            // 目标key
-            targetKey: "",
-            // 数据对接对象
-            // trans: {}
-        };
-        assign(defaults, options);
-
-        let {
-            key,
-            target,
-            targetKey,
-            trans
-        } = defaults;
-
-        // 判断是否有trans
-        if (defaults.trans) {
-            // 生成翻转对象
-            let resverObj = {};
-            for (let k in trans) {
-                resverObj[trans[k]] = k;
-            }
-
-            // 监听
-            this.watch(key, d => {
-                d = trans[d];
-                target[targetKey] = d;
-            });
-            target.watch(targetKey, d => {
-                d = resverObj[d];
-                this[key] = d;
-            });
-        }
-    },
-    // 删除自己或子元素
-    remove(...args) {
-        let [keyName] = args;
-        if (0 in args) {
-            if (getType(keyName) === "number") {
-                // 删除数组内相应index的数据
-                this.splice(keyName, 1);
-            } else {
-                delete this[keyName];
-            }
-        } else {
-            if (this.host) {
-                delete this.host[this.hostkey];
-            }
-        }
-    },
-    // 克隆对象，为了更好理解，还是做成方法获取
-    clone() {
-        return createXData(this.object);
-    },
-    // 排序方法
-    // 需要特别处理，因为参数可能是函数
-    sort(...args) {
-        // 设定禁止事件驱动
-        setInMethod(this, "sort");
-
-        // 记录id顺序
-        let ids = this.map(e => e._id);
-
-        // 执行默认方法
-        let reValue = Array.prototype.sort.apply(this, args);
-
-        // 开启事件驱动
-        delete this._inMethod;
-
-        // 记录新顺序
-        let new_ids = this.map(e => e._id);
-
-        // 记录顺序置换
-        let order = [];
-        ids.forEach((e, index) => {
-            let newIndex = new_ids.indexOf(e);
-            order[index] = newIndex;
-        });
-
-        // 手动触发事件
-        let tid = getRandomId();
-
-        // 自身添加该tid
-        trendClear(this, tid);
-
-        emitChange(this, undefined, this, this, "sort", {
-            tid,
-            keys: [],
-            type: "sort",
-            order
-        });
-
-        return reValue
     }
-};
-
-// 设置 XDataFn
-Object.keys(XDataProto).forEach(k => {
-    defineProperty(XDataFn, k, {
-        value: XDataProto[k]
-    });
 });
 
-// 更新数组方法
-// 参数不会出现函数的方法
-['splice', 'shift', 'unshfit', 'push', 'pop', 'copyWithin', 'fill', 'reverse'].forEach(k => {
-    let oldFunc = Array.prototype[k];
-    oldFunc && defineProperty(XDataFn, k, {
-        value(...args) {
-            // 设定禁止事件驱动
-            setInMethod(this, "array-" + k);
 
-            // 继承旧的方法
-            let reValue = oldFunc.apply(this, args);
+defineProperties(XDataFn, {
+    // 直接返回object
+    "object": {
+        get() {
+            let obj = {};
 
-            // 手动触发事件
-            let tid = getRandomId();
+            Object.keys(this).forEach(k => {
+                let val = this[k];
 
-            // 自身添加该tid
-            trendClear(this, tid);
+                if (isXData(val)) {
+                    obj[k] = val.object;
+                } else {
+                    obj[k] = val;
+                }
+            });
+
+            return obj;
+        }
+    },
+    "string": {
+        get() {
+            return JSON.stringify(this.object);
+        }
+    },
+    "root": {
+        get() {
+            let root = this;
+            while (root.parent) {
+                root = root.parent;
+            }
+            return root;
+        }
+    }
+});
+
+// 私有属性正则
+const PRIREG = /^_.+|^parent$|^hostkey$|^status$|^length$/;
+
+// handler
+let XDataHandler = {
+    set(xdata, key, value, receiver) {
+        // 私有的变量直接通过
+        if (PRIREG.test(key)) {
+            return Reflect.set(xdata, key, value, receiver);
+        }
+
+        let newValue = value;
+
+        // 判断是否属于xdata数据
+        if (isXData(value)) {
+            if (value.parent == receiver) {
+                value.hostkey = key;
+            } else {
+                if (value.status !== "binding") {
+                    value.status = 'binding';
+                } else {
+                    // 从原来的地方拿走，先从原处删除在安上
+                    value.remove();
+                }
+                value.parent = receiver;
+                value.hostkey = key;
+
+                // 替换value为普通对象
+                value = value.object;
+            }
+        } else {
+            // 数据转换
+            newValue = createXData(value, {
+                parent: receiver,
+                hostkey: key
+            });
+        }
+
+        let oldVal = xdata[key];
+
+        let reData;
+
+        if (!xdata[RUNARRMETHOD]) {
+            // 相同值就别瞎折腾了
+            if (oldVal === newValue) {
+                return true;
+            }
+
+            if (isXData(oldVal)) {
+                if (isXData(newValue) && oldVal.string === newValue.string) {
+                    // 同是object
+                    return true;
+                }
+            }
+
+            let mid = getModifyId(receiver);
+
+            // 事件实例生成
+            let eveObj = new XDataEvent('update', receiver);
+
+            let isFirst;
+            // 判断是否初次设置
+            if (!xdata.hasOwnProperty(key)) {
+                isFirst = 1;
+            }
+
+            // 添加修正数据
+            eveObj.modify = {
+                // change 改动
+                // set 新增值
+                genre: isFirst ? "set" : "change",
+                key,
+                value,
+                oldVal,
+                modifyId: mid
+            };
+
+            reData = Reflect.set(xdata, key, newValue, receiver)
 
             // 触发事件
-            emitChange(this, undefined, this, this, "array-method", {
-                tid,
-                keys: [],
-                type: "array-method",
-                methodName: k,
-                args
-            });
-
-            delete this._inMethod;
-            return reValue
+            receiver.emit(eveObj);
+        } else {
+            reData = Reflect.set(xdata, key, newValue, receiver)
         }
-    });
-});
 
-// 触发器
-const emitChange = (tar, key, val, oldVal, type, trend) => {
-    // watch option
-    let watchOption = {
-        oldVal,
-        type
-    };
+        return reData;
+    },
+    deleteProperty(xdata, key) {
+        // 私有的变量直接通过
+        if (PRIREG.test(key)) {
+            return Reflect.deleteProperty(xdata, key);
+        }
 
-    // 自身watch option
-    let selfOption = {
-        key,
-        val: tar[key],
-        type,
-        oldVal
-    };
-
-    if (trend) {
-        (key !== undefined) && trend.keys.unshift(key);
-    } else {
-        let keys = [key];
-        let tid = getRandomId();
-        trend = {
-            // 行动id
-            tid,
-            keys,
-            type
-        };
-
-        // 自身添加该tid
-        trendClear(tar, tid);
-
-        defineProperties(trend, {
-            val: {
-                value: val,
-                enumerable: true
-            }
-        });
-    }
-
-    watchOption.trend = trend;
-    selfOption.trend = trend;
-
-    // watch处理
-    emitXDataEvent(tar, "watch-" + key, [tar[key], watchOption]);
-    emitXDataEvent(tar, "watch-", [selfOption]);
-
-    // 冒泡
-    let {
-        host,
-        hostkey
-    } = tar;
-
-    if (host) {
-        emitChange(host, hostkey, tar, tar, "update", deepClone(trend));
-    }
-}
-
-// Handler
-const XDataHandler = {
-    set(target, key, value, receiver) {
-        // 判断不是下划线开头的属性，才触发改动事件
-        if (!/^_.+/.test(key)) {
-            let oldVal = target[key];
-            let type = target.hasOwnProperty(key) ? "update" : "new";
-
-            let newValue = createXData(value, receiver, key);
-
-            // 分开来写，不然这条判断语句太长了不好维护
-            let canEmit = 1;
-
-            if (target._exkeys) {
-                if (target._exkeys.includes(key)) {
-                    // 只修改准入值
-                    target[key] = newValue;
-                } else {
-                    canEmit = 0;
-                    Reflect.set(target, key, newValue, receiver);
-                }
-            } else {
-                // 执行默认操作
-                // 赋值
-                Reflect.set(target, key, newValue, receiver);
-            }
-
-            if (value instanceof Object && oldVal instanceof Object && JSON.stringify(value) == JSON.stringify(oldVal)) {
-                // object类型，判断结构值是否全等
-                canEmit = 0;
-            } else if (value === oldVal || target._inMethod) {
-                // 普通类型是否相等
-                // 在数组处理函数内禁止触发
-                canEmit = 0;
-            }
-
-            // 触发改动
-            canEmit && emitChange(target, key, value, oldVal, type);
-
+        // 都不存在瞎折腾什么
+        if (!xdata.hasOwnProperty(key)) {
             return true;
         }
-        return Reflect.set(target, key, value, receiver);
-    },
-    deleteProperty(target, key) {
-        if (!/^_.+/.test(key)) {
-            // 获取旧值
-            let oldVal = target[key];
 
-            // 默认行为
-            let reValue = Reflect.deleteProperty(target, key);
+        let receiver;
 
-            // 触发改动事件
-            (!target._inMethod) && emitChange(target, key, undefined, oldVal, "delete");
-
-            return reValue;
+        if (xdata.parent) {
+            receiver = xdata.parent[xdata.hostkey];
         } else {
-            return Reflect.deleteProperty(target, key);
+            Object.values(xdata).some(e => {
+                if (isXData(e)) {
+                    receiver = e.parent;
+                    return true;
+                }
+            });
+
+            if (!receiver) {
+                receiver = new Proxy(xdata, XDataHandler);
+            }
         }
+
+        let oldVal = xdata[key];
+
+        let reData = Reflect.deleteProperty(xdata, key);
+
+        if (isXData(oldVal)) {
+            clearXdata(oldVal);
+        }
+
+        // 事件实例生成
+        let eveObj = new XDataEvent('update', receiver);
+
+        // 添加修正数据
+        eveObj.modify = {
+            // change 改动
+            // set 新增值
+            genre: "delete",
+            key,
+            oldVal
+        };
+
+        // 触发事件
+        receiver.emit(eveObj);
+
+        return reData;
     }
 };
-
-// main
-const createXData = (obj, host, hostkey) => {
-    switch (getType(obj)) {
-        case "array":
-        case "object":
-            if (obj instanceof XData) {
-                return obj;
-            }
-            let xdata = new XData(obj, host, hostkey);
-            return new Proxy(xdata, XDataHandler);
-    }
-    return obj;
-}

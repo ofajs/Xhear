@@ -1,3 +1,5 @@
-# Xhear 3.0
+# xhear3
 
-如果说 Xhear1 和 Xhear2 是脱胎于jQuery，那 Xhear3 是脱胎于 stanz，借鉴jQuery；
+xhear 3.0 摆脱了jQuery，借鉴jQuery，脱胎于stanz；
+
+相对于xhear2，大量精简代码，减少错误，增强性能；
