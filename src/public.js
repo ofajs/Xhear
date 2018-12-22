@@ -1,37 +1,21 @@
-// 基础tag记录器
-let tagDatabase = {};
-
-// debugger
-glo.tagDatabase = tagDatabase;
-
-const {
-    assign,
-    create,
-    defineProperty,
-    defineProperties
-} = Object;
-
-// function
-let isUndefined = val => val === undefined;
-let isRealValue = val => val !== undefined && val !== null;
-const hasAttr = (e, attrName) => {
-    if (!e.getAttribute) {
-        return !!0;
-    }
-    let attr = e.getAttribute(attrName);
-    if (attr !== null && attr !== undefined) {
-        return !!1;
-    }
-};
-
-// 获取类型
-let objectToString = Object.prototype.toString;
-const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
-
-const each = (arr, func) => Array.from(arr).forEach(func);
-
 // 获取随机id
 const getRandomId = () => Math.random().toString(32).substr(2);
+let objectToString = Object.prototype.toString;
+const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
+const isUndefined = val => val === undefined;
+// 克隆object
+const cloneObject = obj => JSON.parse(JSON.stringify(obj));
+
+// 设置不可枚举的方法
+const setNotEnumer = (tar, obj) => {
+    for (let k in obj) {
+        defineProperty(tar, k, {
+            // enumerable: false,
+            writable: true,
+            value: obj[k]
+        });
+    }
+}
 
 //改良异步方法
 const nextTick = (() => {
@@ -52,63 +36,20 @@ const nextTick = (() => {
     };
 })();
 
-// COMMON
-// 随机字符串
-const RANDOMID = "_" + getRandomId();
-const SWATCH = RANDOMID + "_watchs";
-const SWATCHGET = SWATCH + "_get";
-const OBSERVERKEYS = RANDOMID + "_observer";
-const XHEAROBJKEY = getRandomId() + "_xhearobj";
-const ATTACHED_KEY = getRandomId() + "_attached";
-const SHADOW_DESCRIPT_CANNOTUSE = 'shadow element can\'t use ';
-// const XDATA_DATAOBJ = getRandomId() + "xdatas";
+// common
+const PROTO = '_proto_' + getRandomId();
+const XHEAREVENT = "_xevent_" + getRandomId();
+const EXKEYS = "_exkeys_" + getRandomId();
+const ATTACHED = "_attached_" + getRandomId();
+const DETACHED = "_detached_" + getRandomId();
+const XHEARDATA = "_xheardata_" + getRandomId();
 
+// database
+// 注册数据
+const regDatabase = new Map();
 
-// business fucntion 
-const getTagData = (ele) => {
-    let tagname = ele.tagName.toLowerCase();
-    return tagDatabase[tagname];
-}
-
-// 生成专用shear对象
-const createShearObject = (ele) => {
-    let xvData = ele[XHEAROBJKEY];
-    let e = create(xvData);
-    xvData._pausedEmit = 1;
-    e.push(ele);
-    delete xvData._pausedEmit;
-    return e;
-}
-
-// 生成普通继承的$实例
-const inCreate$ = arr => {
-    let reObj = create(shearInitPrototype);
-    reObj.splice(-1, 0, ...arr);
-    if (arr.prevObject) {
-        reObj.prevObject = arr.prevObject;
-    }
-    return reObj;
-}
-
-// 通用实例生成方法
-const createShear$ = arr => {
-    if (arr.length == 1 && arr[0][XHEAROBJKEY]) {
-        return createShearObject(arr[0]);
-    }
-    return inCreate$(arr);
-}
-
-// 渲染所有的sv-ele元素
-const renderAllSvEle = (jqObj) => {
-    // 自己是不是sv-ele
-    if (jqObj.is('[xv-ele]')) {
-        jqObj.each((i, e) => {
-            renderEle(e);
-        });
-    }
-
-    // 查找有没有 sv-ele
-    _$('[xv-ele]', Array.from(jqObj)).each((i, e) => {
-        renderEle(e);
-    });
-}
+let {
+    defineProperty,
+    defineProperties,
+    assign
+} = Object;
