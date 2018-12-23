@@ -41,12 +41,16 @@ const nextTick = (() => {
 })();
 
 // common
-const PROTO = '_proto_' + getRandomId();
+// XhearElement寄存在element内的函数寄宿对象key
 const XHEAREVENT = "_xevent_" + getRandomId();
+// xhearElement初始化存放的变量key
+const XHEARELEMENT = "_xhearEle_" + getRandomId();
+// 属于可动变量的key组合
 const EXKEYS = "_exkeys_" + getRandomId();
-const ATTACHED = "_attached_" + getRandomId();
-const DETACHED = "_detached_" + getRandomId();
-const XHEARDATA = "_xheardata_" + getRandomId();
+// const PROTO = '_proto_' + getRandomId();
+// const ATTACHED = "_attached_" + getRandomId();
+// const DETACHED = "_detached_" + getRandomId();
+// const XHEARDATA = "_xheardata_" + getRandomId();
 
 // database
 // 注册数据
@@ -58,6 +62,88 @@ let {
     assign
 } = Object;
 
+// business function
+
+// 将element转换成xhearElement
+const createXHearElement = (ele) => {
+    let xhearData = ele[XHEARELEMENT];
+    if (!xhearData) {
+        xhearData = new XhearElement(ele);
+        ele[XHEARELEMENT] = xhearData;
+    }
+    return xhearData;
+}
+
+// 转化成XhearElement
+const parseToXHearElement = (tar) => {
+    return createXHearElement(tar);
+}
+
+// 获取 content 容器
+const getContentEle = (tarEle) => {
+    let contentEle = tarEle;
+
+    // 判断是否xvRender
+    while (contentEle.xvRender) {
+        let xhearData = contentEle[XHEARDATA];
+
+        if (xhearData) {
+            let {
+                $content
+            } = xhearData;
+
+            if ($content) {
+                contentEle = $content.ele;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return contentEle;
+}
+
+// 获取父容器
+const getParentEle = (tarEle) => {
+    let {
+        parentElement
+    } = tarEle;
+
+    if (!parentElement) {
+        return;
+    }
+
+    while (parentElement.xvContent) {
+        parentElement = parentElement[XHEARDATA].$host.ele;
+    }
+
+    return parentElement;
+}
+
+// 判断元素是否符合条件
+const meetsEle = (ele, expr) => {
+    if (ele === expr) {
+        return !0;
+    }
+    let fadeParent = document.createElement('div');
+    if (ele === document) {
+        return false;
+    }
+    fadeParent.appendChild(ele.cloneNode(false));
+    return !!fadeParent.querySelector(expr);
+}
+
+// 转换元素
+const parseStringToDom = (str) => {
+    let par = document.createElement('div');
+    par.innerHTML = str;
+    let childs = Array.from(par.childNodes);
+    return childs.filter(function (e) {
+        if (!(e instanceof Text) || (e.textContent && e.textContent.trim())) {
+            return e;
+        }
+    });
+};
 
     // common
 // 事件寄宿对象key
@@ -1502,7 +1588,290 @@ defineProperties(XDataFn, {
             }
             return root;
         }
+    },
+    "prev": {
+        get() {
+            if (!/\D/.test(this.hostkey) && this.hostkey > 0) {
+                return this.parent[this.hostkey - 1];
+            }
+        }
+    },
+    "next": {
+        get() {
+            if (!/\D/.test(this.hostkey)) {
+                return this.parent[this.hostkey + 1];
+            }
+        }
     }
 });
+
+    function XhearElement(ele) {
+    defineProperties(this, {
+        tag: {
+            enumerable: true,
+            value: ele.tagName.toLowerCase()
+        },
+        ele: {
+            value: ele
+        }
+    });
+    let opt = {
+        // status: "root",
+        // 设置数组长度
+        // length,
+        // 事件寄宿对象
+        [EVES]: new Map(),
+        // modifyId存放寄宿对象
+        [MODIFYIDHOST]: new Set(),
+        // modifyId清理器的断定变量
+        [MODIFYTIMER]: 0,
+        // watch寄宿对象
+        [WATCHHOST]: new Map(),
+        // 同步数据寄宿对象
+        [SYNCHOST]: new Map(),
+        // ------下面是XhearElement新增的------
+        // 实体事件函数寄存
+        [XHEAREVENT]: {},
+        [EXKEYS]: new Set()
+    };
+
+    // 设置不可枚举数据
+    setNotEnumer(this, opt);
+
+    // 返回代理后的数据对象
+    return new Proxy(this, XhearElementHandler);
+}
+let XhearElementFn = XhearElement.prototype = Object.create(XDataFn);
+
+const XhearElementHandler = {
+    get(target, key, receiver) {
+        // 判断是否纯数字
+        if (/\D/.test(key)) {
+            return Reflect.get(target, key, receiver);
+        } else {
+            let ele = getContentEle(receiver.ele).children[key];
+            return ele && createXHearElement(ele);
+        }
+    },
+    set(target, key, value, receiver) {
+        return Reflect.set(target, key, value, receiver);
+    }
+};
+// 关键keys
+let importantKeys;
+defineProperties(XhearElementFn, importantKeys = {
+    hostkey: {
+        get() {
+            return Array.from(this.ele.parentElement.children).indexOf(this.ele);
+        }
+    },
+    parent: {
+        get() {
+            let parentElement = getParentEle(this.ele);
+            if (!parentElement) {
+                return;
+            }
+            return createXHearElement(parentElement);
+        }
+    },
+    // 是否注册的Xele
+    xvele: {
+        get() {
+            let {
+                attributes
+            } = this.ele;
+
+            return attributes.hasOwnProperty('xv-ele') || attributes.hasOwnProperty('xv-render');
+        }
+    },
+    class: {
+        get() {
+            return this.ele.classList;
+        }
+    },
+    object: {
+        get() {
+            let obj = {
+                tag: this.tag
+            };
+
+            // 非xvele就保留class属性
+            if (!this.xvRender) {
+                let classValue = this.ele.classList.value;
+                classValue && (obj.class = classValue);
+            } else {
+                // 获取自定义数据
+                let exkeys = this[EXKEYS];
+                exkeys && exkeys.forEach(k => {
+                    obj[k] = this[k];
+                });
+            }
+
+            // 自身的children加入
+            this.forEach((e, i) => {
+                if (e instanceof XhearElement) {
+                    obj[i] = e.object;
+                } else {
+                    obj[i] = e;
+                }
+            });
+
+            return obj;
+        }
+    },
+    length: {
+        get() {
+            let contentEle = getContentEle(this.ele);
+            return contentEle.children.length;
+        }
+    }
+});
+importantKeys = Object.keys(importantKeys);
+
+    // 可运行的方法
+['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some'].forEach(methodName => {
+    let oldFunc = Array.prototype[methodName];
+    if (oldFunc) {
+        setNotEnumer(XhearElementFn, {
+            [methodName](...args) {
+                return oldFunc.apply(Array.from(getContentEle(this.ele).children).map(e => createXHearElement(e)), args);
+            }
+        });
+    }
+});
+
+    defineProperties(XhearElementFn, {
+    display: {
+        get() {
+            return getComputedStyle(this.ele)['display'];
+        },
+        set(val) {
+            this.ele.style['display'] = val;
+        }
+    },
+    text: {
+        get() {
+            return getContentEle(this.ele).textContent;
+        },
+        set(d) {
+            getContentEle(this.ele).textContent = d;
+        }
+    },
+    html: {
+        get() {
+            return getContentEle(this.ele).innerHTML;
+        },
+        set(d) {
+            getContentEle(this.ele).innerHTML = d;
+        }
+    },
+    style: {
+        get() {
+            return this.ele.style;
+        },
+        set(d) {
+            let {
+                style
+            } = this;
+
+            // 覆盖旧的样式
+            let hasKeys = Array.from(style);
+            let nextKeys = Object.keys(d);
+
+            // 清空不用设置的key
+            hasKeys.forEach(k => {
+                if (!nextKeys.includes(k)) {
+                    style[k] = "";
+                }
+            });
+
+            assign(style, d);
+        }
+    },
+    position: {
+        get() {
+            return {
+                top: this.ele.offsetTop,
+                left: this.ele.offsetLeft
+            };
+        }
+    },
+    offset: {
+        get() {
+            let reobj = {
+                top: 0,
+                left: 0
+            };
+
+            let tar = this.ele;
+            while (tar && tar !== document) {
+                reobj.top += tar.offsetTop;
+                reobj.left += tar.offsetLeft;
+                tar = tar.offsetParent
+            }
+            return reobj;
+        }
+    },
+    width: {
+        get() {
+            return parseInt(getComputedStyle(this.ele).width);
+        }
+    },
+    height: {
+        get() {
+            return parseInt(getComputedStyle(this.ele).height);
+        }
+    },
+    innerWidth: {
+        get() {
+            return this.ele.clientWidth;
+        }
+    },
+    innerHeight: {
+        get() {
+            return this.ele.clientHeight;
+        }
+    },
+    offsetWidth: {
+        get() {
+            return this.ele.offsetWidth;
+        }
+    },
+    offsetHeight: {
+        get() {
+            return this.ele.offsetHeight;
+        }
+    },
+    outerWidth: {
+        get() {
+            let tarSty = getComputedStyle(this.ele);
+            return this.ele.offsetWidth + parseInt(tarSty['margin-left']) + parseInt(tarSty['margin-right']);
+        }
+    },
+    outerHeight: {
+        get() {
+            let tarSty = getComputedStyle(this.ele);
+            return this.ele.offsetHeight + parseInt(tarSty['margin-top']) + parseInt(tarSty['margin-bottom']);
+        }
+    }
+});
+
+    // 全局用$
+    let $ = (expr) => {
+        if (expr instanceof XhearElement) {
+            return expr;
+        }
+
+        let tar = expr;
+
+        if (getType(expr) === "string" && expr.search("<") === -1) {
+            tar = document.querySelector(expr);
+        }
+
+        return parseToXHearElement(tar);
+    }
+
+    // 暴露到全局
+    glo.$ = $;
 
 })(window);

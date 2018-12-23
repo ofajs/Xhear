@@ -1,6 +1,6 @@
 # Xhear 4.0
 
-基于新的 [stanz 5.0](http://baidu.com) 开发，增强性能优化代码结构；
+基于新的 [stanz 5.0](http://baidu.com) 开发，增强性能，优化代码结构；
 
 ## Xhear 3.0
 

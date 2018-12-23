@@ -1441,5 +1441,19 @@ defineProperties(XDataFn, {
             }
             return root;
         }
+    },
+    "prev": {
+        get() {
+            if (!/\D/.test(this.hostkey) && this.hostkey > 0) {
+                return this.parent[this.hostkey - 1];
+            }
+        }
+    },
+    "next": {
+        get() {
+            if (!/\D/.test(this.hostkey)) {
+                return this.parent[this.hostkey + 1];
+            }
+        }
     }
 });
