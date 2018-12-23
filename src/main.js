@@ -23,6 +23,7 @@ const XhearElementHandler = {
         if (!/\D/.test(key) || target[EXKEYS].has(key)) {
             return xhearEntrend({
                 genre: "handleSet",
+                modifyId,
                 target,
                 key,
                 value,
@@ -70,7 +71,7 @@ function XhearElement(ele) {
         [SYNCHOST]: new Map(),
         // ------下面是XhearElement新增的------
         // 实体事件函数寄存
-        [XHEAREVENT]: {},
+        [XHEAREVENT]: new Map(),
         // 在exkeys内的才能进行set操作
         [EXKEYS]: new Set()
     };
@@ -187,4 +188,94 @@ seekData = (data, exprObj) => {
     }
     searchFunc = null;
     return arr;
+}
+
+
+setNotEnumer(XhearElementFn, {
+    on(...args) {
+        let eventName = args[0];
+
+        // 判断原生是否有存在注册的函数
+        let tarCall = this[XHEAREVENT].get(eventName);
+        if (!tarCall) {
+            let eventCall;
+            // 不存在就注册
+            this.ele.addEventListener(eventName, eventCall = (e) => {
+                // 阻止掉其他所有的函数监听
+                e.stopImmediatePropagation();
+
+                // 事件实例生成
+                let target = createXHearElement(e.target);
+                let eveObj = new XDataEvent(eventName, target);
+
+                // 补充keys
+                let tempTarget = target;
+                while (tempTarget.ele !== this.ele) {
+                    eveObj.keys.unshift(tempTarget.hostkey);
+                    tempTarget = tempTarget.parent;
+                }
+
+                // 添加 originalEvent
+                eveObj.originalEvent = e;
+
+                // 添加默认方法
+                eveObj.preventDefault = e.preventDefault.bind(e);
+
+                this.emit(eveObj);
+            });
+            this[XHEAREVENT].set(eventName, eventCall);
+        }
+
+        return XDataFn.on.apply(this, args);
+    },
+    one(...args) {
+        let eventName = args[0];
+        let reData = XDataFn.one.apply(this, args);
+
+        // 智能清除事件函数
+        intelClearEvent(this, eventName);
+
+        return reData;
+    },
+    off(...args) {
+        let eventName = args[0];
+
+        let reData = XDataFn.off.apply(this, args);
+
+        // 智能清除事件函数
+        intelClearEvent(this, eventName);
+
+        return reData;
+    },
+    emit(...args) {
+        let tar = this;
+
+        let eveObj = args[0];
+
+        // 判断是否 shadow元素，shadow元素到根节点就不要冒泡
+        if (eveObj instanceof XDataEvent && eveObj.shadow && eveObj.shadow == this.xvRender) {
+            return;
+        }
+
+        let reData = XDataFn.emit.apply(tar, args);
+
+        return reData;
+    },
+    que(expr) {
+        return $.que(expr, this.ele);
+    }
+});
+
+// 判断是否要清除注册的事件函数
+const intelClearEvent = (_this, eventName) => {
+    // 查看是否没有注册的事件函数了，没有就清空call
+    let tarEves = _this[EVES][eventName];
+
+    if (tarEves && !tarEves.length) {
+        let tarCall = _this[XHEAREVENT].get(eventName);
+
+        // 清除注册事件函数
+        _this.ele.removeEventListener(eventName, tarCall);
+        _this[XHEAREVENT].delete(eventName);
+    }
 }
