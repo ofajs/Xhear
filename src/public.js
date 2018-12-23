@@ -49,10 +49,8 @@ const XHEAREVENT = "_xevent_" + getRandomId();
 const XHEARELEMENT = "_xhearEle_" + getRandomId();
 // 属于可动变量的key组合
 const EXKEYS = "_exkeys_" + getRandomId();
-// const PROTO = '_proto_' + getRandomId();
-// const ATTACHED = "_attached_" + getRandomId();
-// const DETACHED = "_detached_" + getRandomId();
-// const XHEARDATA = "_xheardata_" + getRandomId();
+const ATTACHED = "_attached_" + getRandomId();
+const DETACHED = "_detached_" + getRandomId();
 
 // database
 // 注册数据
@@ -68,12 +66,12 @@ const getContentEle = (tarEle) => {
 
     // 判断是否xvRender
     while (contentEle.xvRender) {
-        let xhearData = contentEle[XHEARDATA];
+        let xhearEle = contentEle[XHEARELEMENT];
 
-        if (xhearData) {
+        if (xhearEle) {
             let {
                 $content
-            } = xhearData;
+            } = xhearEle;
 
             if ($content) {
                 contentEle = $content.ele;
@@ -97,7 +95,7 @@ const getParentEle = (tarEle) => {
     }
 
     while (parentElement.xvContent) {
-        parentElement = parentElement[XHEARDATA].$host.ele;
+        parentElement = parentElement[XHEARELEMENT].$host.ele;
     }
 
     return parentElement;
@@ -128,7 +126,7 @@ const parseStringToDom = (str) => {
     });
 };
 
-// 转换 xhearData 到 element
+// 转换 tag data 到 element
 const parseDataToDom = (data) => {
     if (!data.tag) {
         console.error("this data need tag =>", data);
@@ -186,12 +184,12 @@ const parseDataToDom = (data) => {
 
 // 将element转换成xhearElement
 const createXHearElement = (ele) => {
-    let xhearData = ele[XHEARELEMENT];
-    if (!xhearData) {
-        xhearData = new XhearElement(ele);
-        ele[XHEARELEMENT] = xhearData;
+    let xhearEle = ele[XHEARELEMENT];
+    if (!xhearEle) {
+        xhearEle = new XhearElement(ele);
+        ele[XHEARELEMENT] = xhearEle;
     }
-    return xhearData;
+    return xhearEle;
 }
 
 // 转化成XhearElement

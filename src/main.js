@@ -19,7 +19,8 @@ const XhearElementHandler = {
             delete target._entrendModifyId;
         }
 
-        if (target[EXKEYS].has(key)) {
+        // 数字和关键key才能修改
+        if (!/\D/.test(key) || target[EXKEYS].has(key)) {
             return xhearEntrend({
                 genre: "handleSet",
                 target,
@@ -149,3 +150,41 @@ defineProperties(XhearElementFn, {
         }
     }
 });
+
+// 重构seekData函数
+seekData = (data, exprObj) => {
+    let arr = [];
+
+    // 关键数据
+    let exprKey = exprObj.k,
+        exprValue = exprObj.v,
+        exprType = exprObj.type,
+        exprEqType = exprObj.eqType;
+
+    let searchFunc = k => {
+        let tarData = data[k];
+
+        if (isXData(tarData)) {
+            // 判断是否可添加
+            let canAdd = conditData(exprKey, exprValue, exprType, exprEqType, tarData);
+
+            // 允许就添加
+            canAdd && arr.push(tarData);
+
+            // 查找子项
+            let newArr = seekData(tarData, exprObj);
+            arr.push(...newArr);
+        }
+    }
+
+    if (data instanceof XhearElement) {
+        // 准备好key
+        let exkeys = data[EXKEYS] || [];
+        let childKeys = Object.keys(getContentEle(data.ele).children);
+        [...exkeys, ...childKeys].forEach(searchFunc);
+    } else {
+        Object.keys(data).forEach(searchFunc);
+    }
+    searchFunc = null;
+    return arr;
+}

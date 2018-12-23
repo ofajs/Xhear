@@ -10,7 +10,7 @@
     }
 });
 
-['pop', 'push', 'reverse', 'splice', 'shift', 'unshift'].forEach(methodName => {
+['pop', 'push', 'reverse', 'splice', 'shift', 'unshift', 'sort'].forEach(methodName => {
     defineProperty(XhearElementFn, methodName, {
         writable: true,
         value(...args) {

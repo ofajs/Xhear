@@ -32,9 +32,76 @@ const xhearEntrend = (options) => {
     // 事件实例生成
     let eveObj = new XDataEvent('update', receiver);
 
+    let {
+        ele
+    } = receiver;
+
+    // 获取影子id
+    let shadowId = ele.getAttribute('xv-shadow');
+
+    // 设置shadowId
+    shadowId && (eveObj.shadow = shadowId);
+
     switch (genre) {
         case "handleSet":
-            debugger
+            let oldVal;
+            if (/\D/.test(key)) {
+                // 替换变量数据
+                oldVal = target[key];
+
+                // 一样的值就别折腾
+                if (oldVal == value) {
+                    return;
+                }
+
+                // 是Object的话，转换成stanz数据
+                var afterSetValue = value;
+                if (afterSetValue instanceof Object) {
+                    afterSetValue = cloneObject(afterSetValue);
+                    afterSetValue = createXData(afterSetValue, {
+                        parent: receiver,
+                        hostkey: key
+                    });
+                }
+
+                // 替换值
+                target[key] = afterSetValue;
+
+            } else {
+                // 直接替换相应位置元素
+                var afterSetValue = parseToXHearElement(value);
+
+                if (shadowId) {
+                    // 存在shadow的情况，添加的新元素也要shadow属性
+                    afterSetValue.ele.setAttribute('xv-shadow', shadowId);
+                }
+
+                // 获取旧值
+                let tarEle = receiver[key];
+                if (tarEle) {
+                    // 替换相应元素
+                    let {
+                        parentElement
+                    } = tarEle.ele;
+                    parentElement.insertBefore(afterSetValue.ele, tarEle.ele);
+                    parentElement.removeChild(tarEle.ele);
+                } else {
+                    // 在后面添加新元素
+                    let contentEle = getContentEle(ele);
+                    contentEle.appendChild(afterSetValue.ele);
+                }
+
+                oldVal = tarEle;
+            }
+
+            // 添加修正数据
+            eveObj.modify = {
+                genre: "change",
+                key,
+                value,
+                oldVal,
+                modifyId
+            };
             break;
         case "arrayMethod":
             let {
@@ -61,7 +128,7 @@ const xhearEntrend = (options) => {
                     reData = xhearSplice(receiver, receiver.length - 1, 1, ...args);
                     break;
                 case "reverse":
-                    let contentEle = getContentEle(receiver.ele);
+                    var contentEle = getContentEle(receiver.ele);
                     let childs = Array.from(contentEle.children).reverse();
                     childs.forEach(e => {
                         contentEle.appendChild(e);
@@ -69,7 +136,7 @@ const xhearEntrend = (options) => {
                     reData = this;
                     break;
                 case "sort":
-                    let contentEle = getContentEle(receiver.ele);
+                    var contentEle = getContentEle(receiver.ele);
                     let arg = args[0];
 
                     if (arg instanceof Array) {
@@ -106,7 +173,6 @@ const xhearEntrend = (options) => {
                         // 重新赋值参数
                         args = [ids];
                     }
-
                     break;
             }
 

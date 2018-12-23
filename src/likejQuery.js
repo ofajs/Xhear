@@ -113,3 +113,134 @@ defineProperties(XhearElementFn, {
         }
     }
 });
+
+// 模拟类jQuery的方法
+setNotEnumer(XhearElementFn, {
+    before(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use before in this data =>`, this, data);
+            throw "";
+        }
+        xhearSplice(this.parent, this.hostkey, 0, data);
+        return this;
+    },
+    after(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use after in this data =>`, this, data);
+            throw "";
+        }
+        xhearSplice(this.parent, this.hostkey + 1, 0, data);
+        return this;
+    },
+    siblings(expr) {
+        // 获取父层的所有子元素
+        let parChilds = Array.from(this.ele.parentElement.children);
+
+        // 删除自身
+        let tarId = parChilds.indexOf(this.ele);
+        parChilds.splice(tarId, 1);
+
+        // 删除不符合规定的
+        if (expr) {
+            parChilds = parChilds.filter(e => {
+                if (meetsEle(e, expr)) {
+                    return true;
+                }
+            });
+        }
+
+        return parChilds.map(e => createXHearElement(e));
+    },
+    remove() {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't delete this key => ${this.hostkey}`, this, data);
+            throw "";
+        }
+        xhearSplice(this.parent, this.hostkey, 1);
+    },
+    empty() {
+        // this.html = "";
+        this.splice(0, this.length);
+        return this;
+    },
+    parents(expr) {
+        let pars = [];
+        let tempTar = this.parent;
+
+        if (!expr) {
+            while (tempTar && tempTar.tag != "html") {
+                pars.push(tempTar);
+                tempTar = tempTar.parent;
+            }
+        } else {
+            if (getType(expr) == "string") {
+                while (tempTar && tempTar.tag != "html") {
+                    if (meetsEle(tempTar.ele, expr)) {
+                        pars.push(tempTar);
+                    }
+                    tempTar = tempTar.parent;
+                }
+            } else {
+                if (expr instanceof XhearElement) {
+                    expr = expr.ele;
+                }
+
+                // 从属 element
+                if (expr instanceof Element) {
+                    while (tempTar && tempTar.tag != "html") {
+                        if (tempTar.ele == expr) {
+                            return true;
+                        }
+                        tempTar = tempTar.parent;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        return pars;
+    },
+    parentsUntil(expr) {
+        if (expr) {
+            let tempTar = this.parent;
+            while (tempTar && tempTar.tag != "html") {
+                if (meetsEle(tempTar.ele, expr)) {
+                    return tempTar;
+                }
+                tempTar = tempTar.parent;
+            }
+        }
+    },
+    attr(key, value) {
+        if (!isUndefined(value)) {
+            if (this.xvRender) {
+                let regTagData = regDatabase.get(this.tag);
+                if (regTagData.attrs.includes(key)) {
+                    this[key] = value;
+                }
+            }
+            this.ele.setAttribute(key, value);
+        } else if (key instanceof Object) {
+            Object.keys(key).forEach(k => {
+                this.attr(k, key[k]);
+            });
+        } else {
+            return this.ele.getAttribute(key);
+        }
+    },
+    removeAttr(key) {
+        this.ele.removeAttribute(key);
+        return this;
+    },
+    is(expr) {
+        return meetsEle(this.ele, expr)
+    },
+    // like jQuery function find
+    que(expr) {
+        return $.que(expr, this.ele);
+    },
+    queAll(expr) {
+        return $.queAll(expr, this.ele);
+    }
+});
