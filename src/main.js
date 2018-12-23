@@ -1,3 +1,48 @@
+const XhearElementHandler = {
+    get(target, key, receiver) {
+        // 判断是否纯数字
+        if (/\D/.test(key)) {
+            return Reflect.get(target, key, receiver);
+        } else {
+            let ele = getContentEle(receiver.ele).children[key];
+            return ele && createXHearElement(ele);
+        }
+    },
+    set(target, key, value, receiver) {
+        if (/^_.+/.test(key) || defaultKeys.has(key)) {
+            return Reflect.set(target, key, value, receiver);
+        }
+
+        // 获取到_entrendModifyId就立刻删除
+        let modifyId = target._entrendModifyId;
+        if (modifyId) {
+            delete target._entrendModifyId;
+        }
+
+        if (target[EXKEYS].has(key)) {
+            return xhearEntrend({
+                genre: "handleSet",
+                target,
+                key,
+                value,
+                receiver
+            });
+        }
+
+        return false;
+
+    },
+    deleteProperty(target, key) {
+        // 私有变量直接通过
+        // 数组函数运行中直接通过
+        if (/^_.+/.test(key)) {
+            return Reflect.deleteProperty(target, key);
+        }
+        console.error(`you can't use delete with xhearElement`);
+        return false;
+    }
+};
+
 function XhearElement(ele) {
     defineProperties(this, {
         tag: {
@@ -25,6 +70,7 @@ function XhearElement(ele) {
         // ------下面是XhearElement新增的------
         // 实体事件函数寄存
         [XHEAREVENT]: {},
+        // 在exkeys内的才能进行set操作
         [EXKEYS]: new Set()
     };
 
@@ -36,23 +82,7 @@ function XhearElement(ele) {
 }
 let XhearElementFn = XhearElement.prototype = Object.create(XDataFn);
 
-const XhearElementHandler = {
-    get(target, key, receiver) {
-        // 判断是否纯数字
-        if (/\D/.test(key)) {
-            return Reflect.get(target, key, receiver);
-        } else {
-            let ele = getContentEle(receiver.ele).children[key];
-            return ele && createXHearElement(ele);
-        }
-    },
-    set(target, key, value, receiver) {
-        return Reflect.set(target, key, value, receiver);
-    }
-};
-// 关键keys
-let importantKeys;
-defineProperties(XhearElementFn, importantKeys = {
+defineProperties(XhearElementFn, {
     hostkey: {
         get() {
             return Array.from(this.ele.parentElement.children).indexOf(this.ele);
@@ -119,4 +149,3 @@ defineProperties(XhearElementFn, importantKeys = {
         }
     }
 });
-importantKeys = Object.keys(importantKeys);

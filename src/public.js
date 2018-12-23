@@ -17,6 +17,12 @@ const setNotEnumer = (tar, obj) => {
     }
 }
 
+let {
+    defineProperty,
+    defineProperties,
+    assign
+} = Object;
+
 //改良异步方法
 const nextTick = (() => {
     let isTick = false;
@@ -52,29 +58,10 @@ const EXKEYS = "_exkeys_" + getRandomId();
 // 注册数据
 const regDatabase = new Map();
 
-let {
-    defineProperty,
-    defineProperties,
-    assign
-} = Object;
+// 可以走默认setter的key Map
+const defaultKeys = new Set(["display", "text", "html", "style"]);
 
 // business function
-
-// 将element转换成xhearElement
-const createXHearElement = (ele) => {
-    let xhearData = ele[XHEARELEMENT];
-    if (!xhearData) {
-        xhearData = new XhearElement(ele);
-        ele[XHEARELEMENT] = xhearData;
-    }
-    return xhearData;
-}
-
-// 转化成XhearElement
-const parseToXHearElement = (tar) => {
-    return createXHearElement(tar);
-}
-
 // 获取 content 容器
 const getContentEle = (tarEle) => {
     let contentEle = tarEle;
@@ -140,3 +127,95 @@ const parseStringToDom = (str) => {
         }
     });
 };
+
+// 转换 xhearData 到 element
+const parseDataToDom = (data) => {
+    if (!data.tag) {
+        console.error("this data need tag =>", data);
+        throw "";
+    }
+
+    // 生成element
+    let ele = document.createElement(data.tag);
+
+    // 添加数据
+    data.class && ele.setAttribute('class', data.class);
+    data.text && (ele.textContent = data.text);
+
+    // 判断是否xv-ele
+    let {
+        xvele
+    } = data;
+
+    let xhearEle;
+
+    if (xvele) {
+        ele.setAttribute('xv-ele', "");
+        renderEle(ele);
+        xhearEle = createXHearElement(ele);
+
+        // 数据合并
+        xhearEle[EXKEYS].forEach(k => {
+            let val = data[k];
+            !isUndefined(val) && (xhearEle[k] = val);
+        });
+    }
+
+    // 填充内容
+    let akey = 0;
+    while (akey in data) {
+        // 转换数据
+        let childEle = parseDataToDom(data[akey]);
+
+        if (xhearEle) {
+            let {
+                $content
+            } = xhearEle;
+
+            if ($content) {
+                $content.ele.appendChild(childEle);
+            }
+        } else {
+            ele.appendChild(childEle);
+        }
+        akey++;
+    }
+
+    return ele;
+}
+
+// 将element转换成xhearElement
+const createXHearElement = (ele) => {
+    let xhearData = ele[XHEARELEMENT];
+    if (!xhearData) {
+        xhearData = new XhearElement(ele);
+        ele[XHEARELEMENT] = xhearData;
+    }
+    return xhearData;
+}
+
+// 转化成XhearElement
+const parseToXHearElement = expr => {
+    if (expr instanceof XhearElement) {
+        return expr;
+    }
+
+    let reobj;
+
+    // expr type
+    switch (getType(expr)) {
+        case "object":
+            reobj = parseDataToDom(expr);
+            reobj = createXHearElement(reobj);
+            break;
+        case "string":
+            expr = parseStringToDom(expr)[0];
+        default:
+            if (expr instanceof Element) {
+                // renderAllXvEle(expr);
+                reobj = createXHearElement(expr);
+            }
+    }
+
+    return reobj;
+}

@@ -21,6 +21,12 @@ const setNotEnumer = (tar, obj) => {
     }
 }
 
+let {
+    defineProperty,
+    defineProperties,
+    assign
+} = Object;
+
 //改良异步方法
 const nextTick = (() => {
     let isTick = false;
@@ -56,29 +62,10 @@ const EXKEYS = "_exkeys_" + getRandomId();
 // 注册数据
 const regDatabase = new Map();
 
-let {
-    defineProperty,
-    defineProperties,
-    assign
-} = Object;
+// 可以走默认setter的key Map
+const defaultKeys = new Set(["display", "text", "html", "style"]);
 
 // business function
-
-// 将element转换成xhearElement
-const createXHearElement = (ele) => {
-    let xhearData = ele[XHEARELEMENT];
-    if (!xhearData) {
-        xhearData = new XhearElement(ele);
-        ele[XHEARELEMENT] = xhearData;
-    }
-    return xhearData;
-}
-
-// 转化成XhearElement
-const parseToXHearElement = (tar) => {
-    return createXHearElement(tar);
-}
-
 // 获取 content 容器
 const getContentEle = (tarEle) => {
     let contentEle = tarEle;
@@ -144,6 +131,98 @@ const parseStringToDom = (str) => {
         }
     });
 };
+
+// 转换 xhearData 到 element
+const parseDataToDom = (data) => {
+    if (!data.tag) {
+        console.error("this data need tag =>", data);
+        throw "";
+    }
+
+    // 生成element
+    let ele = document.createElement(data.tag);
+
+    // 添加数据
+    data.class && ele.setAttribute('class', data.class);
+    data.text && (ele.textContent = data.text);
+
+    // 判断是否xv-ele
+    let {
+        xvele
+    } = data;
+
+    let xhearEle;
+
+    if (xvele) {
+        ele.setAttribute('xv-ele', "");
+        renderEle(ele);
+        xhearEle = createXHearElement(ele);
+
+        // 数据合并
+        xhearEle[EXKEYS].forEach(k => {
+            let val = data[k];
+            !isUndefined(val) && (xhearEle[k] = val);
+        });
+    }
+
+    // 填充内容
+    let akey = 0;
+    while (akey in data) {
+        // 转换数据
+        let childEle = parseDataToDom(data[akey]);
+
+        if (xhearEle) {
+            let {
+                $content
+            } = xhearEle;
+
+            if ($content) {
+                $content.ele.appendChild(childEle);
+            }
+        } else {
+            ele.appendChild(childEle);
+        }
+        akey++;
+    }
+
+    return ele;
+}
+
+// 将element转换成xhearElement
+const createXHearElement = (ele) => {
+    let xhearData = ele[XHEARELEMENT];
+    if (!xhearData) {
+        xhearData = new XhearElement(ele);
+        ele[XHEARELEMENT] = xhearData;
+    }
+    return xhearData;
+}
+
+// 转化成XhearElement
+const parseToXHearElement = expr => {
+    if (expr instanceof XhearElement) {
+        return expr;
+    }
+
+    let reobj;
+
+    // expr type
+    switch (getType(expr)) {
+        case "object":
+            reobj = parseDataToDom(expr);
+            reobj = createXHearElement(reobj);
+            break;
+        case "string":
+            expr = parseStringToDom(expr)[0];
+        default:
+            if (expr instanceof Element) {
+                // renderAllXvEle(expr);
+                reobj = createXHearElement(expr);
+            }
+    }
+
+    return reobj;
+}
 
     // common
 // 事件寄宿对象key
@@ -1605,7 +1684,52 @@ defineProperties(XDataFn, {
     }
 });
 
-    function XhearElement(ele) {
+    const XhearElementHandler = {
+    get(target, key, receiver) {
+        // 判断是否纯数字
+        if (/\D/.test(key)) {
+            return Reflect.get(target, key, receiver);
+        } else {
+            let ele = getContentEle(receiver.ele).children[key];
+            return ele && createXHearElement(ele);
+        }
+    },
+    set(target, key, value, receiver) {
+        if (/^_.+/.test(key) || defaultKeys.has(key)) {
+            return Reflect.set(target, key, value, receiver);
+        }
+
+        // 获取到_entrendModifyId就立刻删除
+        let modifyId = target._entrendModifyId;
+        if (modifyId) {
+            delete target._entrendModifyId;
+        }
+
+        if (target[EXKEYS].has(key)) {
+            return xhearEntrend({
+                genre: "handleSet",
+                target,
+                key,
+                value,
+                receiver
+            });
+        }
+
+        return false;
+
+    },
+    deleteProperty(target, key) {
+        // 私有变量直接通过
+        // 数组函数运行中直接通过
+        if (/^_.+/.test(key)) {
+            return Reflect.deleteProperty(target, key);
+        }
+        console.error(`you can't use delete with xhearElement`);
+        return false;
+    }
+};
+
+function XhearElement(ele) {
     defineProperties(this, {
         tag: {
             enumerable: true,
@@ -1632,6 +1756,7 @@ defineProperties(XDataFn, {
         // ------下面是XhearElement新增的------
         // 实体事件函数寄存
         [XHEAREVENT]: {},
+        // 在exkeys内的才能进行set操作
         [EXKEYS]: new Set()
     };
 
@@ -1643,23 +1768,7 @@ defineProperties(XDataFn, {
 }
 let XhearElementFn = XhearElement.prototype = Object.create(XDataFn);
 
-const XhearElementHandler = {
-    get(target, key, receiver) {
-        // 判断是否纯数字
-        if (/\D/.test(key)) {
-            return Reflect.get(target, key, receiver);
-        } else {
-            let ele = getContentEle(receiver.ele).children[key];
-            return ele && createXHearElement(ele);
-        }
-    },
-    set(target, key, value, receiver) {
-        return Reflect.set(target, key, value, receiver);
-    }
-};
-// 关键keys
-let importantKeys;
-defineProperties(XhearElementFn, importantKeys = {
+defineProperties(XhearElementFn, {
     hostkey: {
         get() {
             return Array.from(this.ele.parentElement.children).indexOf(this.ele);
@@ -1726,10 +1835,140 @@ defineProperties(XhearElementFn, importantKeys = {
         }
     }
 });
-importantKeys = Object.keys(importantKeys);
+
+    // xhear数据的entrend入口
+const xhearEntrend = (options) => {
+    let {
+        target,
+        key,
+        value,
+        receiver,
+        modifyId,
+        genre
+    } = options;
+
+    // 判断modifyId
+    if (!modifyId) {
+        // 生成随机modifyId
+        modifyId = getRandomId();
+    } else {
+        // 查看是否已经存在这个modifyId了，存在就不折腾
+        if (receiver[MODIFYIDHOST].has(modifyId)) {
+            return true;
+        };
+    }
+
+    // 自身添加modifyId
+    receiver[MODIFYIDHOST].add(modifyId);
+
+    // 准备打扫函数
+    clearModifyIdHost(receiver);
+
+    // 返回的数据
+    let reData = true;
+
+    // 事件实例生成
+    let eveObj = new XDataEvent('update', receiver);
+
+    switch (genre) {
+        case "handleSet":
+            debugger
+            break;
+        case "arrayMethod":
+            let {
+                methodName,
+                args
+            } = options;
+
+            switch (methodName) {
+                case "splice":
+                    reData = xhearSplice(receiver, ...args);
+                    break;
+                case "unshift":
+                    xhearSplice(receiver, 0, 0, ...args);
+                    reData = receiver.length;
+                    break;
+                case "push":
+                    xhearSplice(receiver, receiver.length, 0, ...args);
+                    reData = receiver.length;
+                    break;
+                case "shift":
+                    reData = xhearSplice(receiver, 0, 1, ...args);
+                    break;
+                case "pop":
+                    reData = xhearSplice(receiver, receiver.length - 1, 1, ...args);
+                    break;
+                case "reverse":
+                    let contentEle = getContentEle(receiver.ele);
+                    let childs = Array.from(contentEle.children).reverse();
+                    childs.forEach(e => {
+                        contentEle.appendChild(e);
+                    });
+                    reData = this;
+                    break;
+                case "sort":
+                    let contentEle = getContentEle(receiver.ele);
+                    let arg = args[0];
+
+                    if (arg instanceof Array) {
+                        // 先做备份
+                        let backupChilds = Array.from(contentEle.children);
+
+                        // 修正顺序
+                        arg.forEach(eid => {
+                            contentEle.appendChild(backupChilds[eid]);
+                        });
+                    } else {
+                        // 新生成数组
+                        let arr = Array.from(contentEle.children).map(e => createXHearElement(e));
+                        let backupArr = Array.from(arr);
+
+                        // 执行排序函数
+                        arr.sort(arg);
+
+                        // 记录顺序
+                        let ids = [],
+                            putId = getRandomId();
+
+                        arr.forEach(e => {
+                            let id = backupArr.indexOf(e);
+                            backupArr[id] = putId;
+                            ids.push(id);
+                        });
+
+                        // 修正新顺序
+                        arr.forEach(e => {
+                            contentEle.appendChild(e.ele);
+                        });
+
+                        // 重新赋值参数
+                        args = [ids];
+                    }
+
+                    break;
+            }
+
+            // 添加修正数据
+            eveObj.modify = {
+                genre: "arrayMethod",
+                methodName,
+                modifyId,
+                args
+            };
+            break;
+        case "handleDelete":
+            // 是不会出现handleDelete的情况的，删除数据属于不合法行为
+            break;
+    }
+
+    // update事件触发
+    receiver.emit(eveObj);
+
+    return reData;
+}
 
     // 可运行的方法
-['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some'].forEach(methodName => {
+['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'includes'].forEach(methodName => {
     let oldFunc = Array.prototype[methodName];
     if (oldFunc) {
         setNotEnumer(XhearElementFn, {
@@ -1739,6 +1978,78 @@ importantKeys = Object.keys(importantKeys);
         });
     }
 });
+
+['pop', 'push', 'reverse', 'splice', 'shift', 'unshift'].forEach(methodName => {
+    defineProperty(XhearElementFn, methodName, {
+        writable: true,
+        value(...args) {
+            // 获取到_entrendModifyId就立刻删除
+            let modifyId = this._entrendModifyId;
+            if (modifyId) {
+                delete this._entrendModifyId;
+            }
+
+            // 其他方式就要通过主体entrend调整
+            return xhearEntrend({
+                genre: "arrayMethod",
+                args,
+                methodName,
+                modifyId,
+                receiver: this
+            });
+        }
+    });
+});
+
+// xhearElement用的splice方法
+const xhearSplice = (_this, index, howmany, ...items) => {
+    let reArr = [];
+
+    let {
+        ele
+    } = _this;
+
+    // 确认是否渲染的元素，抽出content元素
+    let contentEle = getContentEle(ele);
+    let {
+        children
+    } = contentEle;
+
+    // 先删除后面数量的元素
+    while (howmany > 0) {
+        let childEle = children[index];
+
+        reArr.push(parseToXHearElement(childEle));
+
+        // 删除目标元素
+        contentEle.removeChild(childEle);
+
+        // 数量减少
+        howmany--;
+    }
+
+    // 定位目标子元素
+    let tar = children[index];
+
+    let shadowId = ele.getAttribute('xv-shadow');
+
+    // 添加元素
+    if (index >= 0 && tar) {
+        items.forEach(e => {
+            let nEle = parseToXHearElement(e).ele;
+            shadowId && (nEle.setAttribute('xv-shadow', shadowId));
+            contentEle.insertBefore(nEle, tar);
+        });
+    } else {
+        items.forEach(e => {
+            let nEle = parseToXHearElement(e).ele;
+            shadowId && (nEle.setAttribute('xv-shadow', shadowId));
+            contentEle.appendChild(nEle);
+        });
+    }
+
+    return reArr;
+}
 
     defineProperties(XhearElementFn, {
     display: {
