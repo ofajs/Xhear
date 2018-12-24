@@ -5,143 +5,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>xhear test</title>
-    <link rel="stylesheet" href="css/sText.css">
+    <title>Xhear 4.0 click</title>
     <script src="ok.js"></script>
-    <!-- <script src="jquery-3.2.1.js"></script> -->
-    <!-- <script src="../src/xque.js"></script> -->
-    <!-- <script src="../dist/xhear-no$.js"></script> -->
     <script src="../dist/xhear.js"></script>
     <style>
-        testtag,
-        t1,
-        t2 {
-            display: block;
+        .a {
+            width: 150px;
+            min-height: 50px;
+            padding: 10px;
+            margin: 10px;
+            background-color: rgba(255, 255, 255, .1);
+        }
+
+        .b_inner,
+        .c_inner {
+            width: 100px;
+            height: 50px;
+            margin: 20px;
+            background-color: rgba(255, 0, 0, .2);
         }
     </style>
 </head>
 
 <body>
-    <testtag id="test2Tar" xv-ele a="aaaaa" value="kakaluote">
-        <div>haha ok ye</div>
-    </testtag>
-    <br>
-    <stext xv-ele pattern="\D+"></stext>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <t1 xv-ele id="t1">I am t1</t1>
-
-    <testsyncele xv-ele></testsyncele>
+    <div class="main">
+        <div class="a"></div>
+        <div class="a b">
+            <div class="b_inner">b_inner</div>
+        </div>
+        <div class="a c">
+            <div class="c_inner">c_inner</div>
+        </div>
+        <div class="a"></div>
+        <div class="a"></div>
+    </div>
 </body>
-<script src="js/stext.js"></script>
-<script src="js/testtag.js"></script>
-<script src="test1.js"></script>
-<script src="test2.js"></script>
 <script>
-    // 同步数据
-    $('#t1').sync($('testsyncele'), 'render');
+    $('.main').on('click', e => {
+        console.log('click the element => ', e);
+    });
 
-    // sync data test
-    // let rData = $.xdata([]);
-    // $('#t1').render = [];
-
-    // rData.sync($('#t1').render);
-
-    // rData.reset([{
-    //     tag: "t1",
-    //     tname: "A",
-    //     0: {
-    //         tag: "t1",
-    //         tname: "B",
-    //         0: {
-    //             tag: "t1",
-    //             tname: "C"
-    //         },
-    //         length: 1
-    //     },
-    //     1: {
-    //         tag: "t2",
-    //         tname: "D"
-    //     },
-    //     length: 2
-    // }]);
-
-    // setTimeout(() => {
-    //     // rData[0][2] = {
-    //     //     tag: "t1",
-    //     //     tname: "change t2 to t1"
-    //     // };
-    //     // debugger
-    //     rData[0].push({
-    //         tag: "t1",
-    //         tname: "change t2 to t1"
-    //     });
-    // }, 500);
-
-
-    $('#t1').render = [{
-        tag: "t1",
-        tname: "A",
-        0: {
-            tag: "t1",
-            tname: "B",
-            0: {
-                tag: "t1",
-                tname: "C"
-            },
-            1: {
-                tag: "t1",
-                tname: "C2"
-            },
-            length: 2
-        },
-        1: {
-            tag: "t2",
-            tname: "D"
-        },
-        length: 2
-    }];
-
-    setTimeout(() => {
-        // $('#t1').render[0].splice(0, 1, {
-        //     tag: "t2",
-        //     tname: "E",
-        //     0: {
-        //         tag: "t1",
-        //         tname: "F"
-        //     },
-        //     length: 1
-        // })
-
-        // $('#t1').render[0][1] = {
-        //     tag: "t2",
-        //     tname: "t22222",
-        //     0: {
-        //         tag: "t1",
-        //         tname: "t1_hahahaha"
-        //     },
-        //     length: 1
-        // };
-
-        // 翻转
-        $('#t1').render[0][0].reverse();
-
-        setTimeout(() => {
-            $('#t1').render = [{
-                tag: "t1",
-                tname: "B",
-                0: {
-                    tag: "t1",
-                    tname: "C"
-                },
-                length: 1
-            }];
-        }, 500);
-    }, 1000);
+    $('.main').on('click', '.c', e => {
+        console.log('click the selector element => ', e);
+    });
 </script>
 
 </html>
