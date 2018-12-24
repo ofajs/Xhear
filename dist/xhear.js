@@ -369,12 +369,9 @@ let clearXData = (xdata) => {
 
     // 开始清扫所有绑定
     // 先清扫 sync
-    let syncIt = xdata[SYNCHOST].keys();
-    let d = syncIt.next();
-    while (!d.done) {
+    for (let d of xdata[SYNCHOST].keys()) {
         let opp = d.value;
         xdata.unsync(opp);
-        d = syncIt.next();
     }
 
     // 清扫 watch
@@ -590,6 +587,9 @@ setNotEnumer(XDataFn, {
             count = eveONObj.count;
         }
 
+        // 设置数量
+        (isUndefined(count)) && (count = Infinity);
+
         // 分解id参数
         let spIdArr = eventName.split('#');
         let eventId;
@@ -684,26 +684,29 @@ setNotEnumer(XDataFn, {
                 return true;
             }
 
-            // 添加数据
-            let args = [eventObj];
-            !isUndefined(opt.data) && (eventObj.data = opt.data);
-            !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
-            !isUndefined(opt.count) && (eventObj.count = opt.count);
-            !isUndefined(emitData) && (args.push(emitData));
-
-            opt.callback.apply(this, args);
-
-            // 删除多余数据
-            delete eventObj.data;
-            delete eventObj.eventId;
-            delete eventObj.count;
-
-            // 判断次数
+            // 根据count运行函数
+            // 为插件行为提供一个暂停运行的方式
             if (opt.count) {
+                // 添加数据
+                let args = [eventObj];
+                !isUndefined(opt.data) && (eventObj.data = opt.data);
+                !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
+                !isUndefined(opt.count) && (eventObj.count = opt.count);
+                !isUndefined(emitData) && (args.push(emitData));
+
+                opt.callback.apply(this, args);
+
+                // 删除多余数据
+                delete eventObj.data;
+                delete eventObj.eventId;
+                delete eventObj.count;
+
+                // 递减
                 opt.count--;
-                if (opt.count <= 0) {
-                    eves.delete(opt);
-                }
+            }
+
+            if (opt.count <= 0) {
+                eves.delete(opt);
             }
         });
 
@@ -892,8 +895,6 @@ const entrend = (options) => {
 
             // 添加修正数据
             eveObj.modify = {
-                // change 改动
-                // set 新增值
                 genre: "arrayMethod",
                 methodName,
                 modifyId,
@@ -1687,6 +1688,7 @@ defineProperties(XDataFn, {
         if (/\D/.test(key)) {
             return Reflect.get(target, key, receiver);
         } else {
+            // 纯数字就从children上获取
             let ele = getContentEle(receiver.ele).children[key];
             return ele && createXHearElement(ele);
         }
@@ -1873,10 +1875,41 @@ seekData = (data, exprObj) => {
     return arr;
 }
 
-
+// 修正事件方法
 setNotEnumer(XhearElementFn, {
     on(...args) {
-        let eventName = args[0];
+        let eventName = args[0],
+            selector,
+            callback,
+            data;
+
+        // 判断是否对象传入
+        if (getType(eventName) == "object") {
+            let eveOnObj = eventName;
+            eventName = eveOnObj.event;
+            callback = eveOnObj.callback;
+            data = eveOnObj.data;
+            selector = eveOnObj.selector;
+        } else {
+            // 判断第二个参数是否字符串，字符串当做selector处理
+            switch (getType(args[1])) {
+                case "string":
+                    selector = args[1];
+                    callback = args[2];
+                    data = args[3];
+                    break;
+                default:
+                    callback = args[1];
+                    data = args[2];
+            }
+
+            // 修正参数项
+            args = [{
+                event: eventName,
+                callback,
+                data
+            }];
+        }
 
         // 判断原生是否有存在注册的函数
         let tarCall = this[XHEAREVENT].get(eventName);
@@ -1909,7 +1942,24 @@ setNotEnumer(XhearElementFn, {
             this[XHEAREVENT].set(eventName, eventCall);
         }
 
-        return XDataFn.on.apply(this, args);
+        let reData = XDataFn.on.apply(this, args);
+
+        // 判断有selector，把selector数据放进去
+        if (selector) {
+            // 获取事件寄宿对象
+            let eves = getEvesArr(this, eventName);
+
+            // 遍历函数
+            Array.from(eves).some(e => {
+                if (e.callback == callback) {
+                    // 添加selector数据
+                    e.selector = selector;
+                    return true;
+                }
+            });
+        }
+
+        return reData;
     },
     one(...args) {
         let eventName = args[0];
@@ -1931,16 +1981,43 @@ setNotEnumer(XhearElementFn, {
         return reData;
     },
     emit(...args) {
-        let tar = this;
-
         let eveObj = args[0];
+        let eventName = eveObj;
 
         // 判断是否 shadow元素，shadow元素到根节点就不要冒泡
-        if (eveObj instanceof XDataEvent && eveObj.shadow && eveObj.shadow == this.xvRender) {
-            return;
+        if (eveObj instanceof XDataEvent) {
+            if (eveObj.shadow && eveObj.shadow == this.xvRender) {
+                return;
+            }
+            eventName = eveObj.type;
         }
 
-        let reData = XDataFn.emit.apply(tar, args);
+        // 临时寄存数组
+        let temps = [];
+
+        // 获取事件寄宿对象
+        let eves = getEvesArr(this, eventName);
+        eves.forEach(e => {
+            if (e.selector) {
+                let {
+                    target
+                } = eveObj;
+                // 判断是否在selector
+                if (!target.parents(e.selector).length && !target.is(e.selector)) {
+                    // 临时移除count，后面还原
+                    temps.push([e, e.count]);
+                    // 禁止运行
+                    e.count = undefined;
+                }
+            }
+        });
+
+        let reData = XDataFn.emit.apply(this, args);
+
+        // 还原数据
+        temps.forEach(e => {
+            e[0].count = e[1];
+        });
 
         return reData;
     },
@@ -2149,9 +2226,8 @@ const xhearEntrend = (options) => {
                 args
             };
             break;
-        case "handleDelete":
-            // 是不会出现handleDelete的情况的，删除数据属于不合法行为
-            break;
+        default:
+            return;
     }
 
     // update事件触发

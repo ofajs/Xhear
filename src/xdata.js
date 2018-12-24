@@ -146,12 +146,9 @@ let clearXData = (xdata) => {
 
     // 开始清扫所有绑定
     // 先清扫 sync
-    let syncIt = xdata[SYNCHOST].keys();
-    let d = syncIt.next();
-    while (!d.done) {
+    for (let d of xdata[SYNCHOST].keys()) {
         let opp = d.value;
         xdata.unsync(opp);
-        d = syncIt.next();
     }
 
     // 清扫 watch
@@ -367,6 +364,9 @@ setNotEnumer(XDataFn, {
             count = eveONObj.count;
         }
 
+        // 设置数量
+        (isUndefined(count)) && (count = Infinity);
+
         // 分解id参数
         let spIdArr = eventName.split('#');
         let eventId;
@@ -461,26 +461,29 @@ setNotEnumer(XDataFn, {
                 return true;
             }
 
-            // 添加数据
-            let args = [eventObj];
-            !isUndefined(opt.data) && (eventObj.data = opt.data);
-            !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
-            !isUndefined(opt.count) && (eventObj.count = opt.count);
-            !isUndefined(emitData) && (args.push(emitData));
-
-            opt.callback.apply(this, args);
-
-            // 删除多余数据
-            delete eventObj.data;
-            delete eventObj.eventId;
-            delete eventObj.count;
-
-            // 判断次数
+            // 根据count运行函数
+            // 为插件行为提供一个暂停运行的方式
             if (opt.count) {
+                // 添加数据
+                let args = [eventObj];
+                !isUndefined(opt.data) && (eventObj.data = opt.data);
+                !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
+                !isUndefined(opt.count) && (eventObj.count = opt.count);
+                !isUndefined(emitData) && (args.push(emitData));
+
+                opt.callback.apply(this, args);
+
+                // 删除多余数据
+                delete eventObj.data;
+                delete eventObj.eventId;
+                delete eventObj.count;
+
+                // 递减
                 opt.count--;
-                if (opt.count <= 0) {
-                    eves.delete(opt);
-                }
+            }
+
+            if (opt.count <= 0) {
+                eves.delete(opt);
             }
         });
 
@@ -669,8 +672,6 @@ const entrend = (options) => {
 
             // 添加修正数据
             eveObj.modify = {
-                // change 改动
-                // set 新增值
                 genre: "arrayMethod",
                 methodName,
                 modifyId,

@@ -184,9 +184,8 @@ const xhearEntrend = (options) => {
                 args
             };
             break;
-        case "handleDelete":
-            // 是不会出现handleDelete的情况的，删除数据属于不合法行为
-            break;
+        default:
+            return;
     }
 
     // update事件触发
