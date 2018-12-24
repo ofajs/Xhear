@@ -27,7 +27,7 @@
 
         // watch监听
         d.watch(e => {
-            tester.ok(e.modifys.length == 2, 'modifys length ok');
+            tester.ok(e.modifys.length == 4, 'modifys length ok');
             tester.ok(e.modifys[0].genre == "arrayMethod", 'modifys genre ok 1');
             tester.ok(e.modifys[1].genre == "change", 'modifys genre ok 2');
         });
@@ -71,7 +71,7 @@
             switch (cid) {
                 case 1:
                     tester.ok(e.val.length == 1, "[selected=1] ok 1");
-                    tester.ok(e.val[0].ele === d[0].ele, "[selected=1] ok 2");
+                    tester.ok(e.val[0].ele === d[1].ele, "[selected=1] ok 2");
                     break;
             }
             cid++;
@@ -89,10 +89,13 @@
             selected: 1
         };
 
+        d[0].selected = 0;
+        d[1].selected = 1;
+
         tester.ok(d[0].text.trim() == "change t2-1", 'replace ok');
 
         setTimeout(() => {
-            tester.ok(cloneDObj[0].selected == 1, 'sync ok');
+            tester.ok(cloneDObj[1].selected == 1, 'sync ok');
         }, 500);
 
     }, 100);

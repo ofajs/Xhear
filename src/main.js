@@ -31,6 +31,8 @@ const XhearElementHandler = {
                 receiver
             });
         }
+        
+        debugger
 
         return false;
 

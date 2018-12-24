@@ -26,11 +26,8 @@
     };
 
     // 模拟 selector 测试
-    b.on('ka', (e) => {
-        // if (e.target.parents($('.bbb'))) {
-        if (0 in e.target.parents('.bbb')) {
-            tester.ok(1, 'selector ok');
-        }
+    b.on('ka', '.bbb', (e) => {
+        tester.ok(1, 'selector ok');
     });
 
     $('.bbb1_2').emit('ka');

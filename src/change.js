@@ -51,7 +51,7 @@ const xhearEntrend = (options) => {
 
                 // 一样的值就别折腾
                 if (oldVal == value) {
-                    return;
+                    return true;
                 }
 
                 // 是Object的话，转换成stanz数据

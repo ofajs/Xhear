@@ -97,7 +97,7 @@ const getParentEle = (tarEle) => {
         return;
     }
 
-    while (parentElement.xvContent) {
+    while (parentElement.hostId) {
         parentElement = parentElement[XHEARELEMENT].$host.ele;
     }
 
@@ -1287,7 +1287,7 @@ setNotEnumer(XDataFn, {
                             isEq = 0;
                         }
                         isEq && sData.some((e, i) => {
-                            if (!isEqual(oldVals[i], e)) {
+                            if (!(oldVals[i] == e)) {
                                 isEq = 0;
                                 return true;
                             }
@@ -1715,6 +1715,8 @@ defineProperties(XDataFn, {
                 receiver
             });
         }
+        
+        debugger
 
         return false;
 
@@ -2093,7 +2095,7 @@ const xhearEntrend = (options) => {
 
                 // 一样的值就别折腾
                 if (oldVal == value) {
-                    return;
+                    return true;
                 }
 
                 // 是Object的话，转换成stanz数据
@@ -2638,6 +2640,8 @@ const renderEle = (ele) => {
         defineProperty(contentXhearEle, "$host", {
             value: xhearEle
         });
+        // 设置hostId
+        contentEle.hostId = renderId;
 
         // 重新修正contentEle
         while (contentEle.xvRender) {
@@ -2936,7 +2940,10 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document) => createXHearElement(root.querySelector(expr)),
+        que: (expr, root = document) => {
+            let tar = root.querySelector(expr);
+            return tar && createXHearElement(tar);
+        },
         queAll: (expr, root = document) => Array.from(root.querySelectorAll(expr)).map(e => createXHearElement(e)),
         xdata: createXData,
         register

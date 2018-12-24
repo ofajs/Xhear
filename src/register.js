@@ -69,6 +69,8 @@ const renderEle = (ele) => {
         defineProperty(contentXhearEle, "$host", {
             value: xhearEle
         });
+        // 设置hostId
+        contentEle.hostId = renderId;
 
         // 重新修正contentEle
         while (contentEle.xvRender) {

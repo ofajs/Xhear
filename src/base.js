@@ -36,7 +36,10 @@
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document) => createXHearElement(root.querySelector(expr)),
+        que: (expr, root = document) => {
+            let tar = root.querySelector(expr);
+            return tar && createXHearElement(tar);
+        },
         queAll: (expr, root = document) => Array.from(root.querySelectorAll(expr)).map(e => createXHearElement(e)),
         xdata: createXData,
         register

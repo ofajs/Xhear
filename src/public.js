@@ -94,7 +94,7 @@ const getParentEle = (tarEle) => {
         return;
     }
 
-    while (parentElement.xvContent) {
+    while (parentElement.hostId) {
         parentElement = parentElement[XHEARELEMENT].$host.ele;
     }
 
