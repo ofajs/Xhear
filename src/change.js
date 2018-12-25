@@ -109,6 +109,20 @@ const xhearEntrend = (options) => {
                 args
             } = options;
 
+            // 对于新添加的，先转换一下
+            // switch (methodName) {
+            //     case "splice":
+            //     case "unshift":
+            //     case "push":
+            //         args.forEach(e => {
+            //             // 对于已经有组织的人，先脱离组织
+            //             if (e instanceof XhearElement && e.parent) {
+            //                 e.remove();
+            //                 debugger
+            //             }
+            //         });
+            // }
+
             switch (methodName) {
                 case "splice":
                     reData = xhearSplice(receiver, ...args);
@@ -174,6 +188,21 @@ const xhearEntrend = (options) => {
                         args = [ids];
                     }
                     break;
+            }
+
+            // 对于新添加的，先转换一下
+            switch (methodName) {
+                case "splice":
+                case "unshift":
+                case "push":
+                    args = args.map(e => {
+                        // 对于已经有组织的人，先脱离组织
+                        if (e instanceof XhearElement) {
+                            return e.object;
+                        } else {
+                            return e;
+                        }
+                    });
             }
 
             // 添加修正数据

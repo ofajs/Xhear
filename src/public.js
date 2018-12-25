@@ -192,6 +192,21 @@ const createXHearElement = (ele) => {
     return xhearEle;
 }
 
+// 渲染所有xv-ele
+const renderAllXvEle = (ele) => {
+    // 判断内部元素是否有xv-ele
+    let eles = ele.querySelectorAll('[xv-ele]');
+    Array.from(eles).forEach(e => {
+        renderEle(e);
+    });
+
+    let isXvEle = ele.getAttribute('xv-ele');
+    if (!isUndefined(isXvEle) && isXvEle !== null) {
+        renderEle(ele);
+    }
+}
+
+
 // 转化成XhearElement
 const parseToXHearElement = expr => {
     if (expr instanceof XhearElement) {
@@ -210,7 +225,7 @@ const parseToXHearElement = expr => {
             expr = parseStringToDom(expr)[0];
         default:
             if (expr instanceof Element) {
-                // renderAllXvEle(expr);
+                renderAllXvEle(expr);
                 reobj = createXHearElement(expr);
             }
     }

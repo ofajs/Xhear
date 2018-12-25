@@ -195,6 +195,21 @@ const createXHearElement = (ele) => {
     return xhearEle;
 }
 
+// 渲染所有xv-ele
+const renderAllXvEle = (ele) => {
+    // 判断内部元素是否有xv-ele
+    let eles = ele.querySelectorAll('[xv-ele]');
+    Array.from(eles).forEach(e => {
+        renderEle(e);
+    });
+
+    let isXvEle = ele.getAttribute('xv-ele');
+    if (!isUndefined(isXvEle) && isXvEle !== null) {
+        renderEle(ele);
+    }
+}
+
+
 // 转化成XhearElement
 const parseToXHearElement = expr => {
     if (expr instanceof XhearElement) {
@@ -213,7 +228,7 @@ const parseToXHearElement = expr => {
             expr = parseStringToDom(expr)[0];
         default:
             if (expr instanceof Element) {
-                // renderAllXvEle(expr);
+                renderAllXvEle(expr);
                 reobj = createXHearElement(expr);
             }
     }
@@ -530,6 +545,14 @@ defineProperties(XDataEvent.prototype, {
                         modifyId
                     } = modify;
 
+                    // 修正args，将XData还原成object对象
+                    args = args.map(e => {
+                        if (isXData(e)) {
+                            return e.object;
+                        }
+                        return e;
+                    });
+
                     assign(reobj, {
                         methodName,
                         args,
@@ -837,6 +860,10 @@ const entrend = (options) => {
                 case "unshift":
                     args = args.map(e => {
                         if (isXData(e)) {
+                            // 是xdata的话，干掉原来的数据
+                            if (!e.parent) {
+                                return e;
+                            }
                             let eObj = e.object;
                             e.remove();
                             e = eObj;
@@ -1017,11 +1044,23 @@ assign(arrayFn, {
     }
 });
 
+// 私有属性正则
+const PRIREG = /^_.+|^parent$|^hostkey$|^status$|^length$/;
 let XDataHandler = {
     set(target, key, value, receiver) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (/^_.+/.test(key) || target.hasOwnProperty(RUNARRMETHOD)) {
+        if (PRIREG.test(key)) {
+            return Reflect.set(target, key, value, receiver);
+        }
+
+        // 数组内组合，修改hostkey和parent
+        if (target.hasOwnProperty(RUNARRMETHOD)) {
+            if (isXData(value)) {
+                value.parent = receiver;
+                value.hostkey = key;
+                value.status = "binding";
+            }
             return Reflect.set(target, key, value, receiver);
         }
 
@@ -1382,13 +1421,18 @@ setNotEnumer(XDataFn, {
         return this;
     },
     // 同步数据的方法
-    sync(xdata, options, cover = false) {
+    sync(xdata, options, cover) {
         let optionsType = getType(options);
 
         let watchFunc, oppWatchFunc;
 
         switch (optionsType) {
             case "string":
+                // 单键覆盖
+                if (cover) {
+                    xdata[options] = this[options];
+                }
+
                 this.watch(watchFunc = e => {
                     e.modifys.forEach(trend => {
                         if (trend.fromKey == options) {
@@ -1405,6 +1449,13 @@ setNotEnumer(XDataFn, {
                 });
                 break;
             case "array":
+                // 数组内的键覆盖
+                if (cover) {
+                    options.forEach(k => {
+                        xdata[k] = this[k];
+                    });
+                }
+
                 this.watch(watchFunc = e => {
                     e.modifys.forEach(trend => {
                         if (options.includes(trend.fromKey)) {
@@ -1421,11 +1472,23 @@ setNotEnumer(XDataFn, {
                 });
                 break;
             case "object":
+                let optionsKeys = Object.keys(options);
+
                 // 映射key来绑定值
                 let resOptions = {};
-                Object.keys(options).forEach(k => {
-                    resOptions[options[k]] = k;
-                });
+
+                // 映射对象内的数据合并
+                if (cover) {
+                    optionsKeys.forEach(k => {
+                        let oppK = options[k];
+                        xdata[oppK] = this[k];
+                        resOptions[oppK] = k;
+                    });
+                } else {
+                    optionsKeys.forEach(k => {
+                        resOptions[options[k]] = k;
+                    });
+                }
 
                 this.watch(watchFunc = e => {
                     e.modifys.forEach(trend => {
@@ -1464,6 +1527,10 @@ setNotEnumer(XDataFn, {
                 break;
             default:
                 // undefined
+                if (cover) {
+                    assign(xdata, this.object);
+                }
+
                 this.watch(watchFunc = e => {
                     e.modifys.forEach(trend => {
                         xdata.entrend(trend);
@@ -1488,9 +1555,6 @@ setNotEnumer(XDataFn, {
             oppWatchFunc: watchFunc,
             watchFunc: oppWatchFunc
         });
-
-        // 覆盖数据
-        cover && assign(xdata, this.object);
 
         return this;
     },
@@ -1546,7 +1610,8 @@ setNotEnumer(XDataFn, {
                     }
                 });
 
-                cloneData.on('update', e => {
+                let selfUpdataFunc;
+                cloneData.on('update', selfUpdataFunc = e => {
                     let {
                         trend
                     } = e;
@@ -1565,13 +1630,14 @@ setNotEnumer(XDataFn, {
                         if (!args.length) {
                             // 确认删除自身，清除this的函数
                             this.off('update', _thisUpdateFunc);
+                            cloneData.off('update', selfUpdataFunc);
+                            cloneData = null;
                         }
                         XDataFn.remove.call(cloneData, ...args);
                     }
                 });
 
                 return cloneData;
-                break;
         }
     },
     // 删除相应Key的值
@@ -1715,10 +1781,10 @@ defineProperties(XDataFn, {
                 receiver
             });
         }
-        
-        debugger
 
-        return false;
+        // debugger
+
+        return true;
 
     },
     deleteProperty(target, key) {
@@ -1817,6 +1883,7 @@ defineProperties(XhearElementFn, {
                 exkeys && exkeys.forEach(k => {
                     obj[k] = this[k];
                 });
+                obj.xvele = 1;
             }
 
             // 自身的children加入
@@ -2153,6 +2220,20 @@ const xhearEntrend = (options) => {
                 args
             } = options;
 
+            // 对于新添加的，先转换一下
+            // switch (methodName) {
+            //     case "splice":
+            //     case "unshift":
+            //     case "push":
+            //         args.forEach(e => {
+            //             // 对于已经有组织的人，先脱离组织
+            //             if (e instanceof XhearElement && e.parent) {
+            //                 e.remove();
+            //                 debugger
+            //             }
+            //         });
+            // }
+
             switch (methodName) {
                 case "splice":
                     reData = xhearSplice(receiver, ...args);
@@ -2218,6 +2299,21 @@ const xhearEntrend = (options) => {
                         args = [ids];
                     }
                     break;
+            }
+
+            // 对于新添加的，先转换一下
+            switch (methodName) {
+                case "splice":
+                case "unshift":
+                case "push":
+                    args = args.map(e => {
+                        // 对于已经有组织的人，先脱离组织
+                        if (e instanceof XhearElement) {
+                            return e.object;
+                        } else {
+                            return e;
+                        }
+                    });
             }
 
             // 添加修正数据
@@ -2445,7 +2541,7 @@ setNotEnumer(XhearElementFn, {
             console.error(`can't use before in this data =>`, this, data);
             throw "";
         }
-        xhearSplice(this.parent, this.hostkey, 0, data);
+        this.parent.splice(this.hostkey, 0, data);
         return this;
     },
     after(data) {
@@ -2453,7 +2549,7 @@ setNotEnumer(XhearElementFn, {
             console.error(`can't use after in this data =>`, this, data);
             throw "";
         }
-        xhearSplice(this.parent, this.hostkey + 1, 0, data);
+        this.parent.splice(this.hostkey + 1, 0, data);
         return this;
     },
     siblings(expr) {
@@ -2480,7 +2576,7 @@ setNotEnumer(XhearElementFn, {
             console.error(`can't delete this key => ${this.hostkey}`, this, data);
             throw "";
         }
-        xhearSplice(this.parent, this.hostkey, 1);
+        this.parent.splice(this.hostkey, 1);
     },
     empty() {
         // this.html = "";
