@@ -121,7 +121,7 @@ setNotEnumer(XhearElementFn, {
             console.error(`can't use before in this data =>`, this, data);
             throw "";
         }
-        xhearSplice(this.parent, this.hostkey, 0, data);
+        this.parent.splice(this.hostkey, 0, data);
         return this;
     },
     after(data) {
@@ -129,7 +129,7 @@ setNotEnumer(XhearElementFn, {
             console.error(`can't use after in this data =>`, this, data);
             throw "";
         }
-        xhearSplice(this.parent, this.hostkey + 1, 0, data);
+        this.parent.splice(this.hostkey + 1, 0, data);
         return this;
     },
     siblings(expr) {
@@ -156,7 +156,7 @@ setNotEnumer(XhearElementFn, {
             console.error(`can't delete this key => ${this.hostkey}`, this, data);
             throw "";
         }
-        xhearSplice(this.parent, this.hostkey, 1);
+        this.parent.splice(this.hostkey, 1);
     },
     empty() {
         // this.html = "";

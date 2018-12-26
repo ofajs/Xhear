@@ -31,10 +31,10 @@ const XhearElementHandler = {
                 receiver
             });
         }
-        
-        debugger
 
-        return false;
+        // debugger
+
+        return true;
 
     },
     deleteProperty(target, key) {
@@ -133,6 +133,7 @@ defineProperties(XhearElementFn, {
                 exkeys && exkeys.forEach(k => {
                     obj[k] = this[k];
                 });
+                obj.xvele = 1;
             }
 
             // 自身的children加入

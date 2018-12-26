@@ -50,7 +50,7 @@ const xhearEntrend = (options) => {
                 oldVal = target[key];
 
                 // 一样的值就别折腾
-                if (oldVal == value) {
+                if (oldVal === value) {
                     return true;
                 }
 
@@ -108,6 +108,20 @@ const xhearEntrend = (options) => {
                 methodName,
                 args
             } = options;
+
+            // 对于新添加的，先转换一下
+            // switch (methodName) {
+            //     case "splice":
+            //     case "unshift":
+            //     case "push":
+            //         args.forEach(e => {
+            //             // 对于已经有组织的人，先脱离组织
+            //             if (e instanceof XhearElement && e.parent) {
+            //                 e.remove();
+            //                 debugger
+            //             }
+            //         });
+            // }
 
             switch (methodName) {
                 case "splice":
@@ -174,6 +188,21 @@ const xhearEntrend = (options) => {
                         args = [ids];
                     }
                     break;
+            }
+
+            // 对于新添加的，先转换一下
+            switch (methodName) {
+                case "splice":
+                case "unshift":
+                case "push":
+                    args = args.map(e => {
+                        // 对于已经有组织的人，先脱离组织
+                        if (e instanceof XhearElement) {
+                            return e.object;
+                        } else {
+                            return e;
+                        }
+                    });
             }
 
             // 添加修正数据
