@@ -1306,45 +1306,47 @@ setNotEnumer(XDataFn, {
                     });
                     break;
                 case "seekOri":
-                    // 判断是否进入nextTick
-                    if (tarExprObj.isNextTick) {
-                        return;
-                    }
-
-                    // 先记录旧的数据
-                    let oldVals = this.seek(expr);
-
-                    // 锁上
-                    tarExprObj.isNextTick = 1;
-
-                    nextTick(() => {
-                        let sData = this.seek(expr);
-
-                        // 判断是否相等
-                        let isEq = 1;
-                        if (sData.length != oldVals.length) {
-                            isEq = 0;
+                    this.on('update', updateFunc = e => {
+                        // 判断是否进入nextTick
+                        if (tarExprObj.isNextTick) {
+                            return;
                         }
-                        isEq && sData.some((e, i) => {
-                            if (!(oldVals[i] == e)) {
+
+                        // 先记录旧的数据
+                        let oldVals = this.seek(expr);
+
+                        // 锁上
+                        tarExprObj.isNextTick = 1;
+
+                        nextTick(() => {
+                            let sData = this.seek(expr);
+
+                            // 判断是否相等
+                            let isEq = 1;
+                            if (sData.length != oldVals.length) {
                                 isEq = 0;
-                                return true;
                             }
-                        });
-
-                        // 不相等就触发callback
-                        if (!isEq) {
-                            tarExprObj.arr.forEach(callback => {
-                                callback.call(this, {
-                                    expr,
-                                    old: oldVals,
-                                    val: sData
-                                });
+                            isEq && sData.some((e, i) => {
+                                if (!(oldVals[i] == e)) {
+                                    isEq = 0;
+                                    return true;
+                                }
                             });
-                        }
 
-                        // 解锁
-                        tarExprObj.isNextTick = 0;
+                            // 不相等就触发callback
+                            if (!isEq) {
+                                tarExprObj.arr.forEach(callback => {
+                                    callback.call(this, {
+                                        expr,
+                                        old: oldVals,
+                                        val: sData
+                                    });
+                                });
+                            }
+
+                            // 解锁
+                            tarExprObj.isNextTick = 0;
+                        });
                     });
                     break;
             }
@@ -1377,7 +1379,7 @@ setNotEnumer(XDataFn, {
             tarExprObj.arr.delete(callback);
 
             // 判断arr是否清空，是的话回收update事件绑定
-            if (!tarExprObj.arr.length) {
+            if (!tarExprObj.arr.size) {
                 this.off('update', tarExprObj.updateFunc);
                 delete tarExprObj.updateFunc;
                 delete this[WATCHHOST].delete(expr);
