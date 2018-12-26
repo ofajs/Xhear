@@ -153,6 +153,22 @@ defineProperties(XhearElementFn, {
             let contentEle = getContentEle(this.ele);
             return contentEle.children.length;
         }
+    },
+    // 获取标识元素
+    marks: {
+        get() {
+            // 判断自身是否有shadowId
+            let shadowId = this.attr('xv-shadow');
+
+            let obj = {};
+            this.queAll('[xv-mark]').forEach(e => {
+                if (shadowId && shadowId != e.attr('[xv-shadow]')) {
+                    return;
+                }
+                obj[e.attr("xv-mark")] = e;
+            });
+            return obj;
+        }
     }
 });
 
@@ -342,6 +358,53 @@ setNotEnumer(XhearElementFn, {
     },
     que(expr) {
         return $.que(expr, this.ele);
+    },
+    // 根据界面元素上的toData生成xdata实例
+    viewData() {
+        // 判断自身是否有shadowId
+        let shadowId = this.attr('xv-shadow');
+
+        // 生成xdata数据对象
+        let xdata = $.xdata({});
+
+        // 获取所有toData元素
+        let eles = this.queAll('[xv-vd]');
+        eles.forEach(e => {
+            if (shadowId && shadowId != e.attr('[xv-shadow]')) {
+                return;
+            }
+
+            // 获取vd内容
+            let vd = e.attr('xv-vd');
+
+            let syncObj = {};
+
+            // 判断是否有to结构
+            if (/ to /.test(vd)) {
+                // 获取分组
+                let vGroup = vd.split(",");
+                vGroup.forEach(g => {
+                    // 拆分 to 两边的值
+                    let toGroup = g.split("to");
+                    if (toGroup.length == 2) {
+                        let key = toGroup[0].trim();
+                        let toKey = toGroup[1].trim();
+                        xdata[toKey] = e[key];
+                        syncObj[toKey] = key;
+                    }
+                });
+            } else {
+                vd = vd.trim();
+                // 设置同步数据
+                xdata[vd] = e.value;
+                syncObj[vd] = "value";
+            }
+
+            // 数据同步
+            xdata.sync(e, syncObj);
+        });
+
+        return xdata;
     }
 });
 
