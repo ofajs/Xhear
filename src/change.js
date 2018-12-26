@@ -50,7 +50,7 @@ const xhearEntrend = (options) => {
                 oldVal = target[key];
 
                 // 一样的值就别折腾
-                if (oldVal == value) {
+                if (oldVal === value) {
                     return true;
                 }
 

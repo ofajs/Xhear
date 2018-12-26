@@ -1068,19 +1068,23 @@ setNotEnumer(XDataFn, {
                     });
                     break;
                 case "seekOri":
+                    // 先记录旧的数据
+                    tarExprObj.oldVals = this.seek(expr);
+
                     this.on('update', updateFunc = e => {
                         // 判断是否进入nextTick
                         if (tarExprObj.isNextTick) {
                             return;
                         }
 
-                        // 先记录旧的数据
-                        let oldVals = this.seek(expr);
-
                         // 锁上
                         tarExprObj.isNextTick = 1;
 
                         nextTick(() => {
+                            let {
+                                oldVals
+                            } = tarExprObj;
+
                             let sData = this.seek(expr);
 
                             // 判断是否相等
@@ -1105,6 +1109,9 @@ setNotEnumer(XDataFn, {
                                     });
                                 });
                             }
+
+                            // 替换旧值
+                            tarExprObj.oldVals = sData;
 
                             // 解锁
                             tarExprObj.isNextTick = 0;
