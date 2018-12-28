@@ -246,6 +246,9 @@ setNotEnumer(XhearElementFn, {
             }];
         }
 
+        // 获取影子元素Id
+        let shadowId = this.ele.getAttribute('xv-shadow');
+
         // 判断原生是否有存在注册的函数
         let tarCall = this[XHEAREVENT].get(eventName);
         if (!tarCall) {
@@ -272,7 +275,12 @@ setNotEnumer(XhearElementFn, {
                 // 添加默认方法
                 eveObj.preventDefault = e.preventDefault.bind(e);
 
+                // 判断添加影子ID
+                shadowId && (eveObj.shadow = shadowId);
+
                 this.emit(eveObj);
+
+                return false;
             });
             this[XHEAREVENT].set(eventName, eventCall);
         }
