@@ -121,6 +121,7 @@ const parseStringToDom = (str) => {
     let childs = Array.from(par.childNodes);
     return childs.filter(function (e) {
         if (!(e instanceof Text) || (e.textContent && e.textContent.trim())) {
+            par.removeChild(e);
             return e;
         }
     });

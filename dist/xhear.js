@@ -124,6 +124,7 @@ const parseStringToDom = (str) => {
     let childs = Array.from(par.childNodes);
     return childs.filter(function (e) {
         if (!(e instanceof Text) || (e.textContent && e.textContent.trim())) {
+            par.removeChild(e);
             return e;
         }
     });
@@ -385,8 +386,7 @@ let clearXData = (xdata) => {
     // 开始清扫所有绑定
     // 先清扫 sync
     for (let d of xdata[SYNCHOST].keys()) {
-        let opp = d.value;
-        xdata.unsync(opp);
+        xdata.unsync(d);
     }
 
     // 清扫 watch
@@ -2293,18 +2293,19 @@ const xhearEntrend = (options) => {
             } = options;
 
             // 对于新添加的，先转换一下
-            // switch (methodName) {
-            //     case "splice":
-            //     case "unshift":
-            //     case "push":
-            //         args.forEach(e => {
-            //             // 对于已经有组织的人，先脱离组织
-            //             if (e instanceof XhearElement && e.parent) {
-            //                 e.remove();
-            //                 debugger
-            //             }
-            //         });
-            // }
+            switch (methodName) {
+                case "splice":
+                case "unshift":
+                case "push":
+                    args = args.map(e => {
+                        // 对于已经有组织的人，先脱离组织
+                        if (e instanceof XhearElement && e.parent) {
+                            e.remove();
+                            return e.object;
+                        }
+                        return e;
+                    });
+            }
 
             switch (methodName) {
                 case "splice":
@@ -2374,19 +2375,19 @@ const xhearEntrend = (options) => {
             }
 
             // 对于新添加的，先转换一下
-            switch (methodName) {
-                case "splice":
-                case "unshift":
-                case "push":
-                    args = args.map(e => {
-                        // 对于已经有组织的人，先脱离组织
-                        if (e instanceof XhearElement) {
-                            return e.object;
-                        } else {
-                            return e;
-                        }
-                    });
-            }
+            // switch (methodName) {
+            //     case "splice":
+            //     case "unshift":
+            //     case "push":
+            //         args = args.map(e => {
+            //             // 对于已经有组织的人，先脱离组织
+            //             if (e instanceof XhearElement) {
+            //                 return e.object;
+            //             } else {
+            //                 return e;
+            //             }
+            //         });
+            // }
 
             // 添加修正数据
             eveObj.modify = {
