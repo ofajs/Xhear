@@ -124,6 +124,7 @@ const parseStringToDom = (str) => {
     let childs = Array.from(par.childNodes);
     return childs.filter(function (e) {
         if (!(e instanceof Text) || (e.textContent && e.textContent.trim())) {
+            par.removeChild(e);
             return e;
         }
     });
@@ -385,8 +386,7 @@ let clearXData = (xdata) => {
     // 开始清扫所有绑定
     // 先清扫 sync
     for (let d of xdata[SYNCHOST].keys()) {
-        let opp = d.value;
-        xdata.unsync(opp);
+        xdata.unsync(d);
     }
 
     // 清扫 watch
@@ -709,24 +709,36 @@ setNotEnumer(XDataFn, {
 
             // 根据count运行函数
             // 为插件行为提供一个暂停运行的方式
-            if (opt.count) {
-                // 添加数据
-                let args = [eventObj];
-                !isUndefined(opt.data) && (eventObj.data = opt.data);
-                !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
-                !isUndefined(opt.count) && (eventObj.count = opt.count);
-                !isUndefined(emitData) && (args.push(emitData));
+            // 添加数据
+            let args = [eventObj];
+            !isUndefined(opt.data) && (eventObj.data = opt.data);
+            !isUndefined(opt.eventId) && (eventObj.eventId = opt.eventId);
+            eventObj.count = opt.count;
+            !isUndefined(emitData) && (args.push(emitData));
 
-                opt.callback.apply(this, args);
+            // 添加事件插件机制
+            let isRun = !opt.before ? 1 : opt.before({
+                self: this,
+                event: eventObj,
+                emitData
+            });
 
-                // 删除多余数据
-                delete eventObj.data;
-                delete eventObj.eventId;
-                delete eventObj.count;
+            isRun && opt.callback.apply(this, args);
 
-                // 递减
-                opt.count--;
-            }
+            // 添加事件插件机制
+            opt.after && opt.after({
+                self: this,
+                event: eventObj,
+                emitData
+            });
+
+            // 删除多余数据
+            delete eventObj.data;
+            delete eventObj.eventId;
+            delete eventObj.count;
+
+            // 递减
+            opt.count--;
 
             if (opt.count <= 0) {
                 eves.delete(opt);
@@ -1912,6 +1924,22 @@ defineProperties(XhearElementFn, {
             let contentEle = getContentEle(this.ele);
             return contentEle.children.length;
         }
+    },
+    // 获取标识元素
+    marks: {
+        get() {
+            // 判断自身是否有shadowId
+            let shadowId = this.attr('xv-shadow');
+
+            let obj = {};
+            this.queAll('[xv-mark]').forEach(e => {
+                if (shadowId !== e.attr('[xv-shadow]')) {
+                    return;
+                }
+                obj[e.attr("xv-mark")] = e;
+            });
+            return obj;
+        }
     }
 });
 
@@ -2030,9 +2058,39 @@ setNotEnumer(XhearElementFn, {
             // 遍历函数
             Array.from(eves).some(e => {
                 if (e.callback == callback) {
-                    // 添加selector数据
-                    e.selector = selector;
-                    return true;
+                    // 确认函数，添加before和after方法
+                    e.before = (options) => {
+                        let eveObj = options.event;
+                        let target = eveObj.target;
+
+                        // 目标元素
+                        let delegateTarget = target.parents(selector)[0];
+                        if (!delegateTarget && target.is(selector)) {
+                            delegateTarget = target;
+                        }
+
+                        // 判断是否在selector内
+                        if (!delegateTarget) {
+                            return 0;
+                        }
+
+                        // 通过selector验证
+                        // 设置两个关键数据
+                        assign(eveObj, {
+                            selector,
+                            delegateTarget
+                        });
+
+                        // 返回可运行
+                        return 1;
+                    }
+                    e.after = (options) => {
+                        let eveObj = options.event;
+
+                        // 删除无关数据
+                        delete eveObj.selector;
+                        delete eveObj.delegateTarget;
+                    }
                 }
             });
         }
@@ -2060,47 +2118,63 @@ setNotEnumer(XhearElementFn, {
     },
     emit(...args) {
         let eveObj = args[0];
-        let eventName = eveObj;
 
         // 判断是否 shadow元素，shadow元素到根节点就不要冒泡
-        if (eveObj instanceof XDataEvent) {
-            if (eveObj.shadow && eveObj.shadow == this.xvRender) {
-                return;
-            }
-            eventName = eveObj.type;
+        if (eveObj instanceof XDataEvent && eveObj.shadow && eveObj.shadow == this.xvRender) {
+            return;
         }
 
-        // 临时寄存数组
-        let temps = [];
-
-        // 获取事件寄宿对象
-        let eves = getEvesArr(this, eventName);
-        eves.forEach(e => {
-            if (e.selector) {
-                let {
-                    target
-                } = eveObj;
-                // 判断是否在selector
-                if (!target.parents(e.selector).length && !target.is(e.selector)) {
-                    // 临时移除count，后面还原
-                    temps.push([e, e.count]);
-                    // 禁止运行
-                    e.count = undefined;
-                }
-            }
-        });
-
-        let reData = XDataFn.emit.apply(this, args);
-
-        // 还原数据
-        temps.forEach(e => {
-            e[0].count = e[1];
-        });
-
-        return reData;
+        return XDataFn.emit.apply(this, args);
     },
     que(expr) {
         return $.que(expr, this.ele);
+    },
+    // 根据界面元素上的toData生成xdata实例
+    viewData() {
+        // 判断自身是否有shadowId
+        let shadowId = this.attr('xv-shadow');
+
+        // 生成xdata数据对象
+        let xdata = $.xdata({});
+
+        // 获取所有toData元素
+        let eles = this.queAll('[xv-vd]');
+        eles.forEach(e => {
+            if (shadowId !== e.attr('[xv-shadow]')) {
+                return;
+            }
+
+            // 获取vd内容
+            let vd = e.attr('xv-vd');
+
+            let syncObj = {};
+
+            // 判断是否有to结构
+            if (/ to /.test(vd)) {
+                // 获取分组
+                let vGroup = vd.split(",");
+                vGroup.forEach(g => {
+                    // 拆分 to 两边的值
+                    let toGroup = g.split("to");
+                    if (toGroup.length == 2) {
+                        let key = toGroup[0].trim();
+                        let toKey = toGroup[1].trim();
+                        xdata[toKey] = e[key];
+                        syncObj[toKey] = key;
+                    }
+                });
+            } else {
+                vd = vd.trim();
+                // 设置同步数据
+                xdata[vd] = e.value;
+                syncObj[vd] = "value";
+            }
+
+            // 数据同步
+            xdata.sync(e, syncObj);
+        });
+
+        return xdata;
     }
 });
 
@@ -2230,18 +2304,19 @@ const xhearEntrend = (options) => {
             } = options;
 
             // 对于新添加的，先转换一下
-            // switch (methodName) {
-            //     case "splice":
-            //     case "unshift":
-            //     case "push":
-            //         args.forEach(e => {
-            //             // 对于已经有组织的人，先脱离组织
-            //             if (e instanceof XhearElement && e.parent) {
-            //                 e.remove();
-            //                 debugger
-            //             }
-            //         });
-            // }
+            switch (methodName) {
+                case "splice":
+                case "unshift":
+                case "push":
+                    args = args.map(e => {
+                        // 对于已经有组织的人，先脱离组织
+                        if (e instanceof XhearElement && e.parent) {
+                            e.remove();
+                            return e.object;
+                        }
+                        return e;
+                    });
+            }
 
             switch (methodName) {
                 case "splice":
@@ -2311,19 +2386,19 @@ const xhearEntrend = (options) => {
             }
 
             // 对于新添加的，先转换一下
-            switch (methodName) {
-                case "splice":
-                case "unshift":
-                case "push":
-                    args = args.map(e => {
-                        // 对于已经有组织的人，先脱离组织
-                        if (e instanceof XhearElement) {
-                            return e.object;
-                        } else {
-                            return e;
-                        }
-                    });
-            }
+            // switch (methodName) {
+            //     case "splice":
+            //     case "unshift":
+            //     case "push":
+            //         args = args.map(e => {
+            //             // 对于已经有组织的人，先脱离组织
+            //             if (e instanceof XhearElement) {
+            //                 return e.object;
+            //             } else {
+            //                 return e;
+            //             }
+            //         });
+            // }
 
             // 添加修正数据
             eveObj.modify = {
@@ -2934,7 +3009,8 @@ const register = (options) => {
 
         let xvcontent = tempDiv.querySelector('[xv-content]');
         if (!xvcontent) {
-            throw defaults.tag + " need container!";
+            console.error(defaults.tag + " need container!", options);
+            return;
         }
 
         // 去除无用的代码（注释代码）
