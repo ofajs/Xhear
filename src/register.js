@@ -258,7 +258,8 @@ const register = (options) => {
 
         let xvcontent = tempDiv.querySelector('[xv-content]');
         if (!xvcontent) {
-            throw defaults.tag + " need container!";
+            console.error(defaults.tag + " need container!", options);
+            return;
         }
 
         // 去除无用的代码（注释代码）

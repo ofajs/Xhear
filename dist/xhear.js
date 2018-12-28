@@ -1933,7 +1933,7 @@ defineProperties(XhearElementFn, {
 
             let obj = {};
             this.queAll('[xv-mark]').forEach(e => {
-                if (shadowId && shadowId != e.attr('[xv-shadow]')) {
+                if (shadowId !== e.attr('[xv-shadow]')) {
                     return;
                 }
                 obj[e.attr("xv-mark")] = e;
@@ -2140,7 +2140,7 @@ setNotEnumer(XhearElementFn, {
         // 获取所有toData元素
         let eles = this.queAll('[xv-vd]');
         eles.forEach(e => {
-            if (shadowId && shadowId != e.attr('[xv-shadow]')) {
+            if (shadowId !== e.attr('[xv-shadow]')) {
                 return;
             }
 
@@ -3009,7 +3009,8 @@ const register = (options) => {
 
         let xvcontent = tempDiv.querySelector('[xv-content]');
         if (!xvcontent) {
-            throw defaults.tag + " need container!";
+            console.error(defaults.tag + " need container!", options);
+            return;
         }
 
         // 去除无用的代码（注释代码）
