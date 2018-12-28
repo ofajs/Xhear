@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(5, 'event test');
+    let tester = expect(7, 'event test');
 
     let a = $('#a');
 
@@ -27,7 +27,9 @@
 
     // 模拟 selector 测试
     b.on('ka', '.bbb', (e) => {
-        tester.ok(1, 'selector ok');
+        tester.ok(1, 'selector ok 1');
+        tester.ok(e.selector === '.bbb', 'selector ok 2');
+        tester.ok(e.delegateTarget.is('.bbb'), 'selector ok 3');
     });
 
     $('.bbb1_2').emit('ka');

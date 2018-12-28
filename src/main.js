@@ -287,9 +287,39 @@ setNotEnumer(XhearElementFn, {
             // 遍历函数
             Array.from(eves).some(e => {
                 if (e.callback == callback) {
-                    // 添加selector数据
-                    e.selector = selector;
-                    return true;
+                    // 确认函数，添加before和after方法
+                    e.before = (options) => {
+                        let eveObj = options.event;
+                        let target = eveObj.target;
+
+                        // 目标元素
+                        let delegateTarget = target.parents(selector)[0];
+                        if (!delegateTarget && target.is(selector)) {
+                            delegateTarget = target;
+                        }
+
+                        // 判断是否在selector内
+                        if (!delegateTarget) {
+                            return 0;
+                        }
+
+                        // 通过selector验证
+                        // 设置两个关键数据
+                        assign(eveObj, {
+                            selector,
+                            delegateTarget
+                        });
+
+                        // 返回可运行
+                        return 1;
+                    }
+                    e.after = (options) => {
+                        let eveObj = options.event;
+
+                        // 删除无关数据
+                        delete eveObj.selector;
+                        delete eveObj.delegateTarget;
+                    }
                 }
             });
         }
@@ -317,44 +347,13 @@ setNotEnumer(XhearElementFn, {
     },
     emit(...args) {
         let eveObj = args[0];
-        let eventName = eveObj;
 
         // 判断是否 shadow元素，shadow元素到根节点就不要冒泡
-        if (eveObj instanceof XDataEvent) {
-            if (eveObj.shadow && eveObj.shadow == this.xvRender) {
-                return;
-            }
-            eventName = eveObj.type;
+        if (eveObj instanceof XDataEvent && eveObj.shadow && eveObj.shadow == this.xvRender) {
+            return;
         }
 
-        // 临时寄存数组
-        let temps = [];
-
-        // 获取事件寄宿对象
-        let eves = getEvesArr(this, eventName);
-        eves.forEach(e => {
-            if (e.selector) {
-                let {
-                    target
-                } = eveObj;
-                // 判断是否在selector
-                if (!target.parents(e.selector).length && !target.is(e.selector)) {
-                    // 临时移除count，后面还原
-                    temps.push([e, e.count]);
-                    // 禁止运行
-                    e.count = undefined;
-                }
-            }
-        });
-
-        let reData = XDataFn.emit.apply(this, args);
-
-        // 还原数据
-        temps.forEach(e => {
-            e[0].count = e[1];
-        });
-
-        return reData;
+        return XDataFn.emit.apply(this, args);
     },
     que(expr) {
         return $.que(expr, this.ele);
