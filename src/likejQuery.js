@@ -46,6 +46,11 @@ defineProperties(XhearElementFn, {
             assign(style, d);
         }
     },
+    css: {
+        get() {
+            return getComputedStyle(this.ele);
+        }
+    },
     position: {
         get() {
             return {

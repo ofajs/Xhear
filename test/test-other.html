@@ -39,6 +39,10 @@
         <div class="a"></div>
         <div class="a"></div>
     </div>
+
+    <br>
+    <br>
+    <ha xv-ele id="tar2"></ha>
 </body>
 <script>
     $('.main').on('click', e => {
@@ -47,6 +51,25 @@
 
     $('.main').on('click', '.c', e => {
         console.log('click the selector element => ', e);
+    });
+
+    $.register({
+        tag: "ha",
+        temp: `
+        <div>
+            <div xv-tar="inEle" style="width:100px;height:100px;background-color:red;"></div>    
+        </div>
+        <div xv-content />
+        `,
+        inited() {
+            this.$inEle.on("click", e => {
+                console.log("inEle click", e);
+            });
+        }
+    });
+
+    $('#tar2').on('click', e => {
+        console.log("tar2 click", e);
     });
 </script>
 

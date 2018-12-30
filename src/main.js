@@ -246,9 +246,6 @@ setNotEnumer(XhearElementFn, {
             }];
         }
 
-        // 获取影子元素Id
-        let shadowId = this.ele.getAttribute('xv-shadow');
-
         // 判断原生是否有存在注册的函数
         let tarCall = this[XHEAREVENT].get(eventName);
         if (!tarCall) {
@@ -262,13 +259,6 @@ setNotEnumer(XhearElementFn, {
                 let target = createXHearElement(e.target);
                 let eveObj = new XDataEvent(eventName, target);
 
-                // 补充keys
-                let tempTarget = target;
-                while (tempTarget.ele !== this.ele) {
-                    eveObj.keys.unshift(tempTarget.hostkey);
-                    tempTarget = tempTarget.parent;
-                }
-
                 // 添加 originalEvent
                 eveObj.originalEvent = e;
 
@@ -276,9 +266,10 @@ setNotEnumer(XhearElementFn, {
                 eveObj.preventDefault = e.preventDefault.bind(e);
 
                 // 判断添加影子ID
+                let shadowId = e.target.getAttribute('xv-shadow');
                 shadowId && (eveObj.shadow = shadowId);
 
-                this.emit(eveObj);
+                target.emit(eveObj);
 
                 return false;
             });
@@ -358,7 +349,34 @@ setNotEnumer(XhearElementFn, {
 
         // 判断是否 shadow元素，shadow元素到根节点就不要冒泡
         if (eveObj instanceof XDataEvent && eveObj.shadow && eveObj.shadow == this.xvRender) {
-            return;
+            // 判断是否update冒泡
+            if (eveObj.type == "update") {
+                // update就阻止冒泡
+                return;
+            }
+
+            // 其他事件修正数据后继续冒泡
+            // 修正事件对象
+            let newEveObj = new XDataEvent(eveObj.type, this);
+
+            // 判断添加影子ID
+            let shadowId = this.ele.getAttribute('xv-shadow');
+            shadowId && (eveObj.shadow = shadowId);
+
+            let {
+                originalEvent,
+                preventDefault
+            } = eveObj;
+            if (originalEvent) {
+                assign(newEveObj, {
+                    originalEvent,
+                    preventDefault,
+                    fromShadowEvent: eveObj
+                });
+            }
+
+            // 替换原来的事件对象
+            args = [newEveObj];
         }
 
         return XDataFn.emit.apply(this, args);
