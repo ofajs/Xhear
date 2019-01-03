@@ -384,6 +384,19 @@ setNotEnumer(XhearElementFn, {
     que(expr) {
         return $.que(expr, this.ele);
     },
+    extend(...args) {
+        let obj = {};
+        assign(obj, ...args);
+
+        // 合并数据
+        Object.keys(obj).forEach(k => {
+            let val = obj[k];
+            let selfVal = this[k];
+            if (val !== selfVal) {
+                this[k] = val;
+            }
+        });
+    },
     // 根据界面元素上的toData生成xdata实例
     viewData() {
         // 判断自身是否有shadowId

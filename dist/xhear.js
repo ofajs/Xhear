@@ -1386,7 +1386,7 @@ setNotEnumer(XDataFn, {
                                         expr,
                                         old: oldVals,
                                         val: sData
-                                    });
+                                    }, sData);
                                 });
                             }
 
@@ -1410,7 +1410,7 @@ setNotEnumer(XDataFn, {
             callback({
                 expr,
                 val: sData
-            });
+            }, sData);
         }
     },
     // 注销watch
@@ -1579,7 +1579,7 @@ setNotEnumer(XDataFn, {
             default:
                 // undefined
                 if (cover) {
-                    assign(xdata, this.object);
+                    xdata.extend(this.object);
                 }
 
                 this.watch(watchFunc = e => {
@@ -1826,6 +1826,9 @@ setNotEnumer(XDataFn, {
 
         assign(this, value);
         return this;
+    },
+    extend(...args) {
+        assign(this, ...args);
     }
 });
 
@@ -2266,6 +2269,19 @@ setNotEnumer(XhearElementFn, {
     },
     que(expr) {
         return $.que(expr, this.ele);
+    },
+    extend(...args) {
+        let obj = {};
+        assign(obj, ...args);
+
+        // 合并数据
+        Object.keys(obj).forEach(k => {
+            let val = obj[k];
+            let selfVal = this[k];
+            if (val !== selfVal) {
+                this[k] = val;
+            }
+        });
     },
     // 根据界面元素上的toData生成xdata实例
     viewData() {
