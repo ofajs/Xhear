@@ -131,23 +131,33 @@ const parseStringToDom = (str) => {
 };
 
 // 转换 tag data 到 element
-const parseDataToDom = (data) => {
-    if (!data.tag) {
-        console.error("this data need tag =>", data);
+const parseDataToDom = (objData) => {
+    if (!objData.tag) {
+        console.error("this data need tag =>", objData);
         throw "";
     }
 
     // 生成element
-    let ele = document.createElement(data.tag);
+    let ele = document.createElement(objData.tag);
 
     // 添加数据
-    data.class && ele.setAttribute('class', data.class);
-    data.text && (ele.textContent = data.text);
+    objData.class && ele.setAttribute('class', objData.class);
+    objData.text && (ele.textContent = objData.text);
+    if (objData.data) {
+        let {
+            data
+        } = objData;
+
+        Object.keys(data).forEach(k => {
+            let val = data[k];
+            ele.dataset[k] = val;
+        });
+    }
 
     // 判断是否xv-ele
     let {
         xvele
-    } = data;
+    } = objData;
 
     let xhearEle;
 
@@ -158,16 +168,16 @@ const parseDataToDom = (data) => {
 
         // 数据合并
         xhearEle[EXKEYS].forEach(k => {
-            let val = data[k];
+            let val = objData[k];
             !isUndefined(val) && (xhearEle[k] = val);
         });
     }
 
     // 填充内容
     let akey = 0;
-    while (akey in data) {
+    while (akey in objData) {
         // 转换数据
-        let childEle = parseDataToDom(data[akey]);
+        let childEle = parseDataToDom(objData[akey]);
 
         if (xhearEle) {
             let {
@@ -443,7 +453,7 @@ const mapData = (data, options) => {
     }
 }
 
-function XData(obj, options = {}) {
+    function XData(obj, options = {}) {
     let proxyThis = new Proxy(this, XDataHandler);
     // let proxyThis = this;
 
@@ -613,7 +623,7 @@ defineProperties(XDataEvent.prototype, {
     }
 });
 
-// 获取事件数组
+    // 获取事件数组
 const getEvesArr = (tar, eventName) => {
     let eves = tar[EVES];
     let tarSetter = eves.get(eventName);
@@ -789,7 +799,7 @@ setNotEnumer(XDataFn, {
     }
 });
 
-// 主体entrend方法
+    // 主体entrend方法
 const entrend = (options) => {
     let {
         target,
@@ -1016,10 +1026,10 @@ const clearModifyIdHost = (xdata) => {
         }
     }
 
-    setTimeout(clearFunc, 3000);
+    setTimeout(clearFunc, 10000);
 }
 
-// 数组通用方法
+    // 数组通用方法
 // 可运行的方法
 ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'includes'].forEach(methodName => {
     let arrayFnFunc = Array.prototype[methodName];
@@ -1085,7 +1095,7 @@ assign(arrayFn, {
     }
 });
 
-// 私有属性正则
+    // 私有属性正则
 const PRIREG = /^_.+|^parent$|^hostkey$|^status$|^length$/;
 let XDataHandler = {
     set(target, key, value, receiver) {
@@ -1162,7 +1172,7 @@ let XDataHandler = {
     }
 };
 
-setNotEnumer(XDataFn, {
+    setNotEnumer(XDataFn, {
     seek(expr) {
         // 代表式的组织化数据
         let exprObjArr = [];
@@ -1882,7 +1892,7 @@ defineProperties(XDataFn, {
     }
 });
 
-
+    
 
     const XhearElementHandler = {
     get(target, key, receiver) {
@@ -2001,6 +2011,11 @@ defineProperties(XhearElementFn, {
     class: {
         get() {
             return this.ele.classList;
+        }
+    },
+    data: {
+        get() {
+            return this.ele.dataset;
         }
     },
     object: {

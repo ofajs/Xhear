@@ -117,6 +117,11 @@ defineProperties(XhearElementFn, {
             return this.ele.classList;
         }
     },
+    data: {
+        get() {
+            return this.ele.dataset;
+        }
+    },
     object: {
         get() {
             let obj = {
