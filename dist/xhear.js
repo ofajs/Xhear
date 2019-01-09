@@ -572,8 +572,18 @@ defineProperties(XDataEvent.prototype, {
                 keys: this.keys.slice()
             };
 
-            defineProperty(reobj, "oldVal", {
-                value: modify.oldVal
+            // 设置fromKey
+            defineProperties(reobj, {
+                "oldVal": {
+                    value: modify.oldVal
+                },
+                "fromKey": {
+                    get() {
+                        let fromKey = this.keys[0];
+                        return isUndefined(fromKey) ? modify.key : fromKey;
+                    },
+                    enumerable: true
+                }
             });
 
             switch (modify.genre) {
@@ -607,13 +617,10 @@ defineProperties(XDataEvent.prototype, {
                     if (isXData(value)) {
                         value = value.object;
                     }
-                    let fromKey = this.keys[0];
-                    fromKey = isUndefined(fromKey) ? modify.key : fromKey;
                     assign(reobj, {
                         key: modify.key,
                         value,
-                        modifyId,
-                        fromKey
+                        modifyId
                     });
                     break;
             }
@@ -2914,6 +2921,9 @@ setNotEnumer(XhearElementFn, {
     is(expr) {
         return meetsEle(this.ele, expr)
     },
+    clone() {
+        return $(this.ele.cloneNode(true));
+    },
     // like jQuery function find
     que(expr) {
         return $.que(expr, this.ele);
@@ -2959,9 +2969,26 @@ const renderEle = (ele) => {
     } = tdb;
     if (proto) {
         Object.keys(proto).forEach(k => {
-            defineProperty(xhearEle, k, {
-                value: proto[k]
-            });
+            // 获取描述
+            let objDesc = Object.getOwnPropertyDescriptor(proto, k);
+
+            let {
+                get,
+                set,
+                value
+            } = objDesc;
+
+            if (value) {
+                defineProperty(xhearEle, k, {
+                    value
+                });
+            } else {
+                defineProperty(xhearEle, k, {
+                    get,
+                    set
+                });
+            }
+
         });
     }
 

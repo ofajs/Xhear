@@ -323,8 +323,18 @@ defineProperties(XDataEvent.prototype, {
                 keys: this.keys.slice()
             };
 
-            defineProperty(reobj, "oldVal", {
-                value: modify.oldVal
+            // 设置fromKey
+            defineProperties(reobj, {
+                "oldVal": {
+                    value: modify.oldVal
+                },
+                "fromKey": {
+                    get() {
+                        let fromKey = this.keys[0];
+                        return isUndefined(fromKey) ? modify.key : fromKey;
+                    },
+                    enumerable: true
+                }
             });
 
             switch (modify.genre) {
@@ -358,13 +368,10 @@ defineProperties(XDataEvent.prototype, {
                     if (isXData(value)) {
                         value = value.object;
                     }
-                    let fromKey = this.keys[0];
-                    fromKey = isUndefined(fromKey) ? modify.key : fromKey;
                     assign(reobj, {
                         key: modify.key,
                         value,
-                        modifyId,
-                        fromKey
+                        modifyId
                     });
                     break;
             }

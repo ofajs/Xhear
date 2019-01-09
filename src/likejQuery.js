@@ -241,6 +241,9 @@ setNotEnumer(XhearElementFn, {
     is(expr) {
         return meetsEle(this.ele, expr)
     },
+    clone() {
+        return $(this.ele.cloneNode(true));
+    },
     // like jQuery function find
     que(expr) {
         return $.que(expr, this.ele);

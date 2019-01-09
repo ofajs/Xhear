@@ -34,9 +34,26 @@ const renderEle = (ele) => {
     } = tdb;
     if (proto) {
         Object.keys(proto).forEach(k => {
-            defineProperty(xhearEle, k, {
-                value: proto[k]
-            });
+            // 获取描述
+            let objDesc = Object.getOwnPropertyDescriptor(proto, k);
+
+            let {
+                get,
+                set,
+                value
+            } = objDesc;
+
+            if (value) {
+                defineProperty(xhearEle, k, {
+                    value
+                });
+            } else {
+                defineProperty(xhearEle, k, {
+                    get,
+                    set
+                });
+            }
+
         });
     }
 

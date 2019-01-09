@@ -26,6 +26,9 @@
             }
         },
         proto: {
+            get inner() {
+                return this.que("#c_inner");
+            },
             show() {
                 console.log('show running');
             }
