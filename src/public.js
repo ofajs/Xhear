@@ -128,23 +128,33 @@ const parseStringToDom = (str) => {
 };
 
 // 转换 tag data 到 element
-const parseDataToDom = (data) => {
-    if (!data.tag) {
-        console.error("this data need tag =>", data);
+const parseDataToDom = (objData) => {
+    if (!objData.tag) {
+        console.error("this data need tag =>", objData);
         throw "";
     }
 
     // 生成element
-    let ele = document.createElement(data.tag);
+    let ele = document.createElement(objData.tag);
 
     // 添加数据
-    data.class && ele.setAttribute('class', data.class);
-    data.text && (ele.textContent = data.text);
+    objData.class && ele.setAttribute('class', objData.class);
+    objData.text && (ele.textContent = objData.text);
+    if (objData.data) {
+        let {
+            data
+        } = objData;
+
+        Object.keys(data).forEach(k => {
+            let val = data[k];
+            ele.dataset[k] = val;
+        });
+    }
 
     // 判断是否xv-ele
     let {
         xvele
-    } = data;
+    } = objData;
 
     let xhearEle;
 
@@ -155,16 +165,16 @@ const parseDataToDom = (data) => {
 
         // 数据合并
         xhearEle[EXKEYS].forEach(k => {
-            let val = data[k];
+            let val = objData[k];
             !isUndefined(val) && (xhearEle[k] = val);
         });
     }
 
     // 填充内容
     let akey = 0;
-    while (akey in data) {
+    while (akey in objData) {
         // 转换数据
-        let childEle = parseDataToDom(data[akey]);
+        let childEle = parseDataToDom(objData[akey]);
 
         if (xhearEle) {
             let {

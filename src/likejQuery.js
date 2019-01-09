@@ -46,6 +46,11 @@ defineProperties(XhearElementFn, {
             assign(style, d);
         }
     },
+    css: {
+        get() {
+            return getComputedStyle(this.ele);
+        }
+    },
     position: {
         get() {
             return {
@@ -235,6 +240,9 @@ setNotEnumer(XhearElementFn, {
     },
     is(expr) {
         return meetsEle(this.ele, expr)
+    },
+    clone() {
+        return $(this.ele.cloneNode(true));
     },
     // like jQuery function find
     que(expr) {

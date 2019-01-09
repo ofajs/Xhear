@@ -1,3 +1,5 @@
+
+
 // common
 // 事件寄宿对象key
 const EVES = "_eves_" + getRandomId();
@@ -161,21 +163,48 @@ let clearXData = (xdata) => {
 
 // virData用的数据映射方法
 const mapData = (data, options) => {
-    if (!isUndefined(data[options.key])) {
-        data[options.toKey] = data[options.key];
-        delete data[options.key];
+    if (!(data instanceof Object)) {
+        return data;
     }
 
-    for (let k in data) {
-        let d = data[k];
+    let {
+        key,
+        type,
+        mapping
+    } = options;
 
-        if (d instanceof Object) {
-            mapData(d, options);
-        }
+    switch (type) {
+        case "mapKey":
+            Object.keys(data).forEach(k => {
+                let val = data[k];
+                if (mapping[k]) {
+                    data[mapping[k]] = val;
+                    delete data[k];
+                }
+                switch (getType(val)) {
+                    case "object":
+                        mapData(val, options);
+                        break;
+                }
+            });
+            break;
+        case "mapValue":
+            Object.keys(data).forEach(k => {
+                let val = data[k];
+                if (k == key && mapping[val]) {
+                    data[key] = mapping[val];
+                }
+                switch (getType(val)) {
+                    case "object":
+                        mapData(val, options);
+                        break;
+                }
+            });
+            break
     }
 }
 
-function XData(obj, options = {}) {
+    function XData(obj, options = {}) {
     let proxyThis = new Proxy(this, XDataHandler);
     // let proxyThis = this;
 
@@ -294,8 +323,18 @@ defineProperties(XDataEvent.prototype, {
                 keys: this.keys.slice()
             };
 
-            defineProperty(reobj, "oldVal", {
-                value: modify.oldVal
+            // 设置fromKey
+            defineProperties(reobj, {
+                "oldVal": {
+                    value: modify.oldVal
+                },
+                "fromKey": {
+                    get() {
+                        let fromKey = this.keys[0];
+                        return isUndefined(fromKey) ? modify.key : fromKey;
+                    },
+                    enumerable: true
+                }
             });
 
             switch (modify.genre) {
@@ -329,13 +368,10 @@ defineProperties(XDataEvent.prototype, {
                     if (isXData(value)) {
                         value = value.object;
                     }
-                    let fromKey = this.keys[0];
-                    fromKey = isUndefined(fromKey) ? modify.key : fromKey;
                     assign(reobj, {
                         key: modify.key,
                         value,
-                        modifyId,
-                        fromKey
+                        modifyId
                     });
                     break;
             }
@@ -345,7 +381,7 @@ defineProperties(XDataEvent.prototype, {
     }
 });
 
-// 获取事件数组
+    // 获取事件数组
 const getEvesArr = (tar, eventName) => {
     let eves = tar[EVES];
     let tarSetter = eves.get(eventName);
@@ -521,7 +557,7 @@ setNotEnumer(XDataFn, {
     }
 });
 
-// 主体entrend方法
+    // 主体entrend方法
 const entrend = (options) => {
     let {
         target,
@@ -748,10 +784,10 @@ const clearModifyIdHost = (xdata) => {
         }
     }
 
-    setTimeout(clearFunc, 3000);
+    setTimeout(clearFunc, 10000);
 }
 
-// 数组通用方法
+    // 数组通用方法
 // 可运行的方法
 ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'includes'].forEach(methodName => {
     let arrayFnFunc = Array.prototype[methodName];
@@ -817,7 +853,7 @@ assign(arrayFn, {
     }
 });
 
-// 私有属性正则
+    // 私有属性正则
 const PRIREG = /^_.+|^parent$|^hostkey$|^status$|^length$/;
 let XDataHandler = {
     set(target, key, value, receiver) {
@@ -894,7 +930,7 @@ let XDataHandler = {
     }
 };
 
-setNotEnumer(XDataFn, {
+    setNotEnumer(XDataFn, {
     seek(expr) {
         // 代表式的组织化数据
         let exprObjArr = [];
@@ -1063,11 +1099,12 @@ setNotEnumer(XDataFn, {
                         nextTick(() => {
                             // 监听整个数据
                             tarExprObj.arr.forEach(callback => {
+                                let val = this[expr];
                                 callback.call(this, {
                                     expr,
-                                    val: this[expr],
+                                    val,
                                     modifys: Array.from(tarExprObj.modifys)
-                                });
+                                }, val);
                             });
 
                             // 事后清空modifys
@@ -1117,7 +1154,7 @@ setNotEnumer(XDataFn, {
                                         expr,
                                         old: oldVals,
                                         val: sData
-                                    });
+                                    }, sData);
                                 });
                             }
 
@@ -1141,7 +1178,7 @@ setNotEnumer(XDataFn, {
             callback({
                 expr,
                 val: sData
-            });
+            }, sData);
         }
     },
     // 注销watch
@@ -1310,7 +1347,7 @@ setNotEnumer(XDataFn, {
             default:
                 // undefined
                 if (cover) {
-                    assign(xdata, this.object);
+                    xdata.extend(this.object);
                 }
 
                 this.watch(watchFunc = e => {
@@ -1362,65 +1399,145 @@ setNotEnumer(XDataFn, {
         return this;
     },
     virData(options) {
-        switch (options.type) {
-            case "map":
-                let cloneData = this.object;
+        // 转换为xdata
+        let cloneData = this.object;
+        mapData(cloneData, options);
+        cloneData = createXData(cloneData);
 
-                // 重置数据
-                mapData(cloneData, options);
+        let {
+            mapping,
+            type,
+            key
+        } = options;
 
-                // 提取关键数据
-                let keyMapObj = {};
-                let reserveKeyMapObj = {};
-                keyMapObj[options.key] = options.toKey;
-                reserveKeyMapObj[options.toKey] = options.key;
+        let reserveMapping = {};
 
-                // 转换为xdata
-                cloneData = createXData(cloneData);
+        Object.keys(mapping).forEach(k => {
+            let k2 = mapping[k];
+            !isUndefined(k2) && (reserveMapping[k2] = k);
+        });
 
-                let _thisUpdateFunc;
+        let _thisUpdateFunc, selfUpdataFunc;
+        switch (type) {
+            case "mapKey":
                 this.on('update', _thisUpdateFunc = e => {
                     let {
                         trend
                     } = e;
 
-                    let tarKey = keyMapObj[trend.key];
+                    // 修正trend的数据
+                    if (trend.args) {
+                        mapData(trend.args, options);
+                    } else if (trend.value) {
+                        mapData(trend.value, options);
+                    }
+
+                    let tarKey = mapping[trend.key];
                     if (!isUndefined(tarKey)) {
                         // 修正trend数据
                         trend.key = tarKey;
-                        cloneData.entrend(trend);
                     }
+                    cloneData.entrend(trend);
                 });
-
-                let selfUpdataFunc;
                 cloneData.on('update', selfUpdataFunc = e => {
                     let {
                         trend
                     } = e;
 
-                    let tarKey = reserveKeyMapObj[trend.key];
+                    if (trend.args) {
+                        mapData(trend.args, {
+                            type,
+                            // key,
+                            mapping: reserveMapping
+                        });
+                    } else if (trend.value) {
+                        mapData(trend.value, {
+                            type,
+                            // key,
+                            mapping: reserveMapping
+                        });
+                    }
+
+                    let tarKey = reserveMapping[trend.key];
 
                     if (!isUndefined(tarKey)) {
                         trend.key = tarKey;
-                        this.entrend(trend);
                     }
+                    this.entrend(trend);
                 });
+                break;
+            case "mapValue":
+                this.on('update', _thisUpdateFunc = e => {
+                    let {
+                        trend
+                    } = e;
 
-                // 修正remove方法
-                defineProperty(cloneData, "remove", {
-                    value(...args) {
-                        if (!args.length) {
-                            // 确认删除自身，清除this的函数
-                            this.off('update', _thisUpdateFunc);
-                            cloneData.off('update', selfUpdataFunc);
-                            cloneData = null;
+                    // 修正trend的数据
+                    if (trend.args) {
+                        mapData(trend.args, options);
+                    } else if (trend.value) {
+                        mapData(trend.value, options);
+                    }
+
+                    if (trend.key == key) {
+                        let val = trend.value;
+                        if (mapping.hasOwnProperty(val)) {
+                            // 修正value
+                            trend.value = mapping[val];
                         }
-                        XDataFn.remove.call(cloneData, ...args);
                     }
-                });
 
-                return cloneData;
+                    // 同步
+                    cloneData.entrend(trend);
+
+                });
+                cloneData.on('update', selfUpdataFunc = e => {
+                    let {
+                        trend
+                    } = e;
+
+                    if (trend.args) {
+                        mapData(trend.args, {
+                            type,
+                            key,
+                            mapping: reserveMapping
+                        });
+                    } else if (trend.value) {
+                        mapData(trend.value, {
+                            type,
+                            key,
+                            mapping: reserveMapping
+                        });
+                    }
+
+                    if (trend.key == key) {
+                        let val = trend.value;
+                        if (reserveMapping.hasOwnProperty(val)) {
+                            // 修正value
+                            trend.value = reserveMapping[val];
+                        }
+                    }
+
+                    // 同步
+                    this.entrend(trend);
+                });
+                break;
         }
+
+        // 修正remove方法
+        defineProperty(cloneData, "remove", {
+            value(...args) {
+                if (!args.length) {
+                    // 确认删除自身，清除this的函数
+                    this.off('update', _thisUpdateFunc);
+                    cloneData.off('update', selfUpdataFunc);
+                    _thisUpdateFunc = selfUpdataFunc = cloneData = null;
+                }
+                XDataFn.remove.call(cloneData, ...args);
+            }
+        });
+
+        return cloneData;
     },
     // 删除相应Key的值
     removeByKey(key) {
@@ -1477,6 +1594,9 @@ setNotEnumer(XDataFn, {
 
         assign(this, value);
         return this;
+    },
+    extend(...args) {
+        assign(this, ...args);
     }
 });
 
@@ -1529,3 +1649,5 @@ defineProperties(XDataFn, {
         }
     }
 });
+
+    

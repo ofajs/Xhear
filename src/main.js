@@ -117,6 +117,11 @@ defineProperties(XhearElementFn, {
             return this.ele.classList;
         }
     },
+    data: {
+        get() {
+            return this.ele.dataset;
+        }
+    },
     object: {
         get() {
             let obj = {
@@ -259,20 +264,19 @@ setNotEnumer(XhearElementFn, {
                 let target = createXHearElement(e.target);
                 let eveObj = new XDataEvent(eventName, target);
 
-                // 补充keys
-                let tempTarget = target;
-                while (tempTarget.ele !== this.ele) {
-                    eveObj.keys.unshift(tempTarget.hostkey);
-                    tempTarget = tempTarget.parent;
-                }
-
                 // 添加 originalEvent
                 eveObj.originalEvent = e;
 
                 // 添加默认方法
                 eveObj.preventDefault = e.preventDefault.bind(e);
 
-                this.emit(eveObj);
+                // 判断添加影子ID
+                let shadowId = e.target.getAttribute('xv-shadow');
+                shadowId && (eveObj.shadow = shadowId);
+
+                target.emit(eveObj);
+
+                return false;
             });
             this[XHEAREVENT].set(eventName, eventCall);
         }
@@ -350,13 +354,53 @@ setNotEnumer(XhearElementFn, {
 
         // 判断是否 shadow元素，shadow元素到根节点就不要冒泡
         if (eveObj instanceof XDataEvent && eveObj.shadow && eveObj.shadow == this.xvRender) {
-            return;
+            // 判断是否update冒泡
+            if (eveObj.type == "update") {
+                // update就阻止冒泡
+                return;
+            }
+
+            // 其他事件修正数据后继续冒泡
+            // 修正事件对象
+            let newEveObj = new XDataEvent(eveObj.type, this);
+
+            // 判断添加影子ID
+            let shadowId = this.ele.getAttribute('xv-shadow');
+            shadowId && (eveObj.shadow = shadowId);
+
+            let {
+                originalEvent,
+                preventDefault
+            } = eveObj;
+            if (originalEvent) {
+                assign(newEveObj, {
+                    originalEvent,
+                    preventDefault,
+                    fromShadowEvent: eveObj
+                });
+            }
+
+            // 替换原来的事件对象
+            args = [newEveObj];
         }
 
         return XDataFn.emit.apply(this, args);
     },
     que(expr) {
         return $.que(expr, this.ele);
+    },
+    extend(...args) {
+        let obj = {};
+        assign(obj, ...args);
+
+        // 合并数据
+        Object.keys(obj).forEach(k => {
+            let val = obj[k];
+            let selfVal = this[k];
+            if (val !== selfVal) {
+                this[k] = val;
+            }
+        });
     },
     // 根据界面元素上的toData生成xdata实例
     viewData() {
