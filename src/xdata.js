@@ -789,7 +789,7 @@ const clearModifyIdHost = (xdata) => {
 
     // 数组通用方法
 // 可运行的方法
-['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'includes'].forEach(methodName => {
+['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'includes', 'join'].forEach(methodName => {
     let arrayFnFunc = Array.prototype[methodName];
     if (arrayFnFunc) {
         defineProperty(XDataFn, methodName, {
