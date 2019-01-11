@@ -625,7 +625,7 @@ defineProperties(XDataEvent.prototype, {
                     break;
             }
 
-            return reobj;
+            return Object.freeze(reobj);
         }
     }
 });
@@ -1010,7 +1010,7 @@ const clearModifyIdHost = (xdata) => {
             size
         } = xdata[MODIFYIDHOST];
 
-        if (size > 2) {
+        if (size > 10) {
             // 清理一半数量，从新跑回去清理函数
             let halfSzie = Math.floor(size / 2);
 
@@ -1025,7 +1025,8 @@ const clearModifyIdHost = (xdata) => {
             setTimeout(clearFunc, 3000);
         } else {
             // 小于两个就清理掉啦
-            xdata[MODIFYIDHOST].clear();
+            // 改成小于10个就不理了
+            // xdata[MODIFYIDHOST].clear();
             // 解锁
             xdata[MODIFYTIMER] = 0;
             // 清理函数
@@ -1674,6 +1675,8 @@ let XDataHandler = {
                         trend
                     } = e;
 
+                    trend = cloneObject(trend);
+
                     // 修正trend的数据
                     if (trend.args) {
                         mapData(trend.args, options);
@@ -1692,6 +1695,8 @@ let XDataHandler = {
                     let {
                         trend
                     } = e;
+
+                    trend = cloneObject(trend);
 
                     if (trend.args) {
                         mapData(trend.args, {
@@ -1721,6 +1726,8 @@ let XDataHandler = {
                         trend
                     } = e;
 
+                    trend = cloneObject(trend);
+
                     // 修正trend的数据
                     if (trend.args) {
                         mapData(trend.args, options);
@@ -1744,6 +1751,8 @@ let XDataHandler = {
                     let {
                         trend
                     } = e;
+
+                    trend = cloneObject(trend);
 
                     if (trend.args) {
                         mapData(trend.args, {
