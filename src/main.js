@@ -420,31 +420,65 @@ setNotEnumer(XhearElementFn, {
             // 获取vd内容
             let vd = e.attr('xv-vd');
 
-            let syncObj = {};
+            if (e.xvele) {
+                let syncObj = {};
 
-            // 判断是否有to结构
-            if (/ to /.test(vd)) {
-                // 获取分组
-                let vGroup = vd.split(",");
-                vGroup.forEach(g => {
-                    // 拆分 to 两边的值
-                    let toGroup = g.split("to");
-                    if (toGroup.length == 2) {
-                        let key = toGroup[0].trim();
-                        let toKey = toGroup[1].trim();
-                        xdata[toKey] = e[key];
-                        syncObj[toKey] = key;
-                    }
-                });
+                // 判断是否有to结构
+                if (/ to /.test(vd)) {
+                    // 获取分组
+                    let vGroup = vd.split(",");
+                    vGroup.forEach(g => {
+                        // 拆分 to 两边的值
+                        let toGroup = g.split("to");
+                        if (toGroup.length == 2) {
+                            let key = toGroup[0].trim();
+                            let toKey = toGroup[1].trim();
+                            xdata[toKey] = e[key];
+                            syncObj[toKey] = key;
+                        }
+                    });
+                } else {
+                    vd = vd.trim();
+                    // 设置同步数据
+                    xdata[vd] = e.value;
+                    syncObj[vd] = "value";
+                }
+
+                // 数据同步
+                xdata.sync(e, syncObj);
             } else {
-                vd = vd.trim();
-                // 设置同步数据
-                xdata[vd] = e.value;
-                syncObj[vd] = "value";
-            }
+                // 普通元素
+                let {
+                    ele
+                } = e;
 
-            // 数据同步
-            xdata.sync(e, syncObj);
+                if ('checked' in ele) {
+                    // 设定值
+                    xdata[vd] = ele.checked;
+
+                    // 修正Input
+                    xdata.watch(vd, e => {
+                        ele.checked = xdata[vd];
+                    });
+                    ele.addEventListener("change", e => {
+                        xdata[vd] = ele.checked;
+                    });
+                } else {
+                    // 设定值
+                    xdata[vd] = ele.value;
+
+                    // 修正Input
+                    xdata.watch(vd, e => {
+                        ele.value = xdata[vd];
+                    });
+                    ele.addEventListener("change", e => {
+                        xdata[vd] = ele.value;
+                    });
+                    ele.addEventListener("input", e => {
+                        xdata[vd] = ele.value;
+                    });
+                }
+            }
         });
 
         return xdata;
