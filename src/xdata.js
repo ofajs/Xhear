@@ -1026,161 +1026,162 @@ let XDataHandler = {
         // 获取相应队列数据
         let tarExprObj = this[WATCHHOST].get(expr);
         if (!tarExprObj) {
-            tarExprObj = {
-                // 是否已经有nextTick
-                isNextTick: 0,
-                // 事件函数存放数组
-                arr: new Set(),
-                // 空expr使用的数据
-                modifys: [],
-                // 注册的update事件函数
-                // updateFunc
-            }
+            tarExprObj = new Set();
+
             this[WATCHHOST].set(expr, tarExprObj);
         }
 
-        // 添加callback
-        tarExprObj.arr.add(callback);
+        // 要保存的对象数据
+        let saveObj = {
+            modifys: [],
+            isNextTick: 0,
+            callback,
+            // updateFunc
+        };
 
-        if (!tarExprObj.updateFunc) {
-            let updateFunc;
+        // 添加保存对象
+        tarExprObj.add(saveObj);
 
-            // 根据类型调整
-            switch (watchType) {
-                case "watchOri":
-                    this.on('update', updateFunc = (e) => {
-                        // 添加trend数据
-                        tarExprObj.modifys.push(e.trend);
+        // 更新函数
+        let updateFunc;
 
-                        // 判断是否进入nextTick
-                        if (tarExprObj.isNextTick) {
-                            return;
-                        }
+        // 根据类型调整
+        switch (watchType) {
+            case "watchOri":
+                this.on('update', updateFunc = (e) => {
+                    // 添加trend数据
+                    saveObj.modifys.push(e.trend);
 
-                        // 锁上
-                        tarExprObj.isNextTick = 1;
+                    // 判断是否进入nextTick
+                    if (saveObj.isNextTick) {
+                        return;
+                    }
 
-                        nextTick(() => {
-                            // 监听整个数据
-                            tarExprObj.arr.forEach(callback => {
-                                callback.call(this, {
-                                    modifys: Array.from(tarExprObj.modifys)
-                                });
-                            });
+                    // 锁上
+                    saveObj.isNextTick = 1;
 
-                            // 事后清空modifys
-                            tarExprObj.modifys.length = 0;
-
-                            // 解锁
-                            tarExprObj.isNextTick = 0;
+                    nextTick(() => {
+                        // 监听整个数据
+                        saveObj.callback.call(this, {
+                            modifys: Array.from(saveObj.modifys)
                         });
+
+                        // 事后清空modifys
+                        saveObj.modifys.length = 0;
+
+                        // 解锁
+                        saveObj.isNextTick = 0;
                     });
-                    break;
-                case "watchKey":
-                    this.on('update', updateFunc = e => {
+                });
+                break;
+            case "watchKey":
+                this.on('update', updateFunc = e => {
+                    let {
+                        trend
+                    } = e;
+
+                    if (trend.fromKey != expr) {
+                        return;
+                    }
+
+                    // 添加改动
+                    saveObj.modifys.push(trend);
+
+                    // 判断是否进入nextTick
+                    if (saveObj.isNextTick) {
+                        return;
+                    }
+
+                    // 锁上
+                    saveObj.isNextTick = 1;
+
+                    nextTick(() => {
+                        // 获取值
+                        let val = this[expr];
+
+                        // 监听整个数据
+                        saveObj.callback.call(this, {
+                            expr,
+                            val,
+                            modifys: Array.from(saveObj.modifys)
+                        }, val);
+
+                        // 事后清空modifys
+                        saveObj.modifys.length = 0;
+
+                        // 解锁
+                        saveObj.isNextTick = 0;
+                    });
+                });
+                break;
+            case "seekOri":
+                // 先记录旧的数据
+                let sData = saveObj.oldVals = this.seek(expr);
+
+                this.on('update', updateFunc = e => {
+                    // 判断是否进入nextTick
+                    if (saveObj.isNextTick) {
+                        return;
+                    }
+
+                    // 锁上
+                    saveObj.isNextTick = 1;
+
+                    nextTick(() => {
                         let {
-                            trend
-                        } = e;
+                            oldVals
+                        } = saveObj;
 
-                        if (trend.fromKey != expr) {
-                            return;
+                        let sData = this.seek(expr);
+
+                        // 判断是否相等
+                        let isEq = 1;
+                        if (sData.length != oldVals.length) {
+                            isEq = 0;
                         }
-
-                        // 添加改动
-                        tarExprObj.modifys.push(trend);
-
-                        // 判断是否进入nextTick
-                        if (tarExprObj.isNextTick) {
-                            return;
-                        }
-
-                        // 锁上
-                        tarExprObj.isNextTick = 1;
-
-                        nextTick(() => {
-                            // 监听整个数据
-                            tarExprObj.arr.forEach(callback => {
-                                let val = this[expr];
-                                callback.call(this, {
-                                    expr,
-                                    val,
-                                    modifys: Array.from(tarExprObj.modifys)
-                                }, val);
-                            });
-
-                            // 事后清空modifys
-                            tarExprObj.modifys.length = 0;
-
-                            // 解锁
-                            tarExprObj.isNextTick = 0;
-                        });
-                    });
-                    break;
-                case "seekOri":
-                    // 先记录旧的数据
-                    tarExprObj.oldVals = this.seek(expr);
-
-                    this.on('update', updateFunc = e => {
-                        // 判断是否进入nextTick
-                        if (tarExprObj.isNextTick) {
-                            return;
-                        }
-
-                        // 锁上
-                        tarExprObj.isNextTick = 1;
-
-                        nextTick(() => {
-                            let {
-                                oldVals
-                            } = tarExprObj;
-
-                            let sData = this.seek(expr);
-
-                            // 判断是否相等
-                            let isEq = 1;
-                            if (sData.length != oldVals.length) {
+                        isEq && sData.some((e, i) => {
+                            if (!(oldVals[i] == e)) {
                                 isEq = 0;
+                                return true;
                             }
-                            isEq && sData.some((e, i) => {
-                                if (!(oldVals[i] == e)) {
-                                    isEq = 0;
-                                    return true;
-                                }
-                            });
-
-                            // 不相等就触发callback
-                            if (!isEq) {
-                                tarExprObj.arr.forEach(callback => {
-                                    callback.call(this, {
-                                        expr,
-                                        old: oldVals,
-                                        val: sData
-                                    }, sData);
-                                });
-                            }
-
-                            // 替换旧值
-                            tarExprObj.oldVals = sData;
-
-                            // 解锁
-                            tarExprObj.isNextTick = 0;
                         });
-                    });
-                    break;
-            }
 
-            // 设置绑定update的函数
-            tarExprObj.updateFunc = updateFunc;
+                        // 不相等就触发callback
+                        if (!isEq) {
+                            saveObj.callback.call(this, {
+                                expr,
+                                old: oldVals,
+                                val: sData
+                            }, sData);
+                        }
+
+                        // 替换旧值
+                        saveObj.oldVals = sData;
+
+                        // 解锁
+                        saveObj.isNextTick = 0;
+                    });
+                });
+
+                // 执行初始callback
+                callback({
+                    expr,
+                    val: sData
+                }, sData);
+                break;
         }
+
+        // 设置绑定update的函数
+        saveObj.updateFunc = updateFunc;
 
         // 判断是否expr
-        if (watchType == "seekOri") {
-            let sData = this.seek(expr);
-            callback({
-                expr,
-                val: sData
-            }, sData);
-        }
+        // if (watchType == "seekOri") {
+        //     let sData = this.seek(expr);
+        //     callback({
+        //         expr,
+        //         val: sData
+        //     }, sData);
+        // }
     },
     // 注销watch
     unwatch(expr, callback) {
@@ -1194,13 +1195,28 @@ let XDataHandler = {
         let tarExprObj = this[WATCHHOST].get(expr);
 
         if (tarExprObj) {
-            tarExprObj.arr.delete(callback);
+            // 搜索相应的saveObj
+            let saveObj;
+            Array.from(tarExprObj).some(e => {
+                if (e.callback === callback) {
+                    saveObj = e;
+                    return;
+                }
+            });
 
-            // 判断arr是否清空，是的话回收update事件绑定
-            if (!tarExprObj.arr.size) {
-                this.off('update', tarExprObj.updateFunc);
-                delete tarExprObj.updateFunc;
-                delete this[WATCHHOST].delete(expr);
+            if (saveObj) {
+                // 去除update监听
+                this.off('update', saveObj.updateFunc);
+
+                // 删除对象
+                tarExprObj.delete(saveObj);
+
+                // 判断arr是否清空，是的话回收update事件绑定
+                if (!tarExprObj.size) {
+                    delete this[WATCHHOST].delete(expr);
+                }
+            } else {
+                console.warn(`can't find this watch callback => `, callback);
             }
         }
 
