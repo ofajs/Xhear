@@ -1488,19 +1488,23 @@ let XDataHandler = {
             target = target[k];
         });
 
-        // 添加_entrendModifyId
-        target._entrendModifyId = modifyId;
+        if (target) {
+            // 添加_entrendModifyId
+            target._entrendModifyId = modifyId;
 
-        switch (options.genre) {
-            case "arrayMethod":
-                target[options.methodName](...options.args);
-                break;
-            case "delete":
-                delete target[options.key];
-                break;
-            default:
-                target[options.key] = options.value;
-                break;
+            switch (options.genre) {
+                case "arrayMethod":
+                    target[options.methodName](...options.args);
+                    break;
+                case "delete":
+                    delete target[options.key];
+                    break;
+                default:
+                    target[options.key] = options.value;
+                    break;
+            }
+        } else {
+            console.warn(`data not found => `, this, options);
         }
 
         return this;
