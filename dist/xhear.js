@@ -1256,7 +1256,12 @@ let XDataHandler = {
     watch(expr, callback) {
         // 调整参数
         let arg1Type = getType(expr);
-        if (/function/.test(arg1Type)) {
+        if (arg1Type === "object") {
+            Object.keys(expr).forEach(k => {
+                this.watch(k, expr[k]);
+            });
+            return;
+        } else if (/function/.test(arg1Type)) {
             callback = expr;
             expr = "";
         }
@@ -1927,8 +1932,6 @@ defineProperties(XDataFn, {
         }
     }
 });
-
-    
 
     const XhearElementHandler = {
     get(target, key, receiver) {
