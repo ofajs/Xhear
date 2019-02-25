@@ -3325,7 +3325,6 @@ const initDomObserver = () => {
                 removedNodes
             } = e;
 
-
             // 监听新增元素
             addedNodes && tachedArrFunc(Array.from(addedNodes), "attached", ATTACHED);
 
@@ -3348,9 +3347,9 @@ const tachedArrFunc = (arr, tachedFunName, tachedKey) => {
         }
 
         if (ele instanceof Element) {
-            // 触发已渲染的attached
-            arr.forEach(e => {
-                tatcheTargetFunc(ele, tachedFunName, tachedKey);
+            // 判断子元素是否包含render
+            Array.from(ele.querySelectorAll('[xv-render]')).forEach(e => {
+                tatcheTargetFunc(e, tachedFunName, tachedKey);
             });
         }
     });

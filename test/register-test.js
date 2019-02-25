@@ -52,13 +52,16 @@
     });
 
     // 制作c
-    window.c = $(`
-    <testtag id="c" xv-ele>
-        <div id="c_inner">I am testtag</div>
-    </testtag>
+    let outerC = $(`
+    <div>
+        <testtag id="c" xv-ele>
+            <div id="c_inner">I am testtag</div>
+        </testtag>
+    </div>
     `);
+    window.c = outerC.que('#c');
 
-    $("#d").before(c);
+    $("#d").before(outerC);
 
     // 等渲染完毕
     setTimeout(() => {
@@ -67,14 +70,15 @@
 
         // 监听改动
         $('#main').one('update', e => {
-            tester.ok(JSON.stringify(e.keys) == "[2]", "keys ok");
+            tester.ok(JSON.stringify(e.keys) == "[2,0]", "keys ok");
+            // tester.ok(JSON.stringify(e.keys) == "[2]", "keys ok");
             tester.ok(e.modify.key == "aa", 'modify ok');
         });
 
         c.aa = 'change aa';
 
         $('#main').one('update', e => {
-            tester.ok(JSON.stringify(e.keys) == `[2,"sobj"]`, "keys ok 2");
+            tester.ok(JSON.stringify(e.keys) == `[2,0,"sobj"]`, "keys ok 2");
             tester.ok(e.modify.key == "val", 'modify ok 2');
         });
 
