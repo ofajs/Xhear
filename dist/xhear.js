@@ -3297,6 +3297,7 @@ const register = (options) => {
 
     // 判断是否有attached 或者 detached，有的话初始 全局dom监听事件
     if (defaults.attached || defaults.detached) {
+        debugger
         initDomObserver();
     }
 
@@ -3362,7 +3363,7 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
     }
     let tagdata = regDatabase.get(ele.tagName.toLowerCase());
     if (tagdata[tachedFunName]) {
-        tagdata[tachedFunName].call(ele, createXHearElement(ele));
+        tagdata[tachedFunName].call(createXHearElement(ele));
         ele[tachedKey] = 1;
     }
 }

@@ -1,6 +1,6 @@
 (() => {
     let tester = expect(10, 'register test');
-    let c = $('#c');
+    // let c = $('#c');
 
     $.register({
         tag: "testinner",
@@ -39,12 +39,26 @@
             }
         },
         inited() {
-            tester.ok(this.ele == c.ele, "tag ok 1");
+            setTimeout(() => {
+                tester.ok(this.ele == c.ele, "tag ok 1");
+            }, 100);
         },
         attached() {
-            tester.ok(this.ele.getRootNode() == document, 'attacehd ok');
+            // setTimeout(()=>{
+
+            // });
+            tester.ok(this.ele.getRootNode() == document, 'attached ok');
         }
     });
+
+    // 制作c
+    window.c = $(`
+    <testtag id="c" xv-ele>
+        <div id="c_inner">I am testtag</div>
+    </testtag>
+    `);
+
+    $("#d").before(c);
 
     // 等渲染完毕
     setTimeout(() => {
