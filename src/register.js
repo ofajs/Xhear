@@ -296,7 +296,6 @@ const register = (options) => {
 
     // 判断是否有attached 或者 detached，有的话初始 全局dom监听事件
     if (defaults.attached || defaults.detached) {
-        debugger
         initDomObserver();
     }
 
