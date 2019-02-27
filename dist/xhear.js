@@ -162,15 +162,16 @@ const parseDataToDom = (objData) => {
     let xhearEle;
 
     if (xvele) {
-        ele.setAttribute('xv-ele', "");
-        renderEle(ele);
-        xhearEle = createXHearElement(ele);
+        // 克隆一份
+        let cloneData = cloneObject(objData);
 
-        // 数据合并
-        xhearEle[EXKEYS].forEach(k => {
-            let val = objData[k];
-            !isUndefined(val) && (xhearEle[k] = val);
-        });
+        // 去掉xvele
+        delete cloneData.xvele;
+
+        ele.setAttribute('xv-ele', "");
+        // 数据代入渲染
+        renderEle(ele, cloneData);
+        xhearEle = createXHearElement(ele);
     }
 
     // 填充内容
@@ -3002,7 +3003,7 @@ setNotEnumer(XhearElementFn, {
     // 元素自定义组件id计数器
 let renderEleId = 100;
 
-const renderEle = (ele) => {
+const renderEle = (ele, data) => {
     // 获取目标数据
     let tdb = regDatabase.get(ele.tagName.toLowerCase());
 
@@ -3162,6 +3163,8 @@ const renderEle = (ele) => {
 
     // 要设置的数据
     let rData = assign({}, tdb.data);
+
+    data && assign(rData, data);
 
     // attrs 上的数据
     tdb.attrs.forEach(attrName => {

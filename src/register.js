@@ -1,7 +1,7 @@
 // 元素自定义组件id计数器
 let renderEleId = 100;
 
-const renderEle = (ele) => {
+const renderEle = (ele, data) => {
     // 获取目标数据
     let tdb = regDatabase.get(ele.tagName.toLowerCase());
 
@@ -161,6 +161,8 @@ const renderEle = (ele) => {
 
     // 要设置的数据
     let rData = assign({}, tdb.data);
+
+    data && assign(rData, data);
 
     // attrs 上的数据
     tdb.attrs.forEach(attrName => {

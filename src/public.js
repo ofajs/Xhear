@@ -159,15 +159,16 @@ const parseDataToDom = (objData) => {
     let xhearEle;
 
     if (xvele) {
-        ele.setAttribute('xv-ele', "");
-        renderEle(ele);
-        xhearEle = createXHearElement(ele);
+        // 克隆一份
+        let cloneData = cloneObject(objData);
 
-        // 数据合并
-        xhearEle[EXKEYS].forEach(k => {
-            let val = objData[k];
-            !isUndefined(val) && (xhearEle[k] = val);
-        });
+        // 去掉xvele
+        delete cloneData.xvele;
+
+        ele.setAttribute('xv-ele', "");
+        // 数据代入渲染
+        renderEle(ele, cloneData);
+        xhearEle = createXHearElement(ele);
     }
 
     // 填充内容
