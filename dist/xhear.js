@@ -162,16 +162,29 @@ const parseDataToDom = (objData) => {
     let xhearEle;
 
     if (xvele) {
-        // 克隆一份
-        let cloneData = cloneObject(objData);
+        // 克隆一份，去除数字
+        let cloneData = {};
 
-        // 去掉xvele
-        delete cloneData.xvele;
+        Object.keys(objData).forEach(k => {
+            // 非数字和非xvele tag
+            if (k !== "xvele" && k !== "tag" && /\D/.test(k)) {
+                cloneData[k] = objData[k];
+            }
+        });
 
         ele.setAttribute('xv-ele', "");
+
         // 数据代入渲染
         renderEle(ele, cloneData);
+        // renderEle(ele);
+
         xhearEle = createXHearElement(ele);
+
+        // 数据合并
+        // xhearEle[EXKEYS].forEach(k => {
+        //     let val = objData[k];
+        //     !isUndefined(val) && (xhearEle[k] = val);
+        // });
     }
 
     // 填充内容
