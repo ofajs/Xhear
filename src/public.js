@@ -43,14 +43,23 @@ const nextTick = (() => {
 })();
 
 // common
+// // XhearElement寄存在element内的函数寄宿对象key
+// const XHEAREVENT = "_xevent_" + getRandomId();
+// // xhearElement初始化存放的变量key
+// const XHEARELEMENT = "_xhearEle_" + getRandomId();
+// // 属于可动变量的key组合
+// const EXKEYS = "_exkeys_" + getRandomId();
+// const ATTACHED = "_attached_" + getRandomId();
+// const DETACHED = "_detached_" + getRandomId();
+
 // XhearElement寄存在element内的函数寄宿对象key
-const XHEAREVENT = "_xevent_" + getRandomId();
+const XHEAREVENT = Symbol("xhearEvents");
 // xhearElement初始化存放的变量key
-const XHEARELEMENT = "_xhearEle_" + getRandomId();
+const XHEARELEMENT = Symbol("xhearElement");
 // 属于可动变量的key组合
-const EXKEYS = "_exkeys_" + getRandomId();
-const ATTACHED = "_attached_" + getRandomId();
-const DETACHED = "_detached_" + getRandomId();
+const EXKEYS = Symbol("exkeys");
+const ATTACHED = Symbol("attached");
+const DETACHED = Symbol("detached");
 
 // database
 // 注册数据

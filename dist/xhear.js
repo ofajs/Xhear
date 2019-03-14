@@ -46,14 +46,23 @@ const nextTick = (() => {
 })();
 
 // common
+// // XhearElement寄存在element内的函数寄宿对象key
+// const XHEAREVENT = "_xevent_" + getRandomId();
+// // xhearElement初始化存放的变量key
+// const XHEARELEMENT = "_xhearEle_" + getRandomId();
+// // 属于可动变量的key组合
+// const EXKEYS = "_exkeys_" + getRandomId();
+// const ATTACHED = "_attached_" + getRandomId();
+// const DETACHED = "_detached_" + getRandomId();
+
 // XhearElement寄存在element内的函数寄宿对象key
-const XHEAREVENT = "_xevent_" + getRandomId();
+const XHEAREVENT = Symbol("xhearEvents");
 // xhearElement初始化存放的变量key
-const XHEARELEMENT = "_xhearEle_" + getRandomId();
+const XHEARELEMENT = Symbol("xhearElement");
 // 属于可动变量的key组合
-const EXKEYS = "_exkeys_" + getRandomId();
-const ATTACHED = "_attached_" + getRandomId();
-const DETACHED = "_detached_" + getRandomId();
+const EXKEYS = Symbol("exkeys");
+const ATTACHED = Symbol("attached");
+const DETACHED = Symbol("detached");
 
 // database
 // 注册数据
@@ -265,17 +274,17 @@ const parseToXHearElement = expr => {
 
 // common
 // 事件寄宿对象key
-const EVES = "_eves_" + getRandomId();
+const EVES = Symbol("xEves");
 // 是否在数组方法执行中key
-const RUNARRMETHOD = "_runarrmethod_" + getRandomId();
+const RUNARRMETHOD = Symbol("runArrMethod");
 // 存放modifyId的寄宿对象key
-const MODIFYIDHOST = "_modify_" + getRandomId();
+const MODIFYIDHOST = Symbol("modifyHost");
 // modifyId打扫器寄存变量
-const MODIFYTIMER = "_modify_timer_" + getRandomId();
+const MODIFYTIMER = Symbol("modifyTimer");
 // watch寄宿对象
-const WATCHHOST = "_watch_" + getRandomId();
+const WATCHHOST = Symbol("watchHost");
 // 同步数据寄宿对象key
-const SYNCHOST = "_synchost_" + getRandomId();
+const SYNCHOST = Symbol("syncHost");
 
 // business function
 let isXData = obj => obj instanceof XData;
@@ -500,15 +509,15 @@ const mapData = (data, options) => {
         // 设置数组长度
         length,
         // 事件寄宿对象
-        [EVES]: new Map(),
+        // [EVES]: new Map(),
         // modifyId存放寄宿对象
-        [MODIFYIDHOST]: new Set(),
+        // [MODIFYIDHOST]: new Set(),
         // modifyId清理器的断定变量
-        [MODIFYTIMER]: 0,
+        // [MODIFYTIMER]: 0,
         // watch寄宿对象
-        [WATCHHOST]: new Map(),
+        // [WATCHHOST]: new Map(),
         // 同步数据寄宿对象
-        [SYNCHOST]: new Map()
+        // [SYNCHOST]: new Map()
     };
 
     // 设置不可枚举数据
@@ -516,6 +525,22 @@ const mapData = (data, options) => {
 
     // 设置专属值
     defineProperties(this, {
+        [EVES]: {
+            value: new Map()
+        },
+        [MODIFYIDHOST]: {
+            value: new Set()
+        },
+        [WATCHHOST]: {
+            value: new Map()
+        },
+        [SYNCHOST]: {
+            value: new Map()
+        },
+        [MODIFYTIMER]: {
+            writable: true,
+            value: 0
+        },
         status: {
             writable: true,
             value: options.parent ? "binding" : "root"
@@ -534,7 +559,6 @@ const mapData = (data, options) => {
 }
 
 let XDataFn = XData.prototype = {};
-
 
 function XDataEvent(type, target) {
     let enumerable = true;
@@ -1133,7 +1157,7 @@ let XDataHandler = {
     set(target, key, value, receiver) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (PRIREG.test(key)) {
+        if (typeof key === "symbol" || PRIREG.test(key)) {
             return Reflect.set(target, key, value, receiver);
         }
 
@@ -1166,7 +1190,7 @@ let XDataHandler = {
     deleteProperty(target, key) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (/^_.+/.test(key) || target.hasOwnProperty(RUNARRMETHOD)) {
+        if (typeof key === "symbol" || /^_.+/.test(key) || target.hasOwnProperty(RUNARRMETHOD)) {
             return Reflect.deleteProperty(target, key);
         }
 
@@ -1975,7 +1999,7 @@ defineProperties(XDataFn, {
     const XhearElementHandler = {
     get(target, key, receiver) {
         // 判断是否纯数字
-        if (/\D/.test(key)) {
+        if (typeof key === "symbol" || /\D/.test(key)) {
             return Reflect.get(target, key, receiver);
         } else {
             // 纯数字就从children上获取
@@ -1984,7 +2008,7 @@ defineProperties(XDataFn, {
         }
     },
     set(target, key, value, receiver) {
-        if (/^_.+/.test(key) || defaultKeys.has(key)) {
+        if (typeof key === "symbol" || /^_.+/.test(key) || defaultKeys.has(key)) {
             return Reflect.set(target, key, value, receiver);
         }
 
@@ -2014,7 +2038,7 @@ defineProperties(XDataFn, {
     deleteProperty(target, key) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (/^_.+/.test(key)) {
+        if (typeof key === "symbol" || /^_.+/.test(key)) {
             return Reflect.deleteProperty(target, key);
         }
         console.error(`you can't use delete with xhearElement`);
@@ -2032,29 +2056,54 @@ function XhearElement(ele) {
             value: ele
         }
     });
-    let opt = {
-        // status: "root",
-        // 设置数组长度
-        // length,
-        // 事件寄宿对象
-        [EVES]: new Map(),
-        // modifyId存放寄宿对象
-        [MODIFYIDHOST]: new Set(),
-        // modifyId清理器的断定变量
-        [MODIFYTIMER]: 0,
-        // watch寄宿对象
-        [WATCHHOST]: new Map(),
-        // 同步数据寄宿对象
-        [SYNCHOST]: new Map(),
-        // ------下面是XhearElement新增的------
-        // 实体事件函数寄存
-        [XHEAREVENT]: new Map(),
-        // 在exkeys内的才能进行set操作
-        [EXKEYS]: new Set()
-    };
+    // let opt = {
+    //     // status: "root",
+    //     // 设置数组长度
+    //     // length,
+    //     // 事件寄宿对象
+    //     // [EVES]: new Map(),
+    //     // modifyId存放寄宿对象
+    //     // [MODIFYIDHOST]: new Set(),
+    //     // modifyId清理器的断定变量
+    //     // [MODIFYTIMER]: 0,
+    //     // watch寄宿对象
+    //     // [WATCHHOST]: new Map(),
+    //     // 同步数据寄宿对象
+    //     // [SYNCHOST]: new Map(),
+    //     // ------下面是XhearElement新增的------
+    //     // 实体事件函数寄存
+    //     // [XHEAREVENT]: new Map(),
+    //     // // 在exkeys内的才能进行set操作
+    //     // [EXKEYS]: new Set()
+    // };
 
-    // 设置不可枚举数据
-    setNotEnumer(this, opt);
+    // // 设置不可枚举数据
+    // setNotEnumer(this, opt);
+
+    defineProperties(this, {
+        [EVES]: {
+            value: new Map()
+        },
+        [MODIFYIDHOST]: {
+            value: new Set()
+        },
+        [WATCHHOST]: {
+            value: new Map()
+        },
+        [SYNCHOST]: {
+            value: new Map()
+        },
+        [MODIFYTIMER]: {
+            writable: true,
+            value: 0
+        },
+        [XHEAREVENT]: {
+            value: new Map()
+        },
+        // [EXKEYS]: {
+        //     value: new Set()
+        // }
+    });
 
     // 返回代理后的数据对象
     return new Proxy(this, XhearElementHandler);
