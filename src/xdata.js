@@ -2,17 +2,17 @@
 
 // common
 // 事件寄宿对象key
-const EVES = "_eves_" + getRandomId();
+const EVES = Symbol("xEves");
 // 是否在数组方法执行中key
-const RUNARRMETHOD = "_runarrmethod_" + getRandomId();
+const RUNARRMETHOD = Symbol("runArrMethod");
 // 存放modifyId的寄宿对象key
-const MODIFYIDHOST = "_modify_" + getRandomId();
+const MODIFYIDHOST = Symbol("modifyHost");
 // modifyId打扫器寄存变量
-const MODIFYTIMER = "_modify_timer_" + getRandomId();
+const MODIFYTIMER = Symbol("modifyTimer");
 // watch寄宿对象
-const WATCHHOST = "_watch_" + getRandomId();
+const WATCHHOST = Symbol("watchHost");
 // 同步数据寄宿对象key
-const SYNCHOST = "_synchost_" + getRandomId();
+const SYNCHOST = Symbol("syncHost");
 
 // business function
 let isXData = obj => obj instanceof XData;
@@ -237,15 +237,15 @@ const mapData = (data, options) => {
         // 设置数组长度
         length,
         // 事件寄宿对象
-        [EVES]: new Map(),
+        // [EVES]: new Map(),
         // modifyId存放寄宿对象
-        [MODIFYIDHOST]: new Set(),
+        // [MODIFYIDHOST]: new Set(),
         // modifyId清理器的断定变量
-        [MODIFYTIMER]: 0,
+        // [MODIFYTIMER]: 0,
         // watch寄宿对象
-        [WATCHHOST]: new Map(),
+        // [WATCHHOST]: new Map(),
         // 同步数据寄宿对象
-        [SYNCHOST]: new Map()
+        // [SYNCHOST]: new Map()
     };
 
     // 设置不可枚举数据
@@ -253,6 +253,22 @@ const mapData = (data, options) => {
 
     // 设置专属值
     defineProperties(this, {
+        [EVES]: {
+            value: new Map()
+        },
+        [MODIFYIDHOST]: {
+            value: new Set()
+        },
+        [WATCHHOST]: {
+            value: new Map()
+        },
+        [SYNCHOST]: {
+            value: new Map()
+        },
+        [MODIFYTIMER]: {
+            writable: true,
+            value: 0
+        },
         status: {
             writable: true,
             value: options.parent ? "binding" : "root"
@@ -271,7 +287,6 @@ const mapData = (data, options) => {
 }
 
 let XDataFn = XData.prototype = {};
-
 
 function XDataEvent(type, target) {
     let enumerable = true;
@@ -342,7 +357,8 @@ defineProperties(XDataEvent.prototype, {
                     var {
                         methodName,
                         args,
-                        modifyId
+                        modifyId,
+                        returnValue
                     } = modify;
 
                     // 修正args，将XData还原成object对象
@@ -357,6 +373,14 @@ defineProperties(XDataEvent.prototype, {
                         methodName,
                         args,
                         modifyId
+                    });
+
+                    defineProperties(reobj, {
+                        "returnValue": {
+                            get() {
+                                return returnValue instanceof Object ? cloneObject(returnValue) : returnValue;
+                            }
+                        }
                     });
                     break;
                 default:
@@ -734,7 +758,8 @@ const entrend = (options) => {
                 genre: "arrayMethod",
                 methodName,
                 modifyId,
-                args
+                args,
+                returnValue: reData
             };
 
             break;
@@ -860,7 +885,7 @@ let XDataHandler = {
     set(target, key, value, receiver) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (PRIREG.test(key)) {
+        if (typeof key === "symbol" || PRIREG.test(key)) {
             return Reflect.set(target, key, value, receiver);
         }
 
@@ -893,7 +918,7 @@ let XDataHandler = {
     deleteProperty(target, key) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (/^_.+/.test(key) || target.hasOwnProperty(RUNARRMETHOD)) {
+        if (typeof key === "symbol" || /^_.+/.test(key) || target.hasOwnProperty(RUNARRMETHOD)) {
             return Reflect.deleteProperty(target, key);
         }
 
@@ -1007,7 +1032,12 @@ let XDataHandler = {
     watch(expr, callback) {
         // 调整参数
         let arg1Type = getType(expr);
-        if (/function/.test(arg1Type)) {
+        if (arg1Type === "object") {
+            Object.keys(expr).forEach(k => {
+                this.watch(k, expr[k]);
+            });
+            return;
+        } else if (/function/.test(arg1Type)) {
             callback = expr;
             expr = "";
         }
@@ -1239,19 +1269,23 @@ let XDataHandler = {
             target = target[k];
         });
 
-        // 添加_entrendModifyId
-        target._entrendModifyId = modifyId;
+        if (target) {
+            // 添加_entrendModifyId
+            target._entrendModifyId = modifyId;
 
-        switch (options.genre) {
-            case "arrayMethod":
-                target[options.methodName](...options.args);
-                break;
-            case "delete":
-                delete target[options.key];
-                break;
-            default:
-                target[options.key] = options.value;
-                break;
+            switch (options.genre) {
+                case "arrayMethod":
+                    target[options.methodName](...options.args);
+                    break;
+                case "delete":
+                    delete target[options.key];
+                    break;
+                default:
+                    target[options.key] = options.value;
+                    break;
+            }
+        } else {
+            console.warn(`data not found => `, this, options);
         }
 
         return this;
@@ -1622,6 +1656,19 @@ let XDataHandler = {
     },
     extend(...args) {
         assign(this, ...args);
+    },
+    // 根据trend获取目标
+    getTarget(trend) {
+        let {
+            keys
+        } = trend;
+        let target = commonData;
+        if (keys.length) {
+            keys.forEach(k => {
+                target = target[k];
+            });
+        }
+        return target;
     }
 });
 

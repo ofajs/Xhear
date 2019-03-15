@@ -1,7 +1,7 @@
 // 元素自定义组件id计数器
 let renderEleId = 100;
 
-const renderEle = (ele) => {
+const renderEle = (ele, data) => {
     // 获取目标数据
     let tdb = regDatabase.get(ele.tagName.toLowerCase());
 
@@ -161,6 +161,8 @@ const renderEle = (ele) => {
 
     // 要设置的数据
     let rData = assign({}, tdb.data);
+
+    data && assign(rData, data);
 
     // attrs 上的数据
     tdb.attrs.forEach(attrName => {
@@ -324,7 +326,6 @@ const initDomObserver = () => {
                 removedNodes
             } = e;
 
-
             // 监听新增元素
             addedNodes && tachedArrFunc(Array.from(addedNodes), "attached", ATTACHED);
 
@@ -347,9 +348,9 @@ const tachedArrFunc = (arr, tachedFunName, tachedKey) => {
         }
 
         if (ele instanceof Element) {
-            // 触发已渲染的attached
-            arr.forEach(e => {
-                tatcheTargetFunc(ele, tachedFunName, tachedKey);
+            // 判断子元素是否包含render
+            Array.from(ele.querySelectorAll('[xv-render]')).forEach(e => {
+                tatcheTargetFunc(e, tachedFunName, tachedKey);
             });
         }
     });
@@ -361,7 +362,7 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
     }
     let tagdata = regDatabase.get(ele.tagName.toLowerCase());
     if (tagdata[tachedFunName]) {
-        tagdata[tachedFunName].call(ele, createXHearElement(ele));
+        tagdata[tachedFunName].call(createXHearElement(ele));
         ele[tachedKey] = 1;
     }
 }

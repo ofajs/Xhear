@@ -1,7 +1,7 @@
 const XhearElementHandler = {
     get(target, key, receiver) {
         // 判断是否纯数字
-        if (/\D/.test(key)) {
+        if (typeof key === "symbol" || /\D/.test(key)) {
             return Reflect.get(target, key, receiver);
         } else {
             // 纯数字就从children上获取
@@ -10,7 +10,7 @@ const XhearElementHandler = {
         }
     },
     set(target, key, value, receiver) {
-        if (/^_.+/.test(key) || defaultKeys.has(key)) {
+        if (typeof key === "symbol" || /^_.+/.test(key) || defaultKeys.has(key)) {
             return Reflect.set(target, key, value, receiver);
         }
 
@@ -40,7 +40,7 @@ const XhearElementHandler = {
     deleteProperty(target, key) {
         // 私有变量直接通过
         // 数组函数运行中直接通过
-        if (/^_.+/.test(key)) {
+        if (typeof key === "symbol" || /^_.+/.test(key)) {
             return Reflect.deleteProperty(target, key);
         }
         console.error(`you can't use delete with xhearElement`);
@@ -58,29 +58,54 @@ function XhearElement(ele) {
             value: ele
         }
     });
-    let opt = {
-        // status: "root",
-        // 设置数组长度
-        // length,
-        // 事件寄宿对象
-        [EVES]: new Map(),
-        // modifyId存放寄宿对象
-        [MODIFYIDHOST]: new Set(),
-        // modifyId清理器的断定变量
-        [MODIFYTIMER]: 0,
-        // watch寄宿对象
-        [WATCHHOST]: new Map(),
-        // 同步数据寄宿对象
-        [SYNCHOST]: new Map(),
-        // ------下面是XhearElement新增的------
-        // 实体事件函数寄存
-        [XHEAREVENT]: new Map(),
-        // 在exkeys内的才能进行set操作
-        [EXKEYS]: new Set()
-    };
+    // let opt = {
+    //     // status: "root",
+    //     // 设置数组长度
+    //     // length,
+    //     // 事件寄宿对象
+    //     // [EVES]: new Map(),
+    //     // modifyId存放寄宿对象
+    //     // [MODIFYIDHOST]: new Set(),
+    //     // modifyId清理器的断定变量
+    //     // [MODIFYTIMER]: 0,
+    //     // watch寄宿对象
+    //     // [WATCHHOST]: new Map(),
+    //     // 同步数据寄宿对象
+    //     // [SYNCHOST]: new Map(),
+    //     // ------下面是XhearElement新增的------
+    //     // 实体事件函数寄存
+    //     // [XHEAREVENT]: new Map(),
+    //     // // 在exkeys内的才能进行set操作
+    //     // [EXKEYS]: new Set()
+    // };
 
-    // 设置不可枚举数据
-    setNotEnumer(this, opt);
+    // // 设置不可枚举数据
+    // setNotEnumer(this, opt);
+
+    defineProperties(this, {
+        [EVES]: {
+            value: new Map()
+        },
+        [MODIFYIDHOST]: {
+            value: new Set()
+        },
+        [WATCHHOST]: {
+            value: new Map()
+        },
+        [SYNCHOST]: {
+            value: new Map()
+        },
+        [MODIFYTIMER]: {
+            writable: true,
+            value: 0
+        },
+        [XHEAREVENT]: {
+            value: new Map()
+        },
+        // [EXKEYS]: {
+        //     value: new Set()
+        // }
+    });
 
     // 返回代理后的数据对象
     return new Proxy(this, XhearElementHandler);

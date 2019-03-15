@@ -1,6 +1,6 @@
 (() => {
     let tester = expect(10, 'register test');
-    let c = $('#c');
+    // let c = $('#c');
 
     $.register({
         tag: "testinner",
@@ -39,12 +39,29 @@
             }
         },
         inited() {
-            tester.ok(this.ele == c.ele, "tag ok 1");
+            setTimeout(() => {
+                tester.ok(this.ele == c.ele, "tag ok 1");
+            }, 100);
         },
         attached() {
-            tester.ok(this.ele.getRootNode() == document, 'attacehd ok');
+            // setTimeout(()=>{
+
+            // });
+            tester.ok(this.ele.getRootNode() == document, 'attached ok');
         }
     });
+
+    // 制作c
+    let outerC = $(`
+    <div>
+        <testtag id="c" xv-ele>
+            <div id="c_inner">I am testtag</div>
+        </testtag>
+    </div>
+    `);
+    window.c = outerC.que('#c');
+
+    $("#d").before(outerC);
 
     // 等渲染完毕
     setTimeout(() => {
@@ -53,14 +70,15 @@
 
         // 监听改动
         $('#main').one('update', e => {
-            tester.ok(JSON.stringify(e.keys) == "[2]", "keys ok");
+            tester.ok(JSON.stringify(e.keys) == "[2,0]", "keys ok");
+            // tester.ok(JSON.stringify(e.keys) == "[2]", "keys ok");
             tester.ok(e.modify.key == "aa", 'modify ok');
         });
 
         c.aa = 'change aa';
 
         $('#main').one('update', e => {
-            tester.ok(JSON.stringify(e.keys) == `[2,"sobj"]`, "keys ok 2");
+            tester.ok(JSON.stringify(e.keys) == `[2,0,"sobj"]`, "keys ok 2");
             tester.ok(e.modify.key == "val", 'modify ok 2');
         });
 

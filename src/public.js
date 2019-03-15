@@ -43,14 +43,23 @@ const nextTick = (() => {
 })();
 
 // common
+// // XhearElement寄存在element内的函数寄宿对象key
+// const XHEAREVENT = "_xevent_" + getRandomId();
+// // xhearElement初始化存放的变量key
+// const XHEARELEMENT = "_xhearEle_" + getRandomId();
+// // 属于可动变量的key组合
+// const EXKEYS = "_exkeys_" + getRandomId();
+// const ATTACHED = "_attached_" + getRandomId();
+// const DETACHED = "_detached_" + getRandomId();
+
 // XhearElement寄存在element内的函数寄宿对象key
-const XHEAREVENT = "_xevent_" + getRandomId();
+const XHEAREVENT = Symbol("xhearEvents");
 // xhearElement初始化存放的变量key
-const XHEARELEMENT = "_xhearEle_" + getRandomId();
+const XHEARELEMENT = Symbol("xhearElement");
 // 属于可动变量的key组合
-const EXKEYS = "_exkeys_" + getRandomId();
-const ATTACHED = "_attached_" + getRandomId();
-const DETACHED = "_detached_" + getRandomId();
+const EXKEYS = Symbol("exkeys");
+const ATTACHED = Symbol("attached");
+const DETACHED = Symbol("detached");
 
 // database
 // 注册数据
@@ -159,15 +168,29 @@ const parseDataToDom = (objData) => {
     let xhearEle;
 
     if (xvele) {
+        // 克隆一份，去除数字
+        let cloneData = {};
+
+        Object.keys(objData).forEach(k => {
+            // 非数字和非xvele tag
+            if (k !== "xvele" && k !== "tag" && /\D/.test(k)) {
+                cloneData[k] = objData[k];
+            }
+        });
+
         ele.setAttribute('xv-ele', "");
-        renderEle(ele);
+
+        // 数据代入渲染
+        renderEle(ele, cloneData);
+        // renderEle(ele);
+
         xhearEle = createXHearElement(ele);
 
         // 数据合并
-        xhearEle[EXKEYS].forEach(k => {
-            let val = objData[k];
-            !isUndefined(val) && (xhearEle[k] = val);
-        });
+        // xhearEle[EXKEYS].forEach(k => {
+        //     let val = objData[k];
+        //     !isUndefined(val) && (xhearEle[k] = val);
+        // });
     }
 
     // 填充内容

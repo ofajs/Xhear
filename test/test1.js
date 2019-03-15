@@ -16,7 +16,7 @@ a.one('click', cfun = (e, data) => {
     console.log('click a');
 });
 
-let c = $('#c');
+// let c = $('#c');
 let main = $('#main');
 let d = $('#d');
 

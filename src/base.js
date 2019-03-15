@@ -41,6 +41,7 @@
             return tar && createXHearElement(tar);
         },
         queAll: (expr, root = document) => Array.from(root.querySelectorAll(expr)).map(e => createXHearElement(e)),
+        nextTick,
         xdata: createXData,
         register
     });
