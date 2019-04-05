@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>p-layers test</title>
+    <script src="../../dist/xhear.js"></script>
+    <script src="../drill.js"></script>
+    <script>
+        load('p-layers');
+    </script>
+</head>
+
+<body style="width:300px;">
+    <p-layers xv-ele id="tarLayers">
+        <p-page xv-ele packup="1" pname="page1" thumbnail="https://i0.hdslb.com/bfs/archive/2fb71163a38f9299c04d3aafa4f24d3626ed9f03.png">
+            <p-pic xv-ele pname="法法1"></p-pic>
+            <p-text xv-ele pname="哈哈"></p-text>
+            <p-pic xv-ele pname="法法2"></p-pic>
+        </p-page>
+        <p-page xv-ele packup="1" pname="page2">
+            <p-pic xv-ele pname="法法3"></p-pic>
+            <p-text xv-ele pname="哈哈4"></p-text>
+            <p-pic xv-ele pname="法法5" selected="1"></p-pic>
+        </p-page>
+    </p-layers>
+    <br>
+    <p-layers xv-ele id="layers2"></p-layers>
+</body>
+<script>
+    setTimeout(() => {
+        window.tarLayers = $('#tarLayers');
+
+        // 测试多重数据绑定
+        window.tdata = $.xdata(tarLayers.object);
+        tdata.sync(tarLayers);
+
+        window.tdata2 = $.xdata(tarLayers.object);
+        tdata2.sync(tdata);
+
+        window.layers2 = $('#layers2');
+        tdata2.sync(layers2, null, true);
+        // tarLayers.sync(layers2, null, true);
+    }, 100);
+</script>
+
+</html>
