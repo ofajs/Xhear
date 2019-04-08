@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>p-input</title>
+    <style>
+        body {
+            background-color: rgb(66, 66, 66);
+        }
+    </style>
+    <link rel="stylesheet" href="p-input.css">
+    <script src="../../dist/xhear.js"></script>
+    <script src="p-input.js"></script>
+</head>
+
+<body>
+    <p-input xv-ele style="width:120px;" id="tar1" placeholder="我是哈哈"></p-input>
+    <br>
+    <br>
+    <p-input xv-ele type="select" style="width:120px;">
+        <option value="haha1">哈哈1</option>
+        <option value="haha2">哈哈2</option>
+        <option value="haha3">哈哈3</option>
+    </p-input>
+    <br>
+    <p-input xv-ele type="select" style="width:120px;">
+        <option>haha1</option>
+        <option>haha2</option>
+        <option>haha3</option>
+    </p-input>
+    <br>
+    <p-input xv-ele type="color" style="width:120px;"></p-input>
+    <br>
+    <p-input xv-ele type="color" disabled style="width:120px;"></p-input>
+    <br>
+    <p-input xv-ele type="range" min="100" max="200" step="0.25" value="130" style="width:200px;margin-left:40px;">
+    </p-input>
+</body>
+<script>
+    let data = $.xdata({
+        x: ""
+    });
+
+    data.sync($('#tar1'), {
+        x: "value"
+    });
+    setTimeout(() => {
+        data.x = 0;
+    }, 1000);
+</script>
+
+</html>

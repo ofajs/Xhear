@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>p-selector test</title>
+    <link rel="stylesheet" href="p-selector.css">
+    <script src="../../dist/xhear.js"></script>
+    <script src="p-selector.js"></script>
+    <style>
+        body {
+            background-color: rgb(66, 66, 66);
+        }
+    </style>
+</head>
+
+<body>
+    <br>
+    <br>
+    <br>
+    <p-selector xv-ele id="tar" style="width:500px;">
+        <p-option xv-ele value="haha1">哈哈1</p-option>
+        <p-option xv-ele>haha2</p-option>
+        <p-option xv-ele>haha3</p-option>
+        <p-option xv-ele selected="1">haha4</p-option>
+        <p-option xv-ele>haha5</p-option>
+    </p-selector>
+
+    <br>
+    <br>
+    <p-selector xv-ele style="width:400px;" showcount="hide">
+        <p-option xv-ele value="haha1">哈哈1</p-option>
+        <p-option xv-ele>haha2</p-option>
+        <p-option xv-ele>haha3</p-option>
+        <p-option xv-ele selected="1">haha4</p-option>
+        <p-option xv-ele>haha5</p-option>
+    </p-selector>
+</body>
+<script>
+    setTimeout(() => {
+        // 后面新增一个
+        $('#tar').push({
+            tag: "p-option",
+            xvele: 1,
+            text: "haha6"
+        });
+    }, 1000);
+
+    // 获取值
+    // let val = $("p-selector").value;
+    // console.log(val);
+</script>
+
+</html>
