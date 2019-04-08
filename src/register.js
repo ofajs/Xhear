@@ -226,6 +226,9 @@ const renderEle = (ele, data) => {
         });
     }
 
+    // 优先渲染子元素
+    Array.from(ele.querySelectorAll(`[xv-ele]`)).forEach(ele => renderEle(ele));
+
     // 执行inited 函数
     tdb.inited && tdb.inited.call(xhearEle);
 

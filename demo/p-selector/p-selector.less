@@ -1,0 +1,66 @@
+// compress: true, sourceMap: true
+p-selector {
+    display: flex;
+    width: 100%;
+    height: 30px;
+    color: #fdfdfd;
+    font-size: 12px;
+    border: rgba(255, 255, 255, .2) solid 1px;
+    border-radius: 4px;
+    >[xv-content] {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        overflow: hidden;
+    }
+    p-option {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+        border-left: rgba(255, 255, 255, .2) solid 1px;
+        // height: 30px;
+        cursor: pointer;
+        &[selected="1"] {
+            background-color: rgba(0, 0, 0, .2);
+            cursor: default;
+        }
+        &:first-child {
+            border-radius: 4px 0 0 4px;
+            border-left: none;
+        }
+        &:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        >[xv-content] {
+            padding: 0 10px;
+        }
+    }
+    .p_selector_jiao {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 0px;
+        opacity: 0;
+        border-left: rgba(255, 255, 255, .2) solid 1px;
+        transition: all ease .3s;
+        >select {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            outline: none;
+            opacity: 0;
+        }
+    }
+    &[showcount]:not([showcount="hide"]) {
+        .p_selector_jiao {
+            width: 20px;
+            opacity: 1;
+        }
+    }
+}
