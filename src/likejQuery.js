@@ -121,22 +121,6 @@ defineProperties(XhearElementFn, {
 
 // 模拟类jQuery的方法
 setNotEnumer(XhearElementFn, {
-    before(data) {
-        if (/\D/.test(this.hostkey)) {
-            console.error(`can't use before in this data =>`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.hostkey, 0, data);
-        return this;
-    },
-    after(data) {
-        if (/\D/.test(this.hostkey)) {
-            console.error(`can't use after in this data =>`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.hostkey + 1, 0, data);
-        return this;
-    },
     siblings(expr) {
         // 获取父层的所有子元素
         let parChilds = Array.from(this.ele.parentElement.children);

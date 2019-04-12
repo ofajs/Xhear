@@ -1634,6 +1634,24 @@ let XDataHandler = {
             }
         }
     },
+    // 添加到前面
+    before(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use before in this data =>`, this, data);
+            throw "";
+        }
+        this.parent.splice(this.hostkey, 0, data);
+        return this;
+    },
+    // 添加到后面
+    after(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use after in this data =>`, this, data);
+            throw "";
+        }
+        this.parent.splice(this.hostkey + 1, 0, data);
+        return this;
+    },
     // push的去重版本
     add(data) {
         !this.includes(data) && this.push(data);
