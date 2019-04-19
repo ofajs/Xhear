@@ -5,7 +5,7 @@
     $.register({
         tag: "testinner",
         temp: `
-            <div xv-content class="testinner"></div>
+            <div xv-slot="content" class="testinner"></div>
         `
     });
 

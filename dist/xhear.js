@@ -3115,7 +3115,6 @@ const renderEle = (ele, data) => {
 
     // 初始化元素
     let xhearEle = createXHearElement(ele);
-    let xhearData;
 
     // 合并 proto 的函数
     let {
@@ -3142,7 +3141,6 @@ const renderEle = (ele, data) => {
                     set
                 });
             }
-
         });
     }
 
@@ -3160,8 +3158,50 @@ const renderEle = (ele, data) => {
         value: ele.xvRender = renderId
     });
 
+    // 判断是否有插槽属性
+    if (tdb.slotTags.length > 0) {
+        tdb.slotTags.forEach(tName => {
+            let tarEle = childs.find(ele => {
+                let {
+                    tagName
+                } = ele;
+
+                // // 判断是否相应的tagId，并且不是xv定制的元素
+                if (tagName && tagName.toLowerCase() === tName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
+                    // 置换childs
+                    return ele;
+                }
+            });
+
+            if (tarEle) {
+                let tarKey = tName.replace(tdb.tag + "-", "");
+
+                // 把元素填进去
+                defineProperty(xhearEle, "$" + tarKey, {
+                    value: createXHearElement(ele)
+                });
+                debugger
+            }
+        });
+    }
+
+    // 判断是否有相应的content元素，有的话从里面抽出来
+    let contentTagName = tdb.tag + "-content";
+    childs.some(ele => {
+        let {
+            tagName
+        } = ele;
+
+        // 判断是否相应的tagId，并且不是xv定制的元素
+        if (tagName && tagName.toLowerCase() === contentTagName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
+            // 置换childs
+            childs = Array.from(ele.childNodes);
+            return true;
+        }
+    });
+
     // 获取 xv-content
-    let contentEle = ele.querySelector(`[xv-content][xv-shadow="${renderId}"]`);
+    let contentEle = ele.querySelector(`[xv-content][xv-shadow="${renderId}"],[xv-slot="content"][xv-shadow="${renderId}"]`);
 
     // 判断是否有$content
     if (contentEle) {
@@ -3358,6 +3398,9 @@ const register = (options) => {
     defaults.data = cloneObject(defaults.data);
     defaults.watch = assign({}, defaults.watch);
 
+    // 装载slot字段
+    let slotTags = defaults.slotTags = [];
+
     if (defaults.temp) {
         let {
             temp
@@ -3367,16 +3410,29 @@ const register = (options) => {
         let tempDiv = document.createElement('div');
         tempDiv.innerHTML = temp;
 
-        let xvcontent = tempDiv.querySelector('[xv-content]');
+        let xvcontent = tempDiv.querySelector('[xv-content],[xv-slot="content"]');
         if (!xvcontent) {
             console.error(defaults.tag + " need container!", options);
             return;
         }
 
+        // 查找slot字段
+        let slots = tempDiv.querySelectorAll('[xv-slot]');
+        if (slots) {
+            slots.forEach(ele => {
+                let slotName = ele.getAttribute("xv-slot");
+
+                // content就不用加入了
+                if (slotName && slotName !== "content") {
+                    slotTags.push(defaults.tag + "-" + slotName);
+                }
+            });
+        }
+
         // 去除无用的代码（注释代码）
         temp = temp.replace(/<!--.+?-->/g, "");
 
-        //准换自定义字符串数据
+        // 准换自定义字符串数据
         var textDataArr = temp.match(/{{.+?}}/g);
         textDataArr && textDataArr.forEach((e) => {
             var key = /{{(.+?)}}/.exec(e);
@@ -3384,6 +3440,7 @@ const register = (options) => {
                 temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
             }
         });
+
 
         defaults.temp = temp;
     }
