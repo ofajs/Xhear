@@ -24,7 +24,8 @@
         let tar = expr;
 
         if (getType(expr) === "string" && expr.search("<") === -1) {
-            tar = document.querySelector(expr);
+            // tar = document.querySelector(expr);
+            return $.que(expr);
         }
 
         return parseToXHearElement(tar);
@@ -41,7 +42,7 @@
         let eleShadow = ele.getAttribute("xv-shadow");
 
         if (eleShadow && xvShadow !== eleShadow) {
-            agree = 0;
+            agree = null;
         }
 
         return agree;
