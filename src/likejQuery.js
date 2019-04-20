@@ -248,7 +248,7 @@ setNotEnumer(XhearElementFn, {
                     return true;
                 }
             });
-            return tars;
+            return tars.map(e => createXHearElement(e));
         } else {
             throw `it's must render element`;
         }

@@ -3098,7 +3098,7 @@ setNotEnumer(XhearElementFn, {
                     return true;
                 }
             });
-            return tars;
+            return tars.map(e => createXHearElement(e));
         } else {
             throw `it's must render element`;
         }
@@ -3590,16 +3590,17 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
     }
 
     // 暴露到全局
+    let rootDom = document.querySelector("html");
     glo.$ = $;
     assign($, {
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document) => {
+        que: (expr, root = rootDom) => {
             let tar = root.querySelector(expr);
             return tar && isRelativeShadow(root, tar) && createXHearElement(tar);
         },
-        queAll: (expr, root = document) => {
+        queAll: (expr, root = rootDom) => {
             let eles = Array.from(root.querySelectorAll(expr)).filter(ele => {
                 return isRelativeShadow(root, ele);
             })
