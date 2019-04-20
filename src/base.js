@@ -30,17 +30,45 @@
         return parseToXHearElement(tar);
     }
 
+    // 当前元素是否符合规范
+    // @param removeShadow 是否去除相对shadow元素
+    const isFilterEle = (parentEle, ele, removeShadow = true) => {
+        // 是否通过
+        let agree = 1;
+
+        // 获取父层的 xv-shadow
+        let xvShadow = parentEle.getAttribute("xv-shadow");
+
+        // 父层是否slot元素
+        // let isParentSlot = parentEle.attributes.hasOwnProperty("xv-content") || parentEle.attributes.hasOwnProperty("xv-slot");
+
+        // if (removeShadow && !isParentSlot) {
+        if (removeShadow) {
+            let eleShadow = ele.getAttribute("xv-shadow");
+            if (!(eleShadow == xvShadow)) {
+                agree = 0;
+            }
+        }
+
+        return agree;
+    }
+
     // 暴露到全局
     glo.$ = $;
     assign($, {
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document) => {
+        que: (expr, root = document, options) => {
             let tar = root.querySelector(expr);
-            return tar && createXHearElement(tar);
+            return tar && isFilterEle(root, tar) && createXHearElement(tar);
         },
-        queAll: (expr, root = document) => Array.from(root.querySelectorAll(expr)).map(e => createXHearElement(e)),
+        queAll: (expr, root = document, options) => {
+            let eles = Array.from(root.querySelectorAll(expr)).filter(ele => {
+                return isFilterEle(root, ele);
+            })
+            return eles.map(ele => createXHearElement(ele));
+        },
         nextTick,
         xdata: createXData,
         register

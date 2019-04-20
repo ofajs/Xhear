@@ -63,18 +63,21 @@ const xhearSplice = (_this, index, howmany, ...items) => {
     let tar = children[index];
 
     let shadowId = ele.getAttribute('xv-shadow');
+    // let isSlot = ele.attributes.hasOwnProperty("xv-slot") || ele.attributes.hasOwnProperty("xv-content");
 
     // 添加元素
     if (index >= 0 && tar) {
         items.forEach(e => {
             let nEle = parseToXHearElement(e).ele;
             shadowId && (nEle.setAttribute('xv-shadow', shadowId));
+            // !isSlot && shadowId && (nEle.setAttribute('xv-shadow', shadowId));
             contentEle.insertBefore(nEle, tar);
         });
     } else {
         items.forEach(e => {
             let nEle = parseToXHearElement(e).ele;
             shadowId && (nEle.setAttribute('xv-shadow', shadowId));
+            // !isSlot && shadowId && (nEle.setAttribute('xv-shadow', shadowId));
             contentEle.appendChild(nEle);
         });
     }

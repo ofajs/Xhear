@@ -229,10 +229,10 @@ setNotEnumer(XhearElementFn, {
         return $(this.ele.cloneNode(true));
     },
     // like jQuery function find
-    que(expr) {
-        return $.que(expr, this.ele);
+    que(expr, options) {
+        return $.que(expr, this.ele, options);
     },
-    queAll(expr) {
-        return $.queAll(expr, this.ele);
+    queAll(expr, options) {
+        return $.queAll(expr, this.ele, options);
     }
 });

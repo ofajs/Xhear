@@ -72,26 +72,43 @@ const renderEle = (ele, data) => {
     // 判断是否有插槽属性
     if (tdb.slotTags.length > 0) {
         tdb.slotTags.forEach(tName => {
-            let tarEle = childs.find(ele => {
-                let {
-                    tagName
-                } = ele;
+            // 获取slot的key
+            let tarKey = tName.replace(tdb.tag + "-", "");
 
-                // // 判断是否相应的tagId，并且不是xv定制的元素
-                if (tagName && tagName.toLowerCase() === tName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
-                    // 置换childs
-                    return ele;
-                }
-            });
+            // 查找相应元素
+            let tarInEle = ele.querySelector(`[xv-slot="${tarKey}"]`);
 
-            if (tarEle) {
-                let tarKey = tName.replace(tdb.tag + "-", "");
-
+            if (tarInEle) {
                 // 把元素填进去
                 defineProperty(xhearEle, "$" + tarKey, {
-                    value: createXHearElement(ele)
+                    value: createXHearElement(tarInEle)
                 });
-                debugger
+
+                let slotChild = childs.find(ele => {
+                    let {
+                        tagName
+                    } = ele;
+
+                    // 判断是否相应的tagId，并且不是xv定制的元素
+                    if (tagName && tagName.toLowerCase() === tName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
+                        // 置换childs
+                        return ele;
+                    }
+                });
+
+                if (slotChild) {
+                    // 将slot内的元素都设置shadowId
+                    slotChild.querySelectorAll(`*`).forEach(ele => {
+                        if (!ele.attributes.hasOwnProperty('xv-shadow')) {
+                            ele.setAttribute(`xv-shadow`, renderId);
+                        }
+                    });
+
+                    // 键slot内的元素填进去
+                    Array.from(slotChild.childNodes).forEach(ele => {
+                        tarInEle.appendChild(ele);
+                    });
+                }
             }
         });
     }

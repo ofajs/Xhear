@@ -2829,18 +2829,21 @@ const xhearSplice = (_this, index, howmany, ...items) => {
     let tar = children[index];
 
     let shadowId = ele.getAttribute('xv-shadow');
+    // let isSlot = ele.attributes.hasOwnProperty("xv-slot") || ele.attributes.hasOwnProperty("xv-content");
 
     // 添加元素
     if (index >= 0 && tar) {
         items.forEach(e => {
             let nEle = parseToXHearElement(e).ele;
             shadowId && (nEle.setAttribute('xv-shadow', shadowId));
+            // !isSlot && shadowId && (nEle.setAttribute('xv-shadow', shadowId));
             contentEle.insertBefore(nEle, tar);
         });
     } else {
         items.forEach(e => {
             let nEle = parseToXHearElement(e).ele;
             shadowId && (nEle.setAttribute('xv-shadow', shadowId));
+            // !isSlot && shadowId && (nEle.setAttribute('xv-shadow', shadowId));
             contentEle.appendChild(nEle);
         });
     }
@@ -3079,11 +3082,11 @@ setNotEnumer(XhearElementFn, {
         return $(this.ele.cloneNode(true));
     },
     // like jQuery function find
-    que(expr) {
-        return $.que(expr, this.ele);
+    que(expr, options) {
+        return $.que(expr, this.ele, options);
     },
-    queAll(expr) {
-        return $.queAll(expr, this.ele);
+    queAll(expr, options) {
+        return $.queAll(expr, this.ele, options);
     }
 });
 
@@ -3161,26 +3164,43 @@ const renderEle = (ele, data) => {
     // 判断是否有插槽属性
     if (tdb.slotTags.length > 0) {
         tdb.slotTags.forEach(tName => {
-            let tarEle = childs.find(ele => {
-                let {
-                    tagName
-                } = ele;
+            // 获取slot的key
+            let tarKey = tName.replace(tdb.tag + "-", "");
 
-                // // 判断是否相应的tagId，并且不是xv定制的元素
-                if (tagName && tagName.toLowerCase() === tName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
-                    // 置换childs
-                    return ele;
-                }
-            });
+            // 查找相应元素
+            let tarInEle = ele.querySelector(`[xv-slot="${tarKey}"]`);
 
-            if (tarEle) {
-                let tarKey = tName.replace(tdb.tag + "-", "");
-
+            if (tarInEle) {
                 // 把元素填进去
                 defineProperty(xhearEle, "$" + tarKey, {
-                    value: createXHearElement(ele)
+                    value: createXHearElement(tarInEle)
                 });
-                debugger
+
+                let slotChild = childs.find(ele => {
+                    let {
+                        tagName
+                    } = ele;
+
+                    // 判断是否相应的tagId，并且不是xv定制的元素
+                    if (tagName && tagName.toLowerCase() === tName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
+                        // 置换childs
+                        return ele;
+                    }
+                });
+
+                if (slotChild) {
+                    // 将slot内的元素都设置shadowId
+                    slotChild.querySelectorAll(`*`).forEach(ele => {
+                        if (!ele.attributes.hasOwnProperty('xv-shadow')) {
+                            ele.setAttribute(`xv-shadow`, renderId);
+                        }
+                    });
+
+                    // 键slot内的元素填进去
+                    Array.from(slotChild.childNodes).forEach(ele => {
+                        tarInEle.appendChild(ele);
+                    });
+                }
             }
         });
     }
@@ -3531,17 +3551,45 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
         return parseToXHearElement(tar);
     }
 
+    // 当前元素是否符合规范
+    // @param removeShadow 是否去除相对shadow元素
+    const isFilterEle = (parentEle, ele, removeShadow = true) => {
+        // 是否通过
+        let agree = 1;
+
+        // 获取父层的 xv-shadow
+        let xvShadow = parentEle.getAttribute("xv-shadow");
+
+        // 父层是否slot元素
+        // let isParentSlot = parentEle.attributes.hasOwnProperty("xv-content") || parentEle.attributes.hasOwnProperty("xv-slot");
+
+        // if (removeShadow && !isParentSlot) {
+        if (removeShadow) {
+            let eleShadow = ele.getAttribute("xv-shadow");
+            if (!(eleShadow == xvShadow)) {
+                agree = 0;
+            }
+        }
+
+        return agree;
+    }
+
     // 暴露到全局
     glo.$ = $;
     assign($, {
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document) => {
+        que: (expr, root = document, options) => {
             let tar = root.querySelector(expr);
-            return tar && createXHearElement(tar);
+            return tar && isFilterEle(root, tar) && createXHearElement(tar);
         },
-        queAll: (expr, root = document) => Array.from(root.querySelectorAll(expr)).map(e => createXHearElement(e)),
+        queAll: (expr, root = document, options) => {
+            let eles = Array.from(root.querySelectorAll(expr)).filter(ele => {
+                return isFilterEle(root, ele);
+            })
+            return eles.map(ele => createXHearElement(ele));
+        },
         nextTick,
         xdata: createXData,
         register
