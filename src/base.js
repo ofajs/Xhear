@@ -31,23 +31,17 @@
     }
 
     // 当前元素是否符合规范
-    // @param removeShadow 是否去除相对shadow元素
-    const isFilterEle = (parentEle, ele, removeShadow = true) => {
+    const isRelativeShadow = (parentEle, ele) => {
         // 是否通过
         let agree = 1;
 
         // 获取父层的 xv-shadow
         let xvShadow = parentEle.getAttribute("xv-shadow");
 
-        // 父层是否slot元素
-        // let isParentSlot = parentEle.attributes.hasOwnProperty("xv-content") || parentEle.attributes.hasOwnProperty("xv-slot");
+        let eleShadow = ele.getAttribute("xv-shadow");
 
-        // if (removeShadow && !isParentSlot) {
-        if (removeShadow) {
-            let eleShadow = ele.getAttribute("xv-shadow");
-            if (!(eleShadow == xvShadow)) {
-                agree = 0;
-            }
+        if (eleShadow && xvShadow !== eleShadow) {
+            agree = 0;
         }
 
         return agree;
@@ -59,13 +53,13 @@
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document, options) => {
+        que: (expr, root = document) => {
             let tar = root.querySelector(expr);
-            return tar && isFilterEle(root, tar) && createXHearElement(tar);
+            return tar && isRelativeShadow(root, tar) && createXHearElement(tar);
         },
-        queAll: (expr, root = document, options) => {
+        queAll: (expr, root = document) => {
             let eles = Array.from(root.querySelectorAll(expr)).filter(ele => {
-                return isFilterEle(root, ele);
+                return isRelativeShadow(root, ele);
             })
             return eles.map(ele => createXHearElement(ele));
         },

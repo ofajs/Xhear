@@ -108,6 +108,9 @@ const renderEle = (ele, data) => {
                     Array.from(slotChild.childNodes).forEach(ele => {
                         tarInEle.appendChild(ele);
                     });
+
+                    // 去掉自身
+                    childs = childs.filter(e => e !== slotChild);
                 }
             }
         });

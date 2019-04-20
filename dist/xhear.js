@@ -2829,21 +2829,18 @@ const xhearSplice = (_this, index, howmany, ...items) => {
     let tar = children[index];
 
     let shadowId = ele.getAttribute('xv-shadow');
-    // let isSlot = ele.attributes.hasOwnProperty("xv-slot") || ele.attributes.hasOwnProperty("xv-content");
 
     // 添加元素
     if (index >= 0 && tar) {
         items.forEach(e => {
             let nEle = parseToXHearElement(e).ele;
             shadowId && (nEle.setAttribute('xv-shadow', shadowId));
-            // !isSlot && shadowId && (nEle.setAttribute('xv-shadow', shadowId));
             contentEle.insertBefore(nEle, tar);
         });
     } else {
         items.forEach(e => {
             let nEle = parseToXHearElement(e).ele;
             shadowId && (nEle.setAttribute('xv-shadow', shadowId));
-            // !isSlot && shadowId && (nEle.setAttribute('xv-shadow', shadowId));
             contentEle.appendChild(nEle);
         });
     }
@@ -3082,11 +3079,32 @@ setNotEnumer(XhearElementFn, {
         return $(this.ele.cloneNode(true));
     },
     // like jQuery function find
-    que(expr, options) {
-        return $.que(expr, this.ele, options);
+    que(expr) {
+        return $.que(expr, this.ele);
     },
-    queAll(expr, options) {
-        return $.queAll(expr, this.ele, options);
+    queAll(expr) {
+        return $.queAll(expr, this.ele);
+    },
+    queAllShadow(expr) {
+        let {
+            xvRender
+        } = this;
+
+        if (xvRender) {
+            let tars = this.ele.querySelectorAll(expr);
+            tars = Array.from(tars).filter(ele => {
+                let shadowId = ele.getAttribute('xv-shadow');
+                if (shadowId == xvRender) {
+                    return true;
+                }
+            });
+            return tars;
+        } else {
+            throw `it's must render element`;
+        }
+    },
+    queShadow(expr) {
+        return this.queAllShadow(expr)[0];
     }
 });
 
@@ -3200,6 +3218,9 @@ const renderEle = (ele, data) => {
                     Array.from(slotChild.childNodes).forEach(ele => {
                         tarInEle.appendChild(ele);
                     });
+
+                    // 去掉自身
+                    childs = childs.filter(e => e !== slotChild);
                 }
             }
         });
@@ -3552,23 +3573,17 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
     }
 
     // 当前元素是否符合规范
-    // @param removeShadow 是否去除相对shadow元素
-    const isFilterEle = (parentEle, ele, removeShadow = true) => {
+    const isRelativeShadow = (parentEle, ele) => {
         // 是否通过
         let agree = 1;
 
         // 获取父层的 xv-shadow
         let xvShadow = parentEle.getAttribute("xv-shadow");
 
-        // 父层是否slot元素
-        // let isParentSlot = parentEle.attributes.hasOwnProperty("xv-content") || parentEle.attributes.hasOwnProperty("xv-slot");
+        let eleShadow = ele.getAttribute("xv-shadow");
 
-        // if (removeShadow && !isParentSlot) {
-        if (removeShadow) {
-            let eleShadow = ele.getAttribute("xv-shadow");
-            if (!(eleShadow == xvShadow)) {
-                agree = 0;
-            }
+        if (eleShadow && xvShadow !== eleShadow) {
+            agree = 0;
         }
 
         return agree;
@@ -3580,13 +3595,13 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document, options) => {
+        que: (expr, root = document) => {
             let tar = root.querySelector(expr);
-            return tar && isFilterEle(root, tar) && createXHearElement(tar);
+            return tar && isRelativeShadow(root, tar) && createXHearElement(tar);
         },
-        queAll: (expr, root = document, options) => {
+        queAll: (expr, root = document) => {
             let eles = Array.from(root.querySelectorAll(expr)).filter(ele => {
-                return isFilterEle(root, ele);
+                return isRelativeShadow(root, ele);
             })
             return eles.map(ele => createXHearElement(ele));
         },

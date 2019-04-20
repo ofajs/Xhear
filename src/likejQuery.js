@@ -229,10 +229,31 @@ setNotEnumer(XhearElementFn, {
         return $(this.ele.cloneNode(true));
     },
     // like jQuery function find
-    que(expr, options) {
-        return $.que(expr, this.ele, options);
+    que(expr) {
+        return $.que(expr, this.ele);
     },
-    queAll(expr, options) {
-        return $.queAll(expr, this.ele, options);
+    queAll(expr) {
+        return $.queAll(expr, this.ele);
+    },
+    queAllShadow(expr) {
+        let {
+            xvRender
+        } = this;
+
+        if (xvRender) {
+            let tars = this.ele.querySelectorAll(expr);
+            tars = Array.from(tars).filter(ele => {
+                let shadowId = ele.getAttribute('xv-shadow');
+                if (shadowId == xvRender) {
+                    return true;
+                }
+            });
+            return tars;
+        } else {
+            throw `it's must render element`;
+        }
+    },
+    queShadow(expr) {
+        return this.queAllShadow(expr)[0];
     }
 });

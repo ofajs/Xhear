@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(3, 'slot test');
+    let tester = expect(5, 'slot test');
 
     $.register({
         tag: "stag-test",
@@ -23,7 +23,7 @@
         </stag-test-content>
 
         <div>
-            <span>我是要被抛弃的元素了哎</span>
+            <span>存在content，我是要被抛弃的元素了哎</span>
         </div>
 
         <stag-test-top>
@@ -44,13 +44,19 @@
     // 查找多少span
     let span = stag.queAll("span");
 
+    let shadowDiv = stag.queAllShadow("div");
+
     tester.ok(div.length == 1, "length ok 1");
     tester.ok(span.length == 0, "length ok 2");
+
+    tester.ok(shadowDiv.length == 4, "length ok 4");
 
     // 向 slot top 添加新元素
     stag.$top.push(`<div>new top text</div>`);
 
     // 查找多少div
     let div2 = stag.queAll("div");
+    let shadowDiv2 = stag.queAllShadow("div");
     tester.ok(div2.length == 1, "length ok 3");
+    tester.ok(shadowDiv2.length == 5, "length ok 5");
 })();
