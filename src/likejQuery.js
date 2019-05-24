@@ -121,22 +121,6 @@ defineProperties(XhearElementFn, {
 
 // 模拟类jQuery的方法
 setNotEnumer(XhearElementFn, {
-    before(data) {
-        if (/\D/.test(this.hostkey)) {
-            console.error(`can't use before in this data =>`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.hostkey, 0, data);
-        return this;
-    },
-    after(data) {
-        if (/\D/.test(this.hostkey)) {
-            console.error(`can't use after in this data =>`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.hostkey + 1, 0, data);
-        return this;
-    },
     siblings(expr) {
         // 获取父层的所有子元素
         let parChilds = Array.from(this.ele.parentElement.children);
@@ -250,5 +234,26 @@ setNotEnumer(XhearElementFn, {
     },
     queAll(expr) {
         return $.queAll(expr, this.ele);
+    },
+    queAllShadow(expr) {
+        let {
+            xvRender
+        } = this;
+
+        if (xvRender) {
+            let tars = this.ele.querySelectorAll(expr);
+            tars = Array.from(tars).filter(ele => {
+                let shadowId = ele.getAttribute('xv-shadow');
+                if (shadowId == xvRender) {
+                    return true;
+                }
+            });
+            return tars.map(e => createXHearElement(e));
+        } else {
+            throw `it's must render element`;
+        }
+    },
+    queShadow(expr) {
+        return this.queAllShadow(expr)[0];
     }
 });

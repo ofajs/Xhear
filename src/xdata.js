@@ -1029,7 +1029,7 @@ let XDataHandler = {
 
         return redata;
     },
-    watch(expr, callback) {
+    watch(expr, callback, arg3) {
         // 调整参数
         let arg1Type = getType(expr);
         if (arg1Type === "object") {
@@ -1143,6 +1143,13 @@ let XDataHandler = {
                         saveObj.isNextTick = 0;
                     });
                 });
+
+                let val = this[expr];
+                (arg3 === true) && callback.call(this, {
+                    expr,
+                    val,
+                    modifys: []
+                }, val);
                 break;
             case "seekOri":
                 // 先记录旧的数据
@@ -1203,15 +1210,6 @@ let XDataHandler = {
 
         // 设置绑定update的函数
         saveObj.updateFunc = updateFunc;
-
-        // 判断是否expr
-        // if (watchType == "seekOri") {
-        //     let sData = this.seek(expr);
-        //     callback({
-        //         expr,
-        //         val: sData
-        //     }, sData);
-        // }
     },
     // 注销watch
     unwatch(expr, callback) {
@@ -1633,6 +1631,24 @@ let XDataHandler = {
                 }
             }
         }
+    },
+    // 添加到前面
+    before(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use before in this data =>`, this, data);
+            throw "";
+        }
+        this.parent.splice(this.hostkey, 0, data);
+        return this;
+    },
+    // 添加到后面
+    after(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use after in this data =>`, this, data);
+            throw "";
+        }
+        this.parent.splice(this.hostkey + 1, 0, data);
+        return this;
     },
     // push的去重版本
     add(data) {

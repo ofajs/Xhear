@@ -1301,7 +1301,7 @@ let XDataHandler = {
 
         return redata;
     },
-    watch(expr, callback) {
+    watch(expr, callback, arg3) {
         // 调整参数
         let arg1Type = getType(expr);
         if (arg1Type === "object") {
@@ -1415,6 +1415,13 @@ let XDataHandler = {
                         saveObj.isNextTick = 0;
                     });
                 });
+
+                let val = this[expr];
+                (arg3 === true) && callback.call(this, {
+                    expr,
+                    val,
+                    modifys: []
+                }, val);
                 break;
             case "seekOri":
                 // 先记录旧的数据
@@ -1475,15 +1482,6 @@ let XDataHandler = {
 
         // 设置绑定update的函数
         saveObj.updateFunc = updateFunc;
-
-        // 判断是否expr
-        // if (watchType == "seekOri") {
-        //     let sData = this.seek(expr);
-        //     callback({
-        //         expr,
-        //         val: sData
-        //     }, sData);
-        // }
     },
     // 注销watch
     unwatch(expr, callback) {
@@ -1905,6 +1903,24 @@ let XDataHandler = {
                 }
             }
         }
+    },
+    // 添加到前面
+    before(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use before in this data =>`, this, data);
+            throw "";
+        }
+        this.parent.splice(this.hostkey, 0, data);
+        return this;
+    },
+    // 添加到后面
+    after(data) {
+        if (/\D/.test(this.hostkey)) {
+            console.error(`can't use after in this data =>`, this, data);
+            throw "";
+        }
+        this.parent.splice(this.hostkey + 1, 0, data);
+        return this;
     },
     // push的去重版本
     add(data) {
@@ -2955,22 +2971,6 @@ const xhearSplice = (_this, index, howmany, ...items) => {
 
 // 模拟类jQuery的方法
 setNotEnumer(XhearElementFn, {
-    before(data) {
-        if (/\D/.test(this.hostkey)) {
-            console.error(`can't use before in this data =>`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.hostkey, 0, data);
-        return this;
-    },
-    after(data) {
-        if (/\D/.test(this.hostkey)) {
-            console.error(`can't use after in this data =>`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.hostkey + 1, 0, data);
-        return this;
-    },
     siblings(expr) {
         // 获取父层的所有子元素
         let parChilds = Array.from(this.ele.parentElement.children);
@@ -3084,6 +3084,27 @@ setNotEnumer(XhearElementFn, {
     },
     queAll(expr) {
         return $.queAll(expr, this.ele);
+    },
+    queAllShadow(expr) {
+        let {
+            xvRender
+        } = this;
+
+        if (xvRender) {
+            let tars = this.ele.querySelectorAll(expr);
+            tars = Array.from(tars).filter(ele => {
+                let shadowId = ele.getAttribute('xv-shadow');
+                if (shadowId == xvRender) {
+                    return true;
+                }
+            });
+            return tars.map(e => createXHearElement(e));
+        } else {
+            throw `it's must render element`;
+        }
+    },
+    queShadow(expr) {
+        return this.queAllShadow(expr)[0];
     }
 });
 
@@ -3115,7 +3136,6 @@ const renderEle = (ele, data) => {
 
     // 初始化元素
     let xhearEle = createXHearElement(ele);
-    let xhearData;
 
     // 合并 proto 的函数
     let {
@@ -3142,7 +3162,6 @@ const renderEle = (ele, data) => {
                     set
                 });
             }
-
         });
     }
 
@@ -3160,8 +3179,70 @@ const renderEle = (ele, data) => {
         value: ele.xvRender = renderId
     });
 
+    // 判断是否有插槽属性
+    if (tdb.slotTags.length > 0) {
+        tdb.slotTags.forEach(tName => {
+            // 获取slot的key
+            let tarKey = tName.replace(tdb.tag + "-", "");
+
+            // 查找相应元素
+            let tarInEle = ele.querySelector(`[xv-slot="${tarKey}"]`);
+
+            if (tarInEle) {
+                // 把元素填进去
+                defineProperty(xhearEle, "$" + tarKey, {
+                    value: createXHearElement(tarInEle)
+                });
+
+                let slotChild = childs.find(ele => {
+                    let {
+                        tagName
+                    } = ele;
+
+                    // 判断是否相应的tagId，并且不是xv定制的元素
+                    if (tagName && tagName.toLowerCase() === tName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
+                        // 置换childs
+                        return ele;
+                    }
+                });
+
+                if (slotChild) {
+                    // 将slot内的元素都设置shadowId
+                    slotChild.querySelectorAll(`*`).forEach(ele => {
+                        if (!ele.attributes.hasOwnProperty('xv-shadow')) {
+                            ele.setAttribute(`xv-shadow`, renderId);
+                        }
+                    });
+
+                    // 键slot内的元素填进去
+                    Array.from(slotChild.childNodes).forEach(ele => {
+                        tarInEle.appendChild(ele);
+                    });
+
+                    // 去掉自身
+                    childs = childs.filter(e => e !== slotChild);
+                }
+            }
+        });
+    }
+
+    // 判断是否有相应的content元素，有的话从里面抽出来
+    let contentTagName = tdb.tag + "-content";
+    childs.some(ele => {
+        let {
+            tagName
+        } = ele;
+
+        // 判断是否相应的tagId，并且不是xv定制的元素
+        if (tagName && tagName.toLowerCase() === contentTagName && !ele.getAttribute("xv-ele") && !ele.getAttribute("xv-render")) {
+            // 置换childs
+            childs = Array.from(ele.childNodes);
+            return true;
+        }
+    });
+
     // 获取 xv-content
-    let contentEle = ele.querySelector(`[xv-content][xv-shadow="${renderId}"]`);
+    let contentEle = ele.querySelector(`[xv-content][xv-shadow="${renderId}"],[xv-slot="content"][xv-shadow="${renderId}"]`);
 
     // 判断是否有$content
     if (contentEle) {
@@ -3358,6 +3439,9 @@ const register = (options) => {
     defaults.data = cloneObject(defaults.data);
     defaults.watch = assign({}, defaults.watch);
 
+    // 装载slot字段
+    let slotTags = defaults.slotTags = [];
+
     if (defaults.temp) {
         let {
             temp
@@ -3367,16 +3451,29 @@ const register = (options) => {
         let tempDiv = document.createElement('div');
         tempDiv.innerHTML = temp;
 
-        let xvcontent = tempDiv.querySelector('[xv-content]');
+        let xvcontent = tempDiv.querySelector('[xv-content],[xv-slot="content"]');
         if (!xvcontent) {
             console.error(defaults.tag + " need container!", options);
             return;
         }
 
+        // 查找slot字段
+        let slots = tempDiv.querySelectorAll('[xv-slot]');
+        if (slots) {
+            slots.forEach(ele => {
+                let slotName = ele.getAttribute("xv-slot");
+
+                // content就不用加入了
+                if (slotName && slotName !== "content") {
+                    slotTags.push(defaults.tag + "-" + slotName);
+                }
+            });
+        }
+
         // 去除无用的代码（注释代码）
         temp = temp.replace(/<!--.+?-->/g, "");
 
-        //准换自定义字符串数据
+        // 准换自定义字符串数据
         var textDataArr = temp.match(/{{.+?}}/g);
         textDataArr && textDataArr.forEach((e) => {
             var key = /{{(.+?)}}/.exec(e);
@@ -3384,6 +3481,7 @@ const register = (options) => {
                 temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
             }
         });
+
 
         defaults.temp = temp;
     }
@@ -3468,23 +3566,47 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
         let tar = expr;
 
         if (getType(expr) === "string" && expr.search("<") === -1) {
-            tar = document.querySelector(expr);
+            // tar = document.querySelector(expr);
+            return $.que(expr);
         }
 
         return parseToXHearElement(tar);
     }
 
+    // 当前元素是否符合规范
+    const isRelativeShadow = (parentEle, ele) => {
+        // 是否通过
+        let agree = 1;
+
+        // 获取父层的 xv-shadow
+        let xvShadow = parentEle.getAttribute("xv-shadow");
+
+        let eleShadow = ele.getAttribute("xv-shadow");
+
+        if (eleShadow && xvShadow !== eleShadow) {
+            agree = null;
+        }
+
+        return agree;
+    }
+
     // 暴露到全局
+    let rootDom = document.querySelector("html");
     glo.$ = $;
     assign($, {
         fn: XhearElementFn,
         type: getType,
         init: createXHearElement,
-        que: (expr, root = document) => {
+        que: (expr, root = rootDom) => {
             let tar = root.querySelector(expr);
-            return tar && createXHearElement(tar);
+            return tar && isRelativeShadow(root, tar) && createXHearElement(tar);
         },
-        queAll: (expr, root = document) => Array.from(root.querySelectorAll(expr)).map(e => createXHearElement(e)),
+        queAll: (expr, root = rootDom) => {
+            let eles = Array.from(root.querySelectorAll(expr)).filter(ele => {
+                return isRelativeShadow(root, ele);
+            })
+            return eles.map(ele => createXHearElement(ele));
+        },
         nextTick,
         xdata: createXData,
         register
