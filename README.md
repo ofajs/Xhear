@@ -1,3 +1,9 @@
+# Xhear 5.0
+
+将基于 stanz 6.0 开发，大幅度优化代码，提高兼容性；
+
+将新增 `:attr` `xv-seen` 等模板语法；
+
 # Xhear 4.0
 
 基于新的 [stanz 5.0](http://baidu.com) 开发，增强性能，优化代码结构；
