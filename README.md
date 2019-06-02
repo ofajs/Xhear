@@ -1,17 +1,78 @@
 # Xhear
 
-是做原生 element 的抽象层，把 数据同步 和 组件化 抽象出来，并把一些原生属性放到表层；
+## 什么是Xhear?
 
-## Xhear 4.0
+Xhear 是 jQuery的精神延续产品，有很多类似jQuery的api，直接在浏览器上跑；但Xhear是一个 **vm模型**，负责做封装组件的底层；
 
-基于新的 [stanz 5.0](http://baidu.com) 开发，增强性能，优化代码结构；
+## 什么是 **vm模型**？
 
-## Xhear 3.0
+数据本身就是视图，视图本身就是数据；
 
-xhear 3.0 摆脱了jQuery，借鉴jQuery，脱胎于stanz；
+比如下面的table，我们使用 Xhear 给它排序，代码非常简单；
 
-相对于xhear2，大量精简代码，减少错误，增强性能；
+```html
+<table>
+    <thead>
+        <td>姓名</td>
+        <td>年龄</td>
+    </thead>
+    <tbody>
+        <tr>
+            <td>大白</td>
+            <td>28</td>
+        </tr>
+        <tr>
+            <td>小张</td>
+            <td>23</td>
+        </tr>
+        <tr>
+            <td>老王</td>
+            <td>40</td>
+        </tr>
+        <tr>
+            <td>阿山</td>
+            <td>33</td>
+        </tr>
+    </tbody>
+</table>
 
-### Xhear 2.0
+<script>
+$('tbody').sort((a, b) => {
+    return a[1].text - b[1].text;
+});
+</script>
+```
 
-Xhear 1.0 使用过程中发现很多问题，需要精简很多没用和容易出错的功能，干脆重构；
+只需要三行代码，表格就会按照年龄顺序排列；
+
+使用Xhear封装的组件也非常简单；直接使用封装好的html标签即可；
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>markdown test</title>
+    <script src="../drill.js"></script>
+    <script src="../../dist/xhear.js"></script>
+    <script>
+        // 加载markdown库
+        load("./markdown");
+    </script>
+</head>
+
+<body>
+    <markdown xv-ele src="README.md" style="padding:20px;">
+        正在请求数据中；
+    </markdown>
+</body>
+
+</html>
+```
+
+## Xhear的优势？
+
+封装简单，使用更简单；只需要浏览器哦，没有编译层，不强制依赖webpack，拿上手就能构建控件，实现mvvm或mvc；
