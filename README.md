@@ -43,7 +43,7 @@ $('tbody').sort((a, b) => {
 </script>
 ```
 
-只需要三行代码，表格就会按照年龄顺序排列；
+只需要三行代码，表格就会按照年龄顺序排列；[查看案例 tableSort](https://kirakiray.github.io/Xhear/readmeSource/table_sort.html)
 
 使用Xhear封装的组件也非常简单；直接使用封装好的html标签即可；
 
@@ -72,6 +72,8 @@ $('tbody').sort((a, b) => {
 
 </html>
 ```
+
+[markdown案例](https://kirakiray.github.io/Xhear/demo/markdown/test.html)
 
 ## Xhear的优势？
 
