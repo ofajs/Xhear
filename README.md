@@ -73,8 +73,10 @@ $('tbody').sort((a, b) => {
 </html>
 ```
 
-[markdown案例](https://kirakiray.github.io/Xhear/demo/markdown/test.html)
+[markdown案例](https://kirakiray.github.io/Xhear/demo/markdown/test.html)，打开案例后，右键选择 查看页面源代码；
 
 ## Xhear的优势？
 
-封装简单，使用更简单；只需要浏览器哦，没有编译层，不强制依赖webpack，拿上手就能构建控件，实现mvvm或mvc；
+封装简单，使用更简单；只需要浏览器，没有编译层，不强制依赖webpack，拿上手就能构建控件，轻松实现mvvm或mvc；
+
+Xhear这里推荐和 [drill.js](https://github.com/kirakiray/drill.js) 一起使用，纯web工程，开发更方便；
