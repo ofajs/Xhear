@@ -6,34 +6,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>table sort</title>
+    <link rel="stylesheet" href="css/uikit.css">
     <script src="../dist/xhear.js"></script>
 </head>
 
 <body>
-    <table>
-        <thead>
-            <td>姓名</td>
-            <td>年龄</td>
-        </thead>
-        <tbody>
-            <tr>
-                <td>大白</td>
-                <td>28</td>
-            </tr>
-            <tr>
-                <td>小张</td>
-                <td>23</td>
-            </tr>
-            <tr>
-                <td>老王</td>
-                <td>40</td>
-            </tr>
-            <tr>
-                <td>阿山</td>
-                <td>33</td>
-            </tr>
-        </tbody>
-    </table>
+    <div style="padding:10px;width:100%;box-sizing: border-box;">
+        <table class="uk-table uk-table-striped uk-table-hover">
+            <thead>
+                <td>姓名</td>
+                <td>年龄</td>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>大白</td>
+                    <td>28</td>
+                </tr>
+                <tr>
+                    <td>小张</td>
+                    <td>23</td>
+                </tr>
+                <tr>
+                    <td>老王</td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td>阿山</td>
+                    <td>33</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <script>
         setTimeout(() => {
             $('tbody').sort((a, b) => {
