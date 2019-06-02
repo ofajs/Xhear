@@ -45,7 +45,7 @@ $('tbody').sort((a, b) => {
 
 只需要三行代码，表格就会按照年龄顺序排列；[查看案例 tableSort](https://kirakiray.github.io/Xhear/readmeSource/table_sort.html)
 
-使用Xhear封装的组件也非常简单；直接使用封装好的html标签即可；
+使用Xhear封装的组件也非常简单；直接使用封装好的 element标签(加上属性`xv-ele`) 即可；
 
 ```html
 <!DOCTYPE html>
@@ -73,8 +73,18 @@ $('tbody').sort((a, b) => {
 </html>
 ```
 
-[markdown案例](https://kirakiray.github.io/Xhear/demo/markdown/test.html)
+[markdown案例](https://kirakiray.github.io/Xhear/demo/markdown/test.html)，打开案例后，右键选择 查看页面源代码；
+
+## 文档
+
+[中文文档](doc/cn/)
 
 ## Xhear的优势？
 
-封装简单，使用更简单；只需要浏览器哦，没有编译层，不强制依赖webpack，拿上手就能构建控件，实现mvvm或mvc；
+封装简单，使用更简单；只需要浏览器，没有编译层，不强制依赖webpack，拿上手就能构建控件，轻松实现mvvm或mvc；
+
+Xhear这里推荐和 [drill.js](https://github.com/kirakiray/drill.js) 一起使用，纯web工程，开发更方便；
+
+## Xhear原理
+
+Xhear是基于 [stanz](https://github.com/kirakiray/stanz) 开发的，Xhear组件也能使用 `stanz` 的方法；
