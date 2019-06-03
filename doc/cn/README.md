@@ -30,7 +30,7 @@
 </script>
 ```
 
-[点击进入 案例table_test](../../readmeSource/table_test.html)，打开调试模式查看console;
+[点击进入 案例table_test](https://kirakiray.github.io/Xhear/readmeSource/table_test.html)，打开调试模式查看console;
 
 `$` 使用方法和 jQ的类似，是从 `document.querySelector` 获取到的对象，再通过 `Xhear` 实例化；
 
@@ -153,7 +153,7 @@ $('tbody').push({
 </html>
 ```
 
-查看 [test-tag案例](../../readmeSource/test-tag-com.html)
+查看 [test-tag案例](https://kirakiray.github.io/Xhear/readmeSource/test-tag-com.html)
 
 这是一个最简单的静态模板，没有交互逻辑，只是自动填充了html元素，后面会有更多组件交互逻辑，但知识点很少，你很快就会学会组件怎么写；
 
