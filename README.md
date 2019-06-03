@@ -2,7 +2,7 @@
 
 ## 什么是Xhear?
 
-Xhear 是 jQuery的精神延续产品，有很多类似jQuery的api，直接在浏览器上跑；但Xhear是一个 **vm模型**，负责做封装组件的底层；
+Xhear 是 jQuery的精神延续产品，有很多类似jQuery的使用方法，直接在浏览器引用就能使用；但Xhear是一个 **vm模型**，负责做封装组件的底层；
 
 ## 什么是 **vm模型**？
 
@@ -13,25 +13,25 @@ Xhear 是 jQuery的精神延续产品，有很多类似jQuery的api，直接在�
 ```html
 <table>
     <thead>
-        <td>姓名</td>
+        <td>人物</td>
         <td>年龄</td>
     </thead>
     <tbody>
         <tr>
-            <td>大白</td>
-            <td>28</td>
+            <td>孙悟空</td>
+            <td>512</td>
         </tr>
         <tr>
-            <td>小张</td>
-            <td>23</td>
+            <td>沉香</td>
+            <td>24</td>
         </tr>
         <tr>
-            <td>老王</td>
-            <td>40</td>
+            <td>玉皇大帝</td>
+            <td>226800000</td>
         </tr>
         <tr>
-            <td>阿山</td>
-            <td>33</td>
+            <td>杨戬</td>
+            <td>1024</td>
         </tr>
     </tbody>
 </table>
