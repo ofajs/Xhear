@@ -27,6 +27,8 @@
 
 <img src="../img/input_line.png" alt="输入线" width="800">
 
+或者不想看案例，直接拉到最后看[总结](#总结)；
+
 首先把基础的静态模板写出来；
 
 **注意！！！！** 注册组件不能出现大写字符，element标签不能识别大写字母，请使用 `-` 分开词义；
@@ -68,7 +70,7 @@ $.register({
 
 `temp` 里加了个 `<div xv-content></div>` 是用于存放 content元素；**所有的组件都必须带有 `xv-content` 的元素**；至于有什么用后面会讲；
 
-[点击查看 input-line 组件](https://kirakiray.github.io/Xhear/readmeSource/input_line/static.html)；
+[点击查看 input-line 组件](https://kirakiray.github.io/Xhear/readmeSource/input_line/inputLineTest.html)；
 
 下面开始添加基础交互；
 
@@ -412,7 +414,7 @@ $.register({
 使用代码
 
 ```html
-<input-line placeholder="UserName" xv-ele>
+<input-line placeholder="UserName" show-selector xv-ele>
     <option>Jack</option>
     <option>Penny</option>
     <option>Hawod</option>
@@ -421,10 +423,128 @@ $.register({
 
 效果
 
-<video id="video" controls="" preload="none">
-    <source id="mp4" src="../img/input-line4.mp4" type="video/mp4">
-</video>
+<img src="../img/input-line4.gif" />
+
+[点击查看案例](https://kirakiray.github.io/Xhear/readmeSource/input_line/inputLineTest.html)
+
+`temp` 内的 **[xv-content]** 就是组件的主容器；组件元素内的子元素，都会被转移到 `[xv-content]` 属性的元素里；
+
+案例中，原先在 `input-line` 的子元素，都被转移到 `select[xv-content]` 的影子元素内，并且该 `select` 和 `value` 是绑定的(xv-module="value")；
+
+**特性说明**
+
+虽然组件渲染后会带有很多影子元素(xv-shadow)，但组件的真正子元素，是从影子元素(xv-content)里获取的；
+
+```javascript
+$('input-line').length // => 3
+$('input-line')[0] // => {tag:"option",text:"Jack",...}
+$('input-line')[1] // => {tag:"option",text:"Penny",...}
+$('input-line')[2] // => {tag:"option",text:"Hawod",...}
+```
+
+## 总结
 
 
+
+### data
+
+参数类型：Object
+
+定义组件的默认数据；
+
+### attrs
+
+参数类型：Array
+
+当组件元素的属性key在 `attrs` 数组内，该key的数据变动会修正元素的 `attributes`；使用该组件时，设置在元素上的属性也会覆盖到默认数据里；
+
+### props
+
+参数类型：Array
+
+`attrs` 的简化版；只会获取一次属性上的值到默认数据里；并不会动态改动属性的 `attributes`；
+
+### watch
+
+参数类型：Object
+
+设置数据的监听函数；
+
+### proto
+
+参数类型：Object
+
+设置组件的原型对象；简单来讲，组件的数据放在 `data`上，组件的方法放在 `proto` 上；
+
+生命周期callback：
+
+### inited
+
+参数类型：Function
+
+组件元素初始化完成后，运行的callback；
+
+### attached
+
+参数类型：Function
+
+组件元素放入 `document` 后执行的callback；当需要知道组件的 `width` 和 `height` 之类的需求，就不要放在 `inited`里执行，应该放在 `attached` 后执行；
+
+### detached
+
+参数类型：Function
+
+组件元素移除出 `document` 后执行的 callback；
+
+模板语法：
+
+### {{keyName}} 文本渲染模板；
+
+跟组件相应 `key` 的值保持一致；
+
+### `xv-content`
+
+自定义组件内的子元素，将会塞进 `xv-content` 的影子元素内；是 `xv-slot="content"` 的缩写版；
+
+### `xv-slot`
+
+组件元素的插槽元素；
+
+比如
+
+```javascript
+$.register({
+    tag:`test-tag`,
+    temp:`
+        ...
+        <div xv-slot="acon"></div>
+        ...
+        <div xv-slot="content"></div>
+        ...
+    `,
+    ...
+});
+```
+
+```html
+<test-tag xv-ele>
+    <test-tag-acon>
+        <div class="a">A</div>
+    </test-tag-acon>    
+    <test-tag-content>
+        <div class="b">B</div>
+    </test-tag-content>
+</test-tag>
+```
+
+`.a` 将会变成 `test-tag` 的影子元素；而 `.b` 会成为 `test-tag` 的子元素；
+
+### xv-tar
+
+组件元素的影子元素的快速映射；
+
+### xv-module
+
+组件内的影子元素的 value 同步到组件相应的属性值上；
 
 
