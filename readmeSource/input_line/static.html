@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>inputLine静态模板</title>
+    <link rel="stylesheet" href="inputLine.css">
+    <style>
+    </style>
+</head>
+
+<body>
+    <div style="padding:30px;width:200px;">
+        <input-line>
+            <!-- 主体输入框 -->
+            <input type="text" class="main_input">
+            <!-- 底部线 -->
+            <div class="bottom_line"></div>
+            <!-- placeholder提示元素 -->
+            <div class="tips_text">Label</div>
+        </input-line>
+        <br><br>
+
+        <!-- 通过属性 istat 确定当前的输入状态； -->
+        <input-line istat="infocus">
+            <input type="text" class="main_input">
+            <div class="bottom_line"></div>
+            <div class="tips_text">Label</div>
+        </input-line>
+    </div>
+</body>
+
+</html>

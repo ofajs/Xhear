@@ -49,9 +49,9 @@ console.log("is equal => ", tEle[0] === $("thead")); // => true
 
 通过 `$` 获取的元素对象，其本身会和 `children`数组是一体的；没有额外的children，数据冒泡将会简单，数据结构变得清晰；
 
-<img src="https://kirakiray.github.io/Xhear/readmeSource/img/DOM_object.png" width="843" alt="原生DOM对象记录节点信息">
+<img src="../img/DOM_object.png" width="843" alt="原生DOM对象记录节点信息">
 
-<img src="https://kirakiray.github.io/Xhear/readmeSource/img/Xhear_object.png" width="525" alt="Xhear节点信息">
+<img src="../img/Xhear_object.png" width="525" alt="Xhear节点信息">
 
 ## 这样做有什么好处呢？
 
