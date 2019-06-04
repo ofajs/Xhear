@@ -462,13 +462,13 @@ $('input-line')[2] // => {tag:"option",text:"Hawod",...}
 
 参数类型：Array
 
-`attrs` 的简化版；只会获取一次属性上的值到默认数据里；并不会动态改动属性的 `attributes`；
+`attrs` 的简化版；只会获取一次属性上的值到默认数据里；并不会动态改动元素的 `attributes`；
 
 ### watch
 
 参数类型：Object
 
-设置数据的监听函数；
+设置组件元素数据的监听函数；`this` 指向组件元素；
 
 ### proto
 
@@ -482,19 +482,19 @@ $('input-line')[2] // => {tag:"option",text:"Hawod",...}
 
 参数类型：Function
 
-组件元素初始化完成后，运行的callback；
+组件元素初始化完成后，运行的callback；`this` 指向组件元素；
 
 ### attached
 
 参数类型：Function
 
-组件元素放入 `document` 后执行的callback；当需要知道组件的 `width` 和 `height` 之类的需求，就不要放在 `inited`里执行，应该放在 `attached` 后执行；
+组件元素放入 `document` 后执行的callback；当需要知道组件的 `width` 和 `height` 之类的需求，就不要放在 `inited`里执行，应该放在 `attached` 后执行；`this` 指向组件元素；
 
 ### detached
 
 参数类型：Function
 
-组件元素移除出 `document` 后执行的 callback；
+组件元素移除出 `document` 后执行的 callback；`this` 指向组件元素；
 
 模板语法：
 
@@ -504,7 +504,7 @@ $('input-line')[2] // => {tag:"option",text:"Hawod",...}
 
 ### `xv-content`
 
-自定义组件内的子元素，将会塞进 `xv-content` 的影子元素内；是 `xv-slot="content"` 的缩写版；
+自定义组件内的子元素，将会塞进 `xv-content` 的容器影子元素内；是 `xv-slot="content"` 的缩写版；
 
 ### `xv-slot`
 
