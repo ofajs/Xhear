@@ -286,11 +286,145 @@ $('input-line').value // => Jack
 <input-line placeholder="UserName" value="Jack" xv-ele></input-line>
 ```
 
-到这里 `input-line` 基础使用没问题，但要添加两个新需求：
+到这里 `input-line` 基础使用没问题，添加限制文本长度的属性；
 
-* 组件主题颜色可自定义，默认是现在的蓝色，我想换成红色的；
-* 在右边添加三角形下拉框，不仅可以输入文本，还能有默认可选项；
+```javascript
+$.register({
+    tag: "input-line",
+    temp: `
+    <input type="text" class="main_input" xv-tar="mainInput" xv-module="value">
+    <div class="bottom_line"></div>
+    <div class="tips_text">{{placeholder}}</div>
+    <div xv-content></div>
+    `,
+    data: {
+        // 默认istat为空
+        istat: "",
+        // placeholder值
+        placeholder: "Label",
+        // 属性值
+        value: "",
+        // 限制长度
+        maxlength: ""
+    },
+    attrs: ["istat", "placeholder", "value", "maxlength"],
+    watch: {
+        maxlength(e, val) {
+            if (val) {
+                this.$mainInput.attr("maxlength", val);
+            } else {
+                this.$mainInput.removeAttr("maxlength");
+            }
+        }
+    },
+    inited() {
+        this.$mainInput.on("focus", e => {
+            // mainInput聚焦时，修改istat属性为infocus
+            this.istat = "infocus";
+        });
+        this.$mainInput.on("blur", e => {
+            if (!this.value) {
+                // mainInput失去焦点时，清空istat
+                this.istat = "";
+            }
+        });
+    }
+});
+```
 
-### 自定义组件主题色
+组件注册 **watch** 参数，设置属性的监听函数，当组件的值发生改变时，会触发 watch 内的函数，第二个参数是当前key的值；
+
+```html
+<input-line placeholder="UserName" maxlength="8" xv-ele></input-line>
+```
+
+**特性说明**
+
+同步多次改动组件的同一属性，只会触发最后一次的属性监听函数；
+
+```javascript
+$("input-line").maxlength = 10;
+$("input-line").maxlength = 9;
+$("input-line").maxlength = 8;
+$("input-line").maxlength = 7;
+
+...
+ watch: {
+    maxlength(e, val) {
+        // 只会触发最后那一次变动
+        console.log(val); // => 7
+    }
+},
+```
+
+在最后，尝试在后面添加选项模式，既可以输入，也可以选择选项的值；
+
+<img src="../img/input-line-plus.png" width="263" />
+
+静态模板里添加了 `show-selector` 可以显示输入框的后面的三角形；
+
+```javascript
+$.register({
+    tag: "input-line",
+    temp: `
+    <input type="text" class="main_input" xv-tar="mainInput" xv-module="value">
+    <div class="bottom_line"></div>
+    <div class="tips_text">{{placeholder}}</div>
+    <div class="right_selector">
+        <select xv-content xv-module="value"></select>
+    </div>
+    `,
+    data: {
+        // 默认istat为空
+        istat: "",
+        // placeholder值
+        placeholder: "Label",
+        // 属性值
+        value: "",
+        // 限制长度
+        maxlength: ""
+    },
+    attrs: ["istat", "placeholder", "value", "maxlength"],
+    watch: {
+        maxlength(e, val) {
+            if (val) {
+                this.$mainInput.attr("maxlength", val);
+            } else {
+                this.$mainInput.removeAttr("maxlength");
+            }
+        }
+    },
+    inited() {
+        this.$mainInput.on("focus", e => {
+            // mainInput聚焦时，修改istat属性为infocus
+            this.istat = "infocus";
+        });
+        this.$mainInput.on("blur", e => {
+            if (!this.value) {
+                // mainInput失去焦点时，清空istat
+                this.istat = "";
+            }
+        });
+    }
+});
+```
+
+使用代码
+
+```html
+<input-line placeholder="UserName" xv-ele>
+    <option>Jack</option>
+    <option>Penny</option>
+    <option>Hawod</option>
+</input-line>
+```
+
+效果
+
+<video id="video" controls="" preload="none">
+    <source id="mp4" src="../img/input-line4.mp4" type="video/mp4">
+</video>
+
+
 
 
