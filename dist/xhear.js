@@ -3596,7 +3596,8 @@ const tatcheTargetFunc = (ele, tachedFunName, tachedKey) => {
         },
         nextTick,
         xdata: createXData,
-        register
+        register,
+        version: 40000
     });
 
     // 添加默认样式
