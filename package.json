@@ -6,5 +6,8 @@
     "watch": "node scripts/watch.js"
   },
   "author": "YAO",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "js-beautify": "^1.10.0"
+  }
 }

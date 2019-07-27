@@ -4,9 +4,11 @@
 
 将新增 `:attr` `xv-seen` 等模板语法；
 
+想要运行 watch编译，请将 stanz 6 放在与项目同一个目录；
+
 # Xhear 4.0
 
-基于新的 [stanz 5.0](http://baidu.com) 开发，增强性能，优化代码结构；
+基于新的 stanz 5.0 开发，增强性能，优化代码结构；
 
 ## Xhear 3.0
 

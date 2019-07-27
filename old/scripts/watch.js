@@ -1,6 +1,5 @@
 const fs = require('fs');
 const util = require('util');
-const jsbeautify = require('js-beautify').js
 
 const readFile = util.promisify(fs.readFile);
 
@@ -18,16 +17,10 @@ let mainFun = async () => {
         let f = e.match(/\/\/<\!--(.+?)-->/);
         if (f && (1 in f)) {
             f = f[1];
-        } else {
-            return;
         }
-        let code = "";
-        if (/^\.\.\//.test(f)) {
-            code = await readFile(`${f}.js`, 'utf8');
-        } else {
-            // 读取文件
-            code = await readFile(`src/${f}.js`, 'utf8');
-        }
+
+        // 读取文件
+        let code = await readFile(`src/${f}.js`, 'utf8');
 
         // 替换记录部分
         basefile = basefile.replace(`//<!--${f}-->`, e => code);
@@ -36,10 +29,6 @@ let mainFun = async () => {
     if (beforeCode == basefile) {
         return;
     }
-
-    // 格式化代码
-    basefile = jsbeautify(basefile);
-
     beforeCode = basefile;
 
     // 写入最终文件
