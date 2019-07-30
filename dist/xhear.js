@@ -206,7 +206,8 @@
                 // 父对象
                 parent: {
                     writable: true,
-                    value: options.parent
+                    value: options.parent,
+                    configurable: true
                 },
                 index: {
                     writable: true,
@@ -1524,20 +1525,56 @@
 
 
 
+    class XhearElement extends XData {
+        constructor(ele) {
+            super({});
+            delete this.parent;
+            ele.__xhear__ = this;
+            Object.defineProperties(this, {
+                tag: {
+                    enumerable: true,
+                    value: ele.tagName.toLowerCase()
+                },
+                ele: {
+                    value: ele
+                },
+                // parent: {
+                //     get() {
+                //         
+                //     }
+                // }
+            });
+        }
+
+        get parent() {
+            return (this.ele.parentNode === document) ? null : createXhearElement(this.ele.parentNode);
+        }
+
+        // setData(key, value) {
+        //     debugger
+        // }
+
+        // getData(key) {
+        //     debugger
+        // }
+    }
+
+    const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
+
     // 全局用$
     let $ = (expr) => {
-        if (expr instanceof XhearElement) {
-            return expr;
+        let ele;
+        switch (getType(expr)) {
+            case "string":
+                ele = document.querySelector(expr);
+                break;
+            default:
+                if (expr instanceof Element) {
+                    ele = expr;
+                }
         }
 
-        let tar = expr;
-
-        if (getType(expr) === "string" && expr.search("<") === -1) {
-            // tar = document.querySelector(expr);
-            return $.que(expr);
-        }
-
-        return parseToXHearElement(tar);
+        return createXhearElement(ele)[PROXYTHIS];
     }
 
     // 添加默认样式
@@ -1551,5 +1588,7 @@
             renderEle(e);
         });
     });
+
+    glo.$ = $;
 
 })(window);

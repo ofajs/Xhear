@@ -4,20 +4,24 @@
 
     //<!--public-->
 
+    //<!--main-->
+
+    const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
+
     // 全局用$
     let $ = (expr) => {
-        if (expr instanceof XhearElement) {
-            return expr;
+        let ele;
+        switch (getType(expr)) {
+            case "string":
+                ele = document.querySelector(expr);
+                break;
+            default:
+                if (expr instanceof Element) {
+                    ele = expr;
+                }
         }
 
-        let tar = expr;
-
-        if (getType(expr) === "string" && expr.search("<") === -1) {
-            // tar = document.querySelector(expr);
-            return $.que(expr);
-        }
-
-        return parseToXHearElement(tar);
+        return createXhearElement(ele)[PROXYTHIS];
     }
 
     // 添加默认样式
@@ -31,5 +35,7 @@
             renderEle(e);
         });
     });
+
+    glo.$ = $;
 
 })(window);
