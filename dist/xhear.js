@@ -211,7 +211,8 @@
                 },
                 index: {
                     writable: true,
-                    value: options.index
+                    value: options.index,
+                    configurable: true
                 }
             });
         }
@@ -396,10 +397,10 @@
     const SET_NO_REG = /^parent$|^index$|^length$|^object$/
 
     let XDataHandler = {
-        get(target, key, value, receiver) {
+        get(target, key, receiver) {
             // 私有变量直接通过
             if (typeof key === "symbol" || GET_REG.test(key)) {
-                return Reflect.get(target, key, value, receiver);
+                return Reflect.get(target, key, receiver);
             }
 
             return target.getData(key);
@@ -758,7 +759,7 @@
          */
         get prev() {
             if (!/\D/.test(this.index) && this.index > 0) {
-                return this.parent[this.index - 1];
+                return this.parent.getData(this.index - 1);
             }
         }
 
@@ -768,7 +769,7 @@
          */
         get next() {
             if (!/\D/.test(this.index)) {
-                return this.parent[this.index + 1];
+                return this.parent.getData(this.index + 1);
             }
         }
 
@@ -1529,6 +1530,7 @@
         constructor(ele) {
             super({});
             delete this.parent;
+            delete this.index;
             ele.__xhear__ = this;
             Object.defineProperties(this, {
                 tag: {
@@ -1537,12 +1539,7 @@
                 },
                 ele: {
                     value: ele
-                },
-                // parent: {
-                //     get() {
-                //         
-                //     }
-                // }
+                }
             });
         }
 
@@ -1550,13 +1547,34 @@
             return (this.ele.parentNode === document) ? null : createXhearElement(this.ele.parentNode);
         }
 
+        get index() {
+            let {
+                ele
+            } = this;
+            return Array.from(ele.parentNode.children).indexOf(ele);
+        }
+
         // setData(key, value) {
         //     debugger
         // }
 
-        // getData(key) {
-        //     debugger
-        // }
+        getData(key) {
+            let target;
+
+            if (!/\D/.test(key)) {
+                // 纯数字，直接获取children
+                target = this.ele.children[key];
+                target = createXhearElement(target);
+            } else {
+                target = this[key];
+            }
+
+            if (target instanceof XData) {
+                target = target[PROXYTHIS];
+            }
+
+            return target;
+        }
     }
 
     const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
