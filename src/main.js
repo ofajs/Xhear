@@ -1,3 +1,6 @@
+const CANSETKEYS = Symbol("cansetkeys");
+
+const XDataSetData = XData.prototype.setData;
 class XhearElement extends XData {
     constructor(ele) {
         super({});
@@ -11,7 +14,10 @@ class XhearElement extends XData {
             },
             ele: {
                 value: ele
-            }
+            },
+            // [CANSETKEYS]: {
+            //     value: new Set(["haha"])
+            // }
         });
     }
 
@@ -24,9 +30,15 @@ class XhearElement extends XData {
         return Array.from(ele.parentNode.children).indexOf(ele);
     }
 
-    // setData(key, value) {
-    //     debugger
-    // }
+    setData(key, value) {
+        // 只有在允许列表里才能进行set操作
+        let canSetKeys = this[CANSETKEYS];
+        if (canSetKeys && canSetKeys.has(key)) {
+            return XDataSetData.call(this, key, value);
+        }
+
+        return false;
+    }
 
     getData(key) {
         let target;
