@@ -6,6 +6,8 @@
 
     //<!--main-->
 
+    //<!--reBuildArray-->
+
     const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
 
     // 全局用$

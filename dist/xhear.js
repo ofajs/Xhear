@@ -801,9 +801,7 @@
             if (arg1Type === "function") {
                 let arr = [];
 
-                Object.keys(this).forEach(k => {
-                    let val = this[k];
-
+                let f = val => {
                     if (val instanceof XData) {
                         let isAgree = expr(val);
 
@@ -814,7 +812,18 @@
 
                         arr = [...arr, ...meetChilds];
                     }
+                }
+
+                // 专门为Xhear优化的操作
+                // 拆分后，Xhear也能为children进行遍历
+                Object.keys(this).forEach(k => {
+                    if (/\D/.test(k)) {
+                        f(this[k]);
+                    }
                 });
+                this.forEach(f);
+
+                f = null;
 
                 return arr;
             } else if (arg1Type === "string") {
@@ -1528,9 +1537,26 @@
     });
 
 
+    // business function
+    // 获取 content 容器
+    const getContentEle = (tarEle) => {
+        let contentEle = tarEle;
 
+        return contentEle;
+    }
 
     const CANSETKEYS = Symbol("cansetkeys");
+
+    // 将 element attribute 横杠转换为大小写模式
+    const transAttrKey = key => {
+        // 判断是否有横线
+        if (/\-/.test(key)) {
+            key = key.replace(/\-[\D]/, (letter) => letter.substr(1).toUpperCase());
+        }
+        return key;
+    }
+
+    const xEleKeys = new Set(["text", "html"]);
 
     const XDataSetData = XData.prototype.setData;
     class XhearElement extends XData {
@@ -1564,10 +1590,36 @@
             return Array.from(ele.parentNode.children).indexOf(ele);
         }
 
+        get text() {
+            return this.ele.innerText;
+        }
+
+        set text(val) {
+            this.ele.innerText = val;
+        }
+
+        get html() {
+            return this.ele.innerHTML;
+        }
+
+        set html(val) {
+            this.ele.innerHTML = val;
+        }
+
+        get data() {
+            return this.ele.dataset;
+        }
+
         setData(key, value) {
+            key = transAttrKey(key);
+
             // 只有在允许列表里才能进行set操作
             let canSetKeys = this[CANSETKEYS];
-            if (canSetKeys && canSetKeys.has(key)) {
+            if (xEleKeys.has(key)) {
+                // 直接设置
+                this[XDATASELF][key] = value;
+                return true;
+            } else if (canSetKeys && canSetKeys.has(key)) {
                 return XDataSetData.call(this, key, value);
             }
 
@@ -1575,6 +1627,8 @@
         }
 
         getData(key) {
+            key = transAttrKey(key);
+
             let target;
 
             if (!/\D/.test(key)) {
@@ -1592,6 +1646,20 @@
             return target;
         }
     }
+
+    window.XhearElement = XhearElement;
+
+    // 不影响数据原结构的方法，重新做钩子
+    ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
+        let arrayFnFunc = Array.prototype[methodName];
+        if (arrayFnFunc) {
+            Object.defineProperty(XhearElement.prototype, methodName, {
+                value(...args) {
+                    return arrayFnFunc.apply(Array.from(getContentEle(this.ele).children).map(e => createXhearElement(e)[PROXYTHIS]), args);
+                }
+            });
+        }
+    });
 
     const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
 
