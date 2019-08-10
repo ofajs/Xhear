@@ -208,8 +208,9 @@ setNotEnumer(XhearElementFn, {
                 if (regTagData.attrs.includes(key)) {
                     this[key] = value;
                 }
+            } else {
+                this.ele.setAttribute(key, value);
             }
-            this.ele.setAttribute(key, value);
         } else if (key instanceof Object) {
             Object.keys(key).forEach(k => {
                 this.attr(k, key[k]);

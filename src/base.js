@@ -8,6 +8,8 @@
 
     //<!--reBuildArray-->
 
+    //<!--register-->
+
     const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
 
     // 全局用$
@@ -25,6 +27,10 @@
 
         return createXhearElement(ele)[PROXYTHIS];
     }
+
+    Object.assign($, {
+        register
+    });
 
     // 添加默认样式
     let mStyle = document.createElement('style');

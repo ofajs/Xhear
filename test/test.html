@@ -14,10 +14,27 @@
         <div class="a">aaa</div>
         <div class="b">bbb</div>
     </div>
+
+    <testele xv-ele>asdasd</testele>
 </body>
 <script>
+
+    $.register({
+        tag: "testele",
+        temp: `
+        <h2>testTitle {{tips}}</h2>
+        <div xv-content style="color:red;"></div>
+        `,
+        data: {
+            tips: "我是tips"
+        }
+    });
+
     let a = $('#test');
+    let b = $("testele");
     console.log(a);
+
+    console.log(b);
 </script>
 
 </html>

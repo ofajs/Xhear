@@ -58,7 +58,7 @@ const renderEle = (ele, data) => {
     // 全部设置 shadow id
     Array.from(ele.querySelectorAll("*")).forEach(ele => ele.setAttribute('xv-shadow', renderId));
 
-    // 渲染依赖sx-ele，
+    // 渲染依赖xv-ele，
     // 让ele使用渲染完成的内元素
     Array.from(ele.querySelectorAll(`[xv-ele][xv-shadow="${renderId}"]`)).forEach(ele => renderEle(ele));
 
@@ -371,7 +371,6 @@ const register = (options) => {
                 temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
             }
         });
-
 
         defaults.temp = temp;
     }

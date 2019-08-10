@@ -4,6 +4,8 @@
 
 将新增 `:attr` `xv-seen` 等模板语法；
 
+想采用 shadow dom 方案来做；
+
 想要运行 watch编译，请将 stanz 6 放在与项目同一个目录；
 
 # Xhear 4.0
