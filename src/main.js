@@ -5,7 +5,13 @@ const CANSETKEYS = Symbol("cansetkeys");
 const attrToProp = key => {
     // 判断是否有横线
     if (/\-/.test(key)) {
-        key = key.replace(/\-[\D]/, (letter) => letter.substr(1).toUpperCase());
+        key = key.replace(/\-[\D]/g, (letter) => letter.substr(1).toUpperCase());
+    }
+    return key;
+}
+const propToAttr = key => {
+    if (/[A-Z]/.test(key)) {
+        key = key.replace(/[A-Z]/g, letter => "-" + letter.toLowerCase());
     }
     return key;
 }
@@ -18,12 +24,16 @@ const UnSetKeys = new Set(["parent", "index"]);
 
 const XDataSetData = XData.prototype.setData;
 
-class XhearElement extends XData {
+class XhearEle extends XData {
     constructor(ele) {
         super({});
         delete this.parent;
         delete this.index;
-        ele.__xhear__ = this;
+        Object.defineProperties(ele, {
+            __xhear__: {
+                value: this
+            }
+        });
         Object.defineProperties(this, {
             tag: {
                 enumerable: true,
@@ -39,7 +49,8 @@ class XhearElement extends XData {
     }
 
     get parent() {
-        return this.ele.parentNode === document ? null : createXhearElement(this.ele.parentNode);
+        let { parentNode } = this.ele;
+        return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode);
     }
 
     get class() {
@@ -116,19 +127,19 @@ class XhearElement extends XData {
     }
 
     get text() {
-        return getContentEle(this.ele).innerText;
+        return this.ele.innerText;
     }
 
     set text(val) {
-        getContentEle(this.ele).innerText = val;
+        this.ele.innerText = val;
     }
 
     get html() {
-        return getContentEle(this.ele).innerHTML;
+        return this.ele.innerHTML;
     }
 
     set html(val) {
-        getContentEle(this.ele).innerHTML = val;
+        this.ele.innerHTML = val;
     }
 
     get display() {
@@ -144,7 +155,6 @@ class XhearElement extends XData {
     }
 
     set style(d) {
-
         let {
             style
         } = this;
@@ -195,7 +205,7 @@ class XhearElement extends XData {
         if (!/\D/.test(key)) {
             // 纯数字，直接获取children
             target = _this.ele.children[key];
-            target && (target = createXhearElement(target));
+            target && (target = createXhearEle(target));
         } else {
             target = _this[key];
         }
@@ -224,7 +234,7 @@ class XhearElement extends XData {
             });
         }
 
-        return parChilds.map(e => createXhearElement(e));
+        return parChilds.map(e => createXhearEle(e));
     }
 
     remove() {
@@ -258,7 +268,7 @@ class XhearElement extends XData {
                     tempTar = tempTar.parent;
                 }
             } else {
-                if (expr instanceof XhearElement) {
+                if (expr instanceof XhearEle) {
                     expr = expr.ele;
                 }
 
@@ -308,4 +318,4 @@ class XhearElement extends XData {
     }
 }
 
-window.XhearElement = XhearElement;
+window.XhearEle = XhearEle;

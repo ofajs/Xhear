@@ -4,7 +4,7 @@
 
 将新增 `:attr` `xv-seen` 等模板语法；
 
-想采用 shadow dom 方案来做；
+将采用 web components 方案封装，相比4.0性能更强，使用更简便；
 
 想要运行 watch编译，请将 stanz 6 放在与项目同一个目录；
 

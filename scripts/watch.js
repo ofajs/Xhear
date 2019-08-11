@@ -37,10 +37,10 @@ let mainFun = async () => {
         return;
     }
 
+    beforeCode = basefile;
+
     // 格式化代码
     basefile = jsbeautify(basefile);
-
-    beforeCode = basefile;
 
     // 写入最终文件
     fs.writeFile('dist/xhear.js', basefile, 'utf8', (err) => {

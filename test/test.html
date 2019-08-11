@@ -15,26 +15,42 @@
         <div class="b">bbb</div>
     </div>
 
-    <testele xv-ele>asdasd</testele>
+    <test-ele>testele1-1</test-ele>
 </body>
 <script>
 
     $.register({
-        tag: "testele",
+        tag: "test-ele",
         temp: `
-        <h2>testTitle {{tips}}</h2>
-        <div xv-content style="color:red;"></div>
+        <h2>testTitle--{{tips}}</h2>
+        <div style="color:red;">
+            <slot></slot>    
+        </div>
+        <p xv-tar="ha"></p>
         `,
+        proto: {
+            gettips() {
+                return this.tips;
+            }
+        },
         data: {
-            tips: "我是tips"
-        }
+            tips: "我是tips",
+            weight: "100"
+        },
+        attrs: ["weight"]
     });
 
     let a = $('#test');
-    let b = $("testele");
+    let b = $("test-ele");
     console.log(a);
 
     console.log(b);
+
+    let c = document.createElement("test-ele");
+    c.innerHTML = "2222";
+    setTimeout(() => {
+        document.body.appendChild(c);
+    }, 1000);
 </script>
 
 </html>

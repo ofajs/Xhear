@@ -1,16 +1,12 @@
 ((glo) => {
     "use strict";
     //<!--../stanz/dist/xdata-->
-
     //<!--public-->
-
     //<!--main-->
-
     //<!--reBuildArray-->
-
     //<!--register-->
 
-    const createXhearElement = ele => (ele.__xhear__ || new XhearElement(ele));
+    const createXhearEle = ele => (ele.__xhear__ || new XhearEle(ele));
 
     // 全局用$
     let $ = (expr) => {
@@ -25,23 +21,11 @@
                 }
         }
 
-        return createXhearElement(ele)[PROXYTHIS];
+        return createXhearEle(ele)[PROXYTHIS];
     }
 
     Object.assign($, {
         register
-    });
-
-    // 添加默认样式
-    let mStyle = document.createElement('style');
-    mStyle.innerHTML = "[xv-ele]{display:none;}";
-    document.head.appendChild(mStyle);
-
-    // 初始化控件
-    nextTick(() => {
-        Array.from(document.querySelectorAll('[xv-ele]')).forEach(e => {
-            renderEle(e);
-        });
     });
 
     glo.$ = $;
