@@ -10,10 +10,21 @@
 
     // 全局用$
     let $ = (expr) => {
+        if (expr instanceof XhearEle) {
+            return expr;
+        }
+
         let ele;
         switch (getType(expr)) {
             case "string":
-                ele = document.querySelector(expr);
+                if (expr.includes("<")) {
+                    ele = parseStringToDom(expr);
+                } else {
+                    ele = document.querySelector(expr);
+                }
+                break;
+            case "object":
+                ele = parseDataToDom(expr);
                 break;
             default:
                 if (expr instanceof Element) {
@@ -21,7 +32,7 @@
                 }
         }
 
-        return createXhearEle(ele)[PROXYTHIS];
+        return ele ? createXhearEle(ele)[PROXYTHIS] : null;
     }
 
     Object.assign($, {

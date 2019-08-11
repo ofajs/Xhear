@@ -12,6 +12,9 @@
 
 // 重置所有数组方法
 Object.defineProperties(XhearEle, {
+    push() {
+        debugger
+    },
     splice() {
         debugger
     }

@@ -790,9 +790,10 @@
 
             // 遍历合并数组，并判断是否有非数字
             Object.keys(this).forEach(k => {
-                if (/^_/.test(k)) {
+                if (/^_/.test(k) || !/\D/.test(k)) {
                     return;
                 }
+                isPureArray = false;
 
                 let val = this[k];
 
@@ -801,9 +802,12 @@
                 }
 
                 obj[k] = val;
-                if (/\D/.test(k)) {
-                    isPureArray = false;
+            });
+            this.forEach((val, k) => {
+                if (val instanceof XData) {
+                    val = val.object;
                 }
+                obj[k] = val;
             });
 
             // 转换为数组格式
@@ -1628,6 +1632,65 @@
         fadeParent.appendChild(ele.cloneNode(false));
         return !!fadeParent.querySelector(expr);
     }
+
+    // 转换元素
+    const parseStringToDom = (str) => {
+        let par = document.createElement('div');
+        par.innerHTML = str;
+        let childs = Array.from(par.childNodes);
+        return childs.filter(function(e) {
+            if (!(e instanceof Text) || (e.textContent && e.textContent.trim())) {
+                par.removeChild(e);
+                return e;
+            }
+        });
+    };
+
+    const parseDataToDom = (objData) => {
+        if (!objData.tag) {
+            console.error("this data need tag =>", objData);
+            throw "";
+        }
+
+        // 生成element
+        let ele = document.createElement(objData.tag);
+
+        // 添加数据
+        objData.class && ele.setAttribute('class', objData.class);
+        objData.text && (ele.textContent = objData.text);
+        if (objData.data) {
+            let {
+                data
+            } = objData;
+
+            Object.keys(data).forEach(k => {
+                let val = data[k];
+                ele.dataset[k] = val;
+            });
+        }
+
+        if (ele.xvele) {
+            let xhearele = createXhearEle(ele);
+
+            xhearele[CANSETKEYS].forEach(k => {
+                let val = objData[k];
+                if (!isUndefined(val)) {
+                    xhearele[k] = val;
+                }
+            });
+        }
+
+        // 填充子元素
+        let akey = 0;
+        while (akey in objData) {
+            // 转换数据
+            let childEle = parseDataToDom(objData[akey]);
+            ele.appendChild(childEle);
+            akey++;
+        }
+
+        return ele;
+    }
     // 可setData的key
     const CANSETKEYS = Symbol("cansetkeys");
 
@@ -1821,6 +1884,18 @@
                 // 直接设置
                 this[XDATASELF][key] = value;
                 return true;
+            } else if (!/\D/.test(key)) {
+                let xele = $(value);
+
+                let targetChild = this.ele.children[key];
+
+                // 这里还欠缺冒泡机制的
+                if (targetChild) {
+                    this.ele.insertBefore(xele.ele, targetChild);
+                    this.ele.removeChild(targetChild);
+                } else {
+                    this.ele.appendChild(xele.ele);
+                }
             } else if (canSetKeys && canSetKeys.has(key)) {
                 // 直接走xdata的逻辑
                 return XDataSetData.call(this, key, value);
@@ -1869,14 +1944,6 @@
             }
 
             return parChilds.map(e => createXhearEle(e));
-        }
-
-        remove() {
-            if (/\D/.test(this.index)) {
-                console.error(`can't delete this key => ${this.index}`, this, data);
-                throw "";
-            }
-            this.parent.splice(this.index, 1);
         }
 
         empty() {
@@ -1967,6 +2034,9 @@
 
     // 重置所有数组方法
     Object.defineProperties(XhearEle, {
+        push() {
+            debugger
+        },
         splice() {
             debugger
         }
@@ -2070,9 +2140,17 @@
         customElements.define(tag, XhearElement);
     }
 
-    const renderEle = (ele, defaults, data) => {
+    const renderEle = (ele, defaults) => {
         // 初始化元素
         let xhearEle = createXhearEle(ele);
+
+        // 设置值
+        Object.defineProperty(ele, "xvele", {
+            value: true
+        });
+        Object.defineProperty(xhearEle, "xvele", {
+            value: true
+        });
 
         // 合并 proto 的函数
         let {
@@ -2137,7 +2215,6 @@
 
         // 要设置的数据
         let rData = Object.assign({}, defaults.data);
-        data && Object.assign(rData, data);
 
         // attrs 上的数据
         defaults.attrs.forEach(attrName => {
@@ -2194,10 +2271,21 @@
 
     // 全局用$
     let $ = (expr) => {
+        if (expr instanceof XhearEle) {
+            return expr;
+        }
+
         let ele;
         switch (getType(expr)) {
             case "string":
-                ele = document.querySelector(expr);
+                if (expr.includes("<")) {
+                    ele = parseStringToDom(expr);
+                } else {
+                    ele = document.querySelector(expr);
+                }
+                break;
+            case "object":
+                ele = parseDataToDom(expr);
                 break;
             default:
                 if (expr instanceof Element) {
@@ -2205,7 +2293,7 @@
                 }
         }
 
-        return createXhearEle(ele)[PROXYTHIS];
+        return ele ? createXhearEle(ele)[PROXYTHIS] : null;
     }
 
     Object.assign($, {

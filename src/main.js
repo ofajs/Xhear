@@ -187,6 +187,18 @@ class XhearEle extends XData {
             // 直接设置
             this[XDATASELF][key] = value;
             return true;
+        } else if (!/\D/.test(key)) {
+            let xele = $(value);
+
+            let targetChild = this.ele.children[key];
+
+            // 这里还欠缺冒泡机制的
+            if (targetChild) {
+                this.ele.insertBefore(xele.ele, targetChild);
+                this.ele.removeChild(targetChild);
+            } else {
+                this.ele.appendChild(xele.ele);
+            }
         } else if (canSetKeys && canSetKeys.has(key)) {
             // 直接走xdata的逻辑
             return XDataSetData.call(this, key, value);
@@ -235,14 +247,6 @@ class XhearEle extends XData {
         }
 
         return parChilds.map(e => createXhearEle(e));
-    }
-
-    remove() {
-        if (/\D/.test(this.index)) {
-            console.error(`can't delete this key => ${this.index}`, this, data);
-            throw "";
-        }
-        this.parent.splice(this.index, 1);
     }
 
     empty() {

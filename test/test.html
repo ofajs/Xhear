@@ -7,18 +7,24 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>xhear test</title>
     <script src="../dist/xhear.js"></script>
+    <script src="ok.js"></script>
 </head>
 
 <body>
-    <div id="test">
-        <div class="a">aaa</div>
-        <div class="b">bbb</div>
+    <div id="event_test">
+        <div class="a_con" id="a">
+            <div id="a1">
+                <div id="a1_1">I am a1_1</div>
+                <div id="a1_2">I am a1_2</div>
+            </div>
+            <div id="a2">I am a2</div>
+        </div>
+        <div class="b_con">bbb</div>
     </div>
 
     <test-ele>testele1-1</test-ele>
 </body>
 <script>
-
     $.register({
         tag: "test-ele",
         temp: `
@@ -40,7 +46,7 @@
         attrs: ["weight"]
     });
 
-    let a = $('#test');
+    let a = $('#event_test');
     let b = $("test-ele");
     console.log(a);
 
@@ -50,7 +56,16 @@
     c.innerHTML = "2222";
     setTimeout(() => {
         document.body.appendChild(c);
+
+        // let ha = $({
+        //     tag: "test-ele",
+        //     text: "new div",
+        //     tips: "hahahah tips"
+        // });
+
+        // document.body.appendChild(ha.ele);
     }, 1000);
 </script>
+<script src="event-test.js"></script>
 
 </html>

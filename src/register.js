@@ -97,9 +97,17 @@ const register = (opts) => {
     customElements.define(tag, XhearElement);
 }
 
-const renderEle = (ele, defaults, data) => {
+const renderEle = (ele, defaults) => {
     // 初始化元素
     let xhearEle = createXhearEle(ele);
+
+    // 设置值
+    Object.defineProperty(ele, "xvele", {
+        value: true
+    });
+    Object.defineProperty(xhearEle, "xvele", {
+        value: true
+    });
 
     // 合并 proto 的函数
     let {
@@ -162,7 +170,6 @@ const renderEle = (ele, defaults, data) => {
 
     // 要设置的数据
     let rData = Object.assign({}, defaults.data);
-    data && Object.assign(rData, data);
 
     // attrs 上的数据
     defaults.attrs.forEach(attrName => {
