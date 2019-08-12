@@ -15,21 +15,11 @@
         }
 
         let ele;
-        switch (getType(expr)) {
-            case "string":
-                if (expr.includes("<")) {
-                    ele = parseStringToDom(expr);
-                } else {
-                    ele = document.querySelector(expr);
-                }
-                break;
-            case "object":
-                ele = parseDataToDom(expr);
-                break;
-            default:
-                if (expr instanceof Element) {
-                    ele = expr;
-                }
+
+        if (getType(expr) === "string" && !/\<.+\>/.test(expr)) {
+            ele = document.querySelector(expr);
+        } else {
+            ele = parseToDom(expr);
         }
 
         return ele ? createXhearEle(ele)[PROXYTHIS] : null;

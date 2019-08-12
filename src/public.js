@@ -70,3 +70,22 @@ const parseDataToDom = (objData) => {
 
     return ele;
 }
+
+const parseToDom = (expr) => {
+    let ele;
+    switch (getType(expr)) {
+        case "string":
+            if (/\<.+\>/.test(expr)) {
+                ele = parseStringToDom(expr);
+            }
+            break;
+        case "object":
+            ele = parseDataToDom(expr);
+            break;
+        default:
+            if (expr instanceof Element) {
+                ele = expr;
+            }
+    }
+    return ele;
+}

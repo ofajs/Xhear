@@ -1550,7 +1550,7 @@
                         }
                     });
 
-                    // 返回值，都是被删除的数据，内部数据清空并回收
+                    // pop shift splice 的返回值，都是被删除的数据，内部数据清空并回收
                     let returnVal = arrayFnFunc.apply(_this, newArgs);
 
                     // 重置index
@@ -1584,38 +1584,36 @@
         }
     });
 
-    Object.defineProperty(XData.prototype, "sort", {
-        /**
-         * 对数组进行排序操作
-         * @param {Function|Array} arg 排序参数
-         */
-        value(arg) {
-            let args = [arg];
-            let _this = this[XDATASELF];
-            let oldThis = Array.from(_this);
-            if (isFunction(arg)) {
-                Array.prototype.sort.call(_this, arg);
+    Object.defineProperties(XData.prototype, {
+        sort: {
+            value(args) {
+                let args = [arg];
+                let _this = this[XDATASELF];
+                let oldThis = Array.from(_this);
+                if (isFunction(arg)) {
+                    Array.prototype.sort.call(_this, arg);
 
-                // 重置index
-                // 记录重新调整的顺序
-                _this.forEach((e, i) => {
-                    if (e instanceof XData) {
-                        e.index = i;
-                    }
-                });
-                let orders = oldThis.map(e => e.index);
-                args = [orders];
-                oldThis = null;
-            } else if (arg instanceof Array) {
-                arg.forEach((aid, id) => {
-                    let tarData = _this[aid] = oldThis[id];
-                    tarData.index = aid;
-                });
+                    // 重置index
+                    // 记录重新调整的顺序
+                    _this.forEach((e, i) => {
+                        if (e instanceof XData) {
+                            e.index = i;
+                        }
+                    });
+                    let orders = oldThis.map(e => e.index);
+                    args = [orders];
+                    oldThis = null;
+                } else if (arg instanceof Array) {
+                    arg.forEach((aid, id) => {
+                        let tarData = _this[aid] = oldThis[id];
+                        tarData.index = aid;
+                    });
+                }
+
+                emitUpdate(_this, "sort", args);
+
+                return this;
             }
-
-            emitUpdate(_this, "sort", args);
-
-            return this;
         }
     });
 
@@ -1689,6 +1687,25 @@
             akey++;
         }
 
+        return ele;
+    }
+
+    const parseToDom = (expr) => {
+        let ele;
+        switch (getType(expr)) {
+            case "string":
+                if (/\<.+\>/.test(expr)) {
+                    ele = parseStringToDom(expr);
+                }
+                break;
+            case "object":
+                ele = parseDataToDom(expr);
+                break;
+            default:
+                if (expr instanceof Element) {
+                    ele = expr;
+                }
+        }
         return ele;
     }
     // 可setData的key
@@ -1878,27 +1895,35 @@
 
             key = attrToProp(key);
 
+            let _this = this[XDATASELF];
+
             // 只有在允许列表里才能进行set操作
             let canSetKeys = this[CANSETKEYS];
             if (xEleDefaultSetKeys.has(key)) {
                 // 直接设置
-                this[XDATASELF][key] = value;
+                _this[key] = value;
                 return true;
             } else if (!/\D/.test(key)) {
                 let xele = $(value);
 
-                let targetChild = this.ele.children[key];
+                let targetChild = _this.ele.children[key];
+                let oldVal = _this.getData(key).object;
 
                 // 这里还欠缺冒泡机制的
                 if (targetChild) {
-                    this.ele.insertBefore(xele.ele, targetChild);
-                    this.ele.removeChild(targetChild);
+                    _this.ele.insertBefore(xele.ele, targetChild);
+                    _this.ele.removeChild(targetChild);
+
+                    // 冒泡设置
+                    emitUpdate(_this, "setData", [key, value], {
+                        oldValue: oldVal
+                    });
                 } else {
-                    this.ele.appendChild(xele.ele);
+                    _this.ele.appendChild(xele.ele);
                 }
             } else if (canSetKeys && canSetKeys.has(key)) {
                 // 直接走xdata的逻辑
-                return XDataSetData.call(this, key, value);
+                return XDataSetData.call(_this, key, value);
             }
 
             return false;
@@ -2017,6 +2042,12 @@
             this.ele.removeAttribute(key);
             return this;
         }
+
+        // addListener() { }
+
+        // on() { }
+
+        // off() { }
     }
 
     window.XhearEle = XhearEle;
@@ -2032,14 +2063,82 @@
         }
     });
 
-    // 重置所有数组方法
-    Object.defineProperties(XhearEle, {
-        push() {
-            debugger
-        },
-        splice() {
-            debugger
+    let XhearEleProtoSplice = (t, index, howmany, items = []) => {
+        let _this = t[XDATASELF];
+
+        // 返回的数组
+        let reArr = [];
+
+        let contentEle = _this.ele;
+        let {
+            children
+        } = contentEle;
+
+        while (howmany > 0) {
+            let childEle = children[index];
+
+            reArr.push(createXhearEle(childEle));
+
+            // 删除目标元素
+            contentEle.removeChild(childEle);
+
+            // 数量减少
+            howmany--;
         }
+
+        // 定位目标子元素
+        let tar = children[index];
+
+        // 添加元素
+        if (items.length) {
+            let fragment = document.createDocumentFragment();
+            items.forEach(e => fragment.appendChild(parseToDom(e)));
+            if (index >= 0 && tar) {
+                contentEle.insertBefore(fragment, tar)
+            } else {
+                contentEle.appendChild(fragment);
+            }
+        }
+        emitUpdate(_this, "splice", [index, howmany, ...items]);
+    }
+
+    // 重置所有数组方法
+    Object.defineProperties(XhearEle.prototype, {
+        push: {
+            value(...items) {
+                let fragment = document.createDocumentFragment();
+                items.forEach(item => {
+                    let ele = parseToDom(item);
+                    fragment.appendChild(ele);
+                });
+                this.ele.appendChild(fragment);
+                emitUpdate(this[XDATASELF], "push", items);
+                return this.length;
+            }
+        },
+        splice: {
+            value(index, howmany, ...items) {
+                return XhearEleProtoSplice(this, index, howmany, items);
+            }
+        },
+        unshift: {
+            value(...items) {
+                XhearEleProtoSplice(this, 0, 0, items);
+                return this.length;
+            }
+        },
+        shift: {
+            value() {
+                return XhearEleProtoSplice(this, 0, 1);
+            }
+        },
+        pop: {
+            value() {
+                return XhearEleProtoSplice(this, this.length - 1, 1);
+            }
+        },
+        reverse() {},
+        sort() {}
     });
     // 注册数据
     const regDatabase = new Map();
@@ -2276,21 +2375,11 @@
         }
 
         let ele;
-        switch (getType(expr)) {
-            case "string":
-                if (expr.includes("<")) {
-                    ele = parseStringToDom(expr);
-                } else {
-                    ele = document.querySelector(expr);
-                }
-                break;
-            case "object":
-                ele = parseDataToDom(expr);
-                break;
-            default:
-                if (expr instanceof Element) {
-                    ele = expr;
-                }
+
+        if (getType(expr) === "string" && !/\<.+\>/.test(expr)) {
+            ele = document.querySelector(expr);
+        } else {
+            ele = parseToDom(expr);
         }
 
         return ele ? createXhearEle(ele)[PROXYTHIS] : null;

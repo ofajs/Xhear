@@ -16,7 +16,7 @@
 
     b.one('update', (e, data) => {
         tester.ok(JSON.stringify(e.keys) == "[0]", "update keys ok");
-        tester.ok(e.modify.key == 1, "update modify key ok");
+        tester.ok(e.modify.args[0] == 1, "update modify key ok");
     });
 
     b[0][1] = {

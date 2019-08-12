@@ -181,27 +181,35 @@ class XhearEle extends XData {
 
         key = attrToProp(key);
 
+        let _this = this[XDATASELF];
+
         // 只有在允许列表里才能进行set操作
         let canSetKeys = this[CANSETKEYS];
         if (xEleDefaultSetKeys.has(key)) {
             // 直接设置
-            this[XDATASELF][key] = value;
+            _this[key] = value;
             return true;
         } else if (!/\D/.test(key)) {
             let xele = $(value);
 
-            let targetChild = this.ele.children[key];
+            let targetChild = _this.ele.children[key];
+            let oldVal = _this.getData(key).object;
 
             // 这里还欠缺冒泡机制的
             if (targetChild) {
-                this.ele.insertBefore(xele.ele, targetChild);
-                this.ele.removeChild(targetChild);
+                _this.ele.insertBefore(xele.ele, targetChild);
+                _this.ele.removeChild(targetChild);
+
+                // 冒泡设置
+                emitUpdate(_this, "setData", [key, value], {
+                    oldValue: oldVal
+                });
             } else {
-                this.ele.appendChild(xele.ele);
+                _this.ele.appendChild(xele.ele);
             }
         } else if (canSetKeys && canSetKeys.has(key)) {
             // 直接走xdata的逻辑
-            return XDataSetData.call(this, key, value);
+            return XDataSetData.call(_this, key, value);
         }
 
         return false;
@@ -320,6 +328,12 @@ class XhearEle extends XData {
         this.ele.removeAttribute(key);
         return this;
     }
+
+    // addListener() { }
+
+    // on() { }
+
+    // off() { }
 }
 
 window.XhearEle = XhearEle;
