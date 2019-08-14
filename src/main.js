@@ -1,5 +1,6 @@
 // 可setData的key
 const CANSETKEYS = Symbol("cansetkeys");
+const ORIEVE = Symbol("orignEvents");
 
 // 将 element attribute 横杠转换为大小写模式
 const attrToProp = key => {
@@ -29,6 +30,7 @@ class XhearEle extends XData {
         super({});
         delete this.parent;
         delete this.index;
+        delete this.length;
         Object.defineProperties(ele, {
             __xhear__: {
                 value: this
@@ -42,6 +44,11 @@ class XhearEle extends XData {
             ele: {
                 value: ele
             },
+            [ORIEVE]: {
+                writable: true,
+                // value: new Map()
+                value: ""
+            }
             // [CANSETKEYS]: {
             //     value: new Set([])
             // }
@@ -53,17 +60,21 @@ class XhearEle extends XData {
         return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode);
     }
 
+    get index() {
+        let { ele } = this;
+        return Array.from(ele.parentNode.children).indexOf(ele);
+    }
+
+    get length() {
+        return this.ele.children.length;
+    }
+
     get class() {
         return this.ele.classList;
     }
 
     get data() {
         return this.ele.dataset;
-    }
-
-    get index() {
-        let { ele } = this;
-        return Array.from(ele.parentNode.children).indexOf(ele);
     }
 
     get css() {
@@ -189,6 +200,9 @@ class XhearEle extends XData {
             // 直接设置
             _this[key] = value;
             return true;
+        } else if (canSetKeys && canSetKeys.has(key)) {
+            // 直接走xdata的逻辑
+            return XDataSetData.call(_this, key, value);
         } else if (!/\D/.test(key)) {
             let xele = $(value);
 
@@ -207,9 +221,6 @@ class XhearEle extends XData {
             } else {
                 _this.ele.appendChild(xele.ele);
             }
-        } else if (canSetKeys && canSetKeys.has(key)) {
-            // 直接走xdata的逻辑
-            return XDataSetData.call(_this, key, value);
         }
 
         return false;
@@ -328,12 +339,6 @@ class XhearEle extends XData {
         this.ele.removeAttribute(key);
         return this;
     }
-
-    // addListener() { }
-
-    // on() { }
-
-    // off() { }
 }
 
 window.XhearEle = XhearEle;

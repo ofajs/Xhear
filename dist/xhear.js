@@ -589,6 +589,7 @@
                 },
                 // 当前实例数组长度
                 length: {
+                    configurable: true,
                     writable: true,
                     value: length
                 }
@@ -1586,8 +1587,8 @@
 
     Object.defineProperties(XData.prototype, {
         sort: {
-            value(args) {
-                let args = [arg];
+            value(arg) {
+                let args = [];
                 let _this = this[XDATASELF];
                 let oldThis = Array.from(_this);
                 if (isFunction(arg)) {
@@ -1608,6 +1609,7 @@
                         let tarData = _this[aid] = oldThis[id];
                         tarData.index = aid;
                     });
+                    args = [arg];
                 }
 
                 emitUpdate(_this, "sort", args);
@@ -1710,6 +1712,7 @@
     }
     // 可setData的key
     const CANSETKEYS = Symbol("cansetkeys");
+    const ORIEVE = Symbol("orignEvents");
 
     // 将 element attribute 横杠转换为大小写模式
     const attrToProp = key => {
@@ -1739,6 +1742,7 @@
             super({});
             delete this.parent;
             delete this.index;
+            delete this.length;
             Object.defineProperties(ele, {
                 __xhear__: {
                     value: this
@@ -1752,6 +1756,11 @@
                 ele: {
                     value: ele
                 },
+                [ORIEVE]: {
+                    writable: true,
+                    // value: new Map()
+                    value: ""
+                }
                 // [CANSETKEYS]: {
                 //     value: new Set([])
                 // }
@@ -1765,19 +1774,23 @@
             return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode);
         }
 
+        get index() {
+            let {
+                ele
+            } = this;
+            return Array.from(ele.parentNode.children).indexOf(ele);
+        }
+
+        get length() {
+            return this.ele.children.length;
+        }
+
         get class() {
             return this.ele.classList;
         }
 
         get data() {
             return this.ele.dataset;
-        }
-
-        get index() {
-            let {
-                ele
-            } = this;
-            return Array.from(ele.parentNode.children).indexOf(ele);
         }
 
         get css() {
@@ -1903,6 +1916,9 @@
                 // 直接设置
                 _this[key] = value;
                 return true;
+            } else if (canSetKeys && canSetKeys.has(key)) {
+                // 直接走xdata的逻辑
+                return XDataSetData.call(_this, key, value);
             } else if (!/\D/.test(key)) {
                 let xele = $(value);
 
@@ -1921,9 +1937,6 @@
                 } else {
                     _this.ele.appendChild(xele.ele);
                 }
-            } else if (canSetKeys && canSetKeys.has(key)) {
-                // 直接走xdata的逻辑
-                return XDataSetData.call(_this, key, value);
             }
 
             return false;
@@ -2042,15 +2055,54 @@
             this.ele.removeAttribute(key);
             return this;
         }
-
-        // addListener() { }
-
-        // on() { }
-
-        // off() { }
     }
 
     window.XhearEle = XhearEle;
+    Object.defineProperties(XhearEle.prototype, {
+        on: {
+            value(...args) {
+                let eventName = args[0],
+                    selector,
+                    callback,
+                    data;
+
+                // 判断是否对象传入
+                if (getType(eventName) == "object") {
+                    let eveOnObj = eventName;
+                    eventName = eveOnObj.event;
+                    callback = eveOnObj.callback;
+                    data = eveOnObj.data;
+                    selector = eveOnObj.selector;
+                } else {
+                    // 判断第二个参数是否字符串，字符串当做selector处理
+                    switch (getType(args[1])) {
+                        case "string":
+                            selector = args[1];
+                            callback = args[2];
+                            data = args[3];
+                            break;
+                        default:
+                            callback = args[1];
+                            data = args[2];
+                    }
+                }
+
+                let originEve = this[ORIEVE] || (this[ORIEVE] = new Map());
+
+                if (!originEve.has(eventName)) {
+                    let eventCall = () => {}
+                    originEve.set(eventName, eventCall);
+                    this.ele.addEventListener(eventName, eventCall);
+                }
+
+                this.addListener({
+                    type: eventName,
+                    data,
+                    callback
+                });
+            }
+        }
+    });
     // 不影响数据原结构的方法，重新做钩子
     ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
         let arrayFnFunc = Array.prototype[methodName];
@@ -2063,16 +2115,23 @@
         }
     });
 
-    let XhearEleProtoSplice = (t, index, howmany, items = []) => {
+    /**
+     * 模拟array splice方法
+     * @param {XhearEle} t 目标对象
+     * @param {Number} index splice index
+     * @param {Number} howmany splice howmany
+     * @param {Array} items splice push items
+     */
+    const XhearEleProtoSplice = (t, index, howmany, items = []) => {
         let _this = t[XDATASELF];
 
         // 返回的数组
         let reArr = [];
 
-        let contentEle = _this.ele;
+        let tarele = _this.ele;
         let {
             children
-        } = contentEle;
+        } = tarele;
 
         while (howmany > 0) {
             let childEle = children[index];
@@ -2080,7 +2139,7 @@
             reArr.push(createXhearEle(childEle));
 
             // 删除目标元素
-            contentEle.removeChild(childEle);
+            tarele.removeChild(childEle);
 
             // 数量减少
             howmany--;
@@ -2094,17 +2153,42 @@
             let fragment = document.createDocumentFragment();
             items.forEach(e => fragment.appendChild(parseToDom(e)));
             if (index >= 0 && tar) {
-                contentEle.insertBefore(fragment, tar)
+                tarele.insertBefore(fragment, tar)
             } else {
-                contentEle.appendChild(fragment);
+                tarele.appendChild(fragment);
             }
         }
         emitUpdate(_this, "splice", [index, howmany, ...items]);
     }
 
+    /**
+     * 根据数组结构进行排序
+     * @param {XhearEle} t 目标对象
+     * @param {Array} arr 排序数组结构
+     */
+    const sortByArray = (t, arr) => {
+        let _this = t[XDATASELF];
+        let {
+            ele
+        } = _this;
+
+        let childsBackup = Array.from(ele.children);
+        let fragment = document.createDocumentFragment();
+        arr.forEach(k => {
+            let ele = childsBackup[k];
+            if (ele.xvele) {
+                ele[RUNARRAY] = 1;
+            }
+            fragment.appendChild(ele);
+        });
+        ele.appendChild(fragment);
+        childsBackup.forEach(ele => ele.xvele && (ele[RUNARRAY] = 0));
+    }
+
     // 重置所有数组方法
     Object.defineProperties(XhearEle.prototype, {
         push: {
+            // push就是最原始的appendChild，干脆直接appencChild
             value(...items) {
                 let fragment = document.createDocumentFragment();
                 items.forEach(item => {
@@ -2137,11 +2221,49 @@
                 return XhearEleProtoSplice(this, this.length - 1, 1);
             }
         },
-        reverse() {},
-        sort() {}
+        reverse: {
+            value() {
+                let childs = Array.from(this.ele.children);
+                let len = childs.length;
+                sortByArray(this, childs.map((e, i) => len - 1 - i));
+                emitUpdate(this[XDATASELF], "reverse", []);
+            }
+        },
+        sort: {
+            value(arg) {
+                if (isFunction(arg)) {
+                    // 新生成数组
+                    let fake_this = Array.from(this.ele.children).map(e => createXhearEle(e));
+                    let backup_fake_this = Array.from(fake_this);
+
+                    // 执行排序函数
+                    fake_this.sort(arg);
+
+                    // 记录顺序
+                    arg = [];
+                    let putId = getRandomId();
+
+                    fake_this.forEach(e => {
+                        let id = backup_fake_this.indexOf(e);
+                        // 防止查到重复值，所以查到过的就清空覆盖
+                        backup_fake_this[id] = putId;
+                        arg.push(id);
+                    });
+                }
+
+                if (arg instanceof Array) {
+                    // 修正新顺序
+                    sortByArray(this, arg);
+                }
+
+                emitUpdate(this[XDATASELF], "sort", [arg]);
+            }
+        }
     });
     // 注册数据
     const regDatabase = new Map();
+
+    const RUNARRAY = Symbol("runArray");
 
     const register = (opts) => {
         let defaults = {
@@ -2207,14 +2329,29 @@
                 super();
                 renderEle(this, defaults);
                 defaults.inited && defaults.inited.call(this);
+
+                Object.defineProperties(this, {
+                    [RUNARRAY]: {
+                        writable: true,
+                        value: 0
+                    }
+                });
             }
 
             connectedCallback() {
+                if (this[RUNARRAY]) {
+                    return;
+                }
                 defaults.attached && defaults.attached.call(this);
+                console.log("connectedCallback =>", this);
             }
 
             disconnectedCallback() {
+                if (this[RUNARRAY]) {
+                    return;
+                }
                 defaults.detached && defaults.detached.call(this);
+                console.log("disconnectedCallback =>", this);
             }
 
             attributeChangedCallback(name, oldValue, newValue) {
@@ -2243,15 +2380,7 @@
         // 初始化元素
         let xhearEle = createXhearEle(ele);
 
-        // 设置值
-        Object.defineProperty(ele, "xvele", {
-            value: true
-        });
-        Object.defineProperty(xhearEle, "xvele", {
-            value: true
-        });
-
-        // 合并 proto 的函数
+        // 合并 proto
         let {
             proto
         } = defaults;
@@ -2276,6 +2405,14 @@
                 }
             });
         }
+
+        // 设置值
+        Object.defineProperty(ele, "xvele", {
+            value: true
+        });
+        Object.defineProperty(xhearEle, "xvele", {
+            value: true
+        });
 
         // 添加shadow root
         let sroot = ele.attachShadow({

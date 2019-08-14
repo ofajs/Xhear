@@ -1,6 +1,8 @@
 // 注册数据
 const regDatabase = new Map();
 
+const RUNARRAY = Symbol("runArray");
+
 const register = (opts) => {
     let defaults = {
         // 自定义标签名
@@ -65,14 +67,29 @@ const register = (opts) => {
             super();
             renderEle(this, defaults);
             defaults.inited && defaults.inited.call(this);
+
+            Object.defineProperties(this, {
+                [RUNARRAY]: {
+                    writable: true,
+                    value: 0
+                }
+            });
         }
 
         connectedCallback() {
+            if (this[RUNARRAY]) {
+                return;
+            }
             defaults.attached && defaults.attached.call(this);
+            console.log("connectedCallback =>", this);
         }
 
         disconnectedCallback() {
+            if (this[RUNARRAY]) {
+                return;
+            }
             defaults.detached && defaults.detached.call(this);
+            console.log("disconnectedCallback =>", this);
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
@@ -101,15 +118,7 @@ const renderEle = (ele, defaults) => {
     // 初始化元素
     let xhearEle = createXhearEle(ele);
 
-    // 设置值
-    Object.defineProperty(ele, "xvele", {
-        value: true
-    });
-    Object.defineProperty(xhearEle, "xvele", {
-        value: true
-    });
-
-    // 合并 proto 的函数
+    // 合并 proto
     let {
         proto
     } = defaults;
@@ -134,6 +143,14 @@ const renderEle = (ele, defaults) => {
             }
         });
     }
+
+    // 设置值
+    Object.defineProperty(ele, "xvele", {
+        value: true
+    });
+    Object.defineProperty(xhearEle, "xvele", {
+        value: true
+    });
 
     // 添加shadow root
     let sroot = ele.attachShadow({ mode: "open" });

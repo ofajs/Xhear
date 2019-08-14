@@ -12,17 +12,24 @@
 
 <body>
     <div id="event_test">
-        <div class="a_con" id="a">
+        <div class="a_con" id="a" data-num="2">
             <div id="a1">
                 <div id="a1_1">I am a1_1</div>
                 <div id="a1_2">I am a1_2</div>
             </div>
             <div id="a2">I am a2</div>
         </div>
-        <div class="b_con">bbb</div>
+        <div class="b_con" data-num="3">bbb</div>
+        <div class="c_con" data-num="1">ccc</div>
     </div>
 
     <test-ele>testele1-1</test-ele>
+
+    <div id="c" style="margin-top:100px;">
+        <test-ele>2</test-ele>
+        <test-ele>1</test-ele>
+        <test-ele>3</test-ele>
+    </div>
 </body>
 <script>
     $.register({
@@ -48,15 +55,15 @@
 
     let a = $('#event_test');
     let b = $("test-ele");
+    let c = $("#c");
     console.log(a);
 
     console.log(b);
 
-    let c = document.createElement("test-ele");
-    c.innerHTML = "2222";
+    let cele = document.createElement("test-ele");
+    cele.innerHTML = "2222";
     setTimeout(() => {
-        document.body.appendChild(c);
-
+        document.body.appendChild(cele);
         // let ha = $({
         //     tag: "test-ele",
         //     text: "new div",
@@ -65,6 +72,12 @@
 
         // document.body.appendChild(ha.ele);
     }, 1000);
+
+    setTimeout(() => {
+        c.sort((a, b) => {
+            return a.text - b.text;
+        })
+    }, 1500);
 </script>
 <script src="event-test.js"></script>
 

@@ -3,6 +3,7 @@
     //<!--../stanz/dist/xdata-->
     //<!--public-->
     //<!--main-->
+    //<!--event-->
     //<!--reBuildArray-->
     //<!--register-->
 
