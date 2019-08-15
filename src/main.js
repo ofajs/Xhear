@@ -339,6 +339,20 @@ class XhearEle extends XData {
         this.ele.removeAttribute(key);
         return this;
     }
+
+    que(expr) {
+        let tar = this.ele.querySelector(expr);
+        if (tar) {
+            return createXhearEle(tar);
+        }
+    }
+
+    queAll(expr) {
+        let tars = this.ele.querySelectorAll(expr);
+        if (tars) {
+            return Array.from(tars).map(tar => createXhearEle(tar));
+        }
+    }
 }
 
 window.XhearEle = XhearEle;
