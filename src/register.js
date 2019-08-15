@@ -81,7 +81,6 @@ const register = (opts) => {
                 return;
             }
             defaults.attached && defaults.attached.call(this);
-            console.log("connectedCallback =>", this);
         }
 
         disconnectedCallback() {
@@ -89,7 +88,6 @@ const register = (opts) => {
                 return;
             }
             defaults.detached && defaults.detached.call(this);
-            console.log("disconnectedCallback =>", this);
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
