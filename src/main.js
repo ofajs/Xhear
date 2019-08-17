@@ -353,6 +353,36 @@ class XhearEle extends XData {
             return Array.from(tars).map(tar => createXhearEle(tar));
         }
     }
+
+    queShadow(expr) {
+        let { shadowRoot } = this.ele;
+        if (shadowRoot) {
+            let tar = shadowRoot.querySelector(expr);
+            if (tar) {
+                return createXhearEle(tar);
+            }
+        } else {
+            throw {
+                target: this,
+                msg: `it must be a customElement`
+            };
+        }
+    }
+
+    queAllShadow(expr) {
+        let { shadowRoot } = this.ele;
+        if (shadowRoot) {
+            let tars = shadowRoot.querySelectorAll(expr);
+            if (tars) {
+                return Array.from(tars).map(tar => createXhearEle(tar));
+            }
+        } else {
+            throw {
+                target: this,
+                msg: `it must be a customElement`
+            };
+        }
+    }
 }
 
 window.XhearEle = XhearEle;

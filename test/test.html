@@ -30,12 +30,24 @@
         <test-ele>1</test-ele>
         <test-ele>3</test-ele>
     </div>
+
+    <div id="model_test" style="margin-top: 30px;">
+        <model-tester></model-tester>
+        <br>
+        <br>
+        <br>
+        <model-tester2></model-tester2>
+        <br>
+        <br>
+        <br>
+        <model-tester3>asd</model-tester3>
+    </div>
 </body>
 <script>
     $.register({
         tag: "test-ele",
         temp: `
-        <h2>testTitle--{{tips}}</h2>
+        <h2 style="margin:30px 0 0 0;padding:0;">testTitle--{{tips}}</h2>
         <div style="color:red;">
             <slot></slot>    
         </div>
@@ -55,5 +67,6 @@
 </script>
 <script src="event-test.js"></script>
 <script src="array-test.js"></script>
+<script src="model-test.js"></script>
 
 </html>

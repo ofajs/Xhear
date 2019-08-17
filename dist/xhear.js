@@ -995,6 +995,7 @@
 
             let updateMethod;
 
+            let callSelf = this[PROXYTHIS];
             switch (watchType) {
                 case "watchSelf":
                     // 监听自身
@@ -1002,18 +1003,18 @@
                         cacheObj.trends.push(e.trend);
 
                         nextTick(() => {
-                            callback.call(this, {
+                            callback.call(callSelf, {
                                 trends: Array.from(cacheObj.trends)
-                            }, this);
+                            }, callSelf);
 
                             cacheObj.trends.length = 0;
                         }, cacheObj);
                     };
 
                     if (ImmeOpt === true) {
-                        callback.call(this, {
+                        callback.call(callSelf, {
                             trends: []
-                        }, this);
+                        }, callSelf);
                     }
                     break;
                 case "watchKey":
@@ -1028,7 +1029,7 @@
                             nextTick(() => {
                                 let val = this[expr];
 
-                                callback.call(this, {
+                                callback.call(callSelf, {
                                     expr,
                                     val,
                                     trends: Array.from(cacheObj.trends)
@@ -1040,18 +1041,18 @@
                     };
 
                     if (ImmeOpt === true) {
-                        callback.call(this, {
+                        callback.call(callSelf, {
                             expr,
-                            val: this[expr],
+                            val: callSelf[expr],
                             trends: []
-                        }, this[expr]);
+                        }, callSelf[expr]);
                     }
                     break;
                 case "seekData":
-                    let oldVals = this.seek(expr);
+                    let oldVals = callSelf.seek(expr);
                     updateMethod = e => {
                         nextTick(() => {
-                            let tars = this.seek(expr);
+                            let tars = callSelf.seek(expr);
                             let isEqual = 1;
 
                             if (tars.length === oldVals.length) {
@@ -1066,7 +1067,7 @@
                             }
 
                             // 有变动就触发
-                            !isEqual && callback.call(this, {
+                            !isEqual && callback.call(callSelf, {
                                 expr,
                                 old: oldVals,
                                 val: tars
@@ -1077,7 +1078,7 @@
                     };
 
                     if (ImmeOpt === true) {
-                        callback.call(this, {
+                        callback.call(callSelf, {
                             expr,
                             old: oldVals,
                             val: oldVals
@@ -2082,6 +2083,40 @@
                 return Array.from(tars).map(tar => createXhearEle(tar));
             }
         }
+
+        queShadow(expr) {
+            let {
+                shadowRoot
+            } = this.ele;
+            if (shadowRoot) {
+                let tar = shadowRoot.querySelector(expr);
+                if (tar) {
+                    return createXhearEle(tar);
+                }
+            } else {
+                throw {
+                    target: this,
+                    msg: `it must be a customElement`
+                };
+            }
+        }
+
+        queAllShadow(expr) {
+            let {
+                shadowRoot
+            } = this.ele;
+            if (shadowRoot) {
+                let tars = shadowRoot.querySelectorAll(expr);
+                if (tars) {
+                    return Array.from(tars).map(tar => createXhearEle(tar));
+                }
+            } else {
+                throw {
+                    target: this,
+                    msg: `it must be a customElement`
+                };
+            }
+        }
     }
 
     window.XhearEle = XhearEle;
@@ -2516,6 +2551,11 @@
         customElements.define(tag, XhearElement);
     }
 
+    const queAllToArray = (target, expr) => {
+        let tars = target.querySelectorAll(expr);
+        return tars ? Array.from(tars) : [];
+    }
+
     const renderEle = (ele, defaults) => {
         // 初始化元素
         let xhearEle = createXhearEle(ele);
@@ -2563,7 +2603,8 @@
         sroot.innerHTML = defaults.temp;
 
         // 设置其他 xv-tar
-        Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
+        queAllToArray(sroot, `[xv-tar]`).forEach(tar => {
+            // Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
             let tarKey = tar.getAttribute('xv-tar');
             Object.defineProperty(xhearEle, "$" + tarKey, {
                 value: createXhearEle(tar)
@@ -2571,7 +2612,7 @@
         });
 
         // 转换 xv-span 元素
-        Array.from(sroot.querySelectorAll(`xv-span`)).forEach(e => {
+        queAllToArray(sroot, `xv-span`).forEach(e => {
             // 替换xv-span
             var textnode = document.createTextNode("");
             e.parentNode.insertBefore(textnode, e);
@@ -2585,6 +2626,110 @@
                 textnode.textContent = xhearEle[xvkey]
             );
         });
+
+        // 需要跳过的元素列表
+        let xvModelJump = new Set();
+
+        // 绑定 xv-model
+        queAllToArray(sroot, `[xv-model]`).forEach(ele => {
+            if (xvModelJump.has(ele)) {
+                return;
+            }
+
+            let modelKey = ele.getAttribute("xv-model");
+
+            switch (ele.tagName.toLowerCase()) {
+                case "input":
+                    let inputType = ele.getAttribute("type");
+                    switch (inputType) {
+                        case "checkbox":
+                            // 判断是不是复数形式的元素
+                            let allChecks = queAllToArray(sroot, `input[type="checkbox"][xv-model="${modelKey}"]`);
+
+                            // 查看是单个数量还是多个数量
+                            if (allChecks.length > 1) {
+                                allChecks.forEach(checkbox => {
+                                    checkbox.addEventListener('change', e => {
+                                        let {
+                                            value,
+                                            checked
+                                        } = e.target;
+
+                                        let tarData = xhearEle.getData(modelKey);
+                                        if (checked) {
+                                            tarData.add(value);
+                                        } else {
+                                            tarData.delete(value);
+                                        }
+                                    });
+                                });
+
+                                // 添加到跳过列表里
+                                allChecks.forEach(e => {
+                                    xvModelJump.add(e);
+                                })
+                            } else {
+                                // 单个直接绑定checked值
+                                xhearEle.watch(modelKey, (e, val) => {
+                                    ele.checked = val;
+                                });
+                                ele.addEventListener("change", e => {
+                                    let {
+                                        checked
+                                    } = ele;
+                                    xhearEle.setData(modelKey, checked);
+                                });
+                            }
+                            break;
+                        case "radio":
+                            let allRadios = queAllToArray(sroot, `input[type="radio"][xv-model="${modelKey}"]`);
+
+                            let rid = getRandomId();
+
+                            allRadios.forEach(radioEle => {
+                                radioEle.setAttribute("name", `radio_${rid}_${modelKey}`);
+                                radioEle.addEventListener("change", e => {
+                                    if (radioEle.checked) {
+                                        xhearEle.setData(modelKey, radioEle.value);
+                                    }
+                                });
+                            });
+                            break;
+                    }
+                    break;
+                case "textarea":
+                    xhearEle.watch(modelKey, (e, val) => {
+                        ele.value = val;
+                    });
+                    ele.addEventListener("input", e => {
+                        xhearEle.setData(modelKey, ele.value);
+                    });
+                    break;
+                case "select":
+                    xhearEle.watch(modelKey, (e, val) => {
+                        ele.value = val;
+                    });
+                    ele.addEventListener("change", e => {
+                        xhearEle.setData(modelKey, ele.value);
+                    });
+                    break;
+                default:
+                    // 自定义组件
+                    if (ele.xvele) {
+                        let cEle = ele.__xhear__;
+                        cEle.watch("value", (e, val) => {
+                            xhearEle.setData(modelKey, val);
+                        });
+                        xhearEle.watch(modelKey, (e, val) => {
+                            cEle.setData("value", val);
+                        });
+                    } else {
+                        console.warn(`can't xv-model with thie element => `, ele);
+                    }
+            }
+        });
+        xvModelJump.clear();
+        xvModelJump = null;
 
         // watch事件绑定
         xhearEle.watch(defaults.watch);
@@ -2626,15 +2771,6 @@
         // 合并数据后设置
         canSetKey.forEach(k => {
             let val = rData[k];
-
-            // 是Object的话，转换成stanz数据
-            if (val instanceof Object) {
-                val = cloneObject(val);
-                val = createXData(val, {
-                    parent: xhearEle,
-                    hostkey: k
-                });
-            }
 
             if (!isUndefined(val)) {
                 // xhearEle[k] = val;
