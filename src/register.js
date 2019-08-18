@@ -16,10 +16,6 @@ const register = (opts) => {
         data: {},
         // 直接监听属性变动对象
         watch: {},
-        // 不冒泡的数据
-        unBubble: [],
-        // 默认数据会向上更新
-        update: true,
         // 原型链上的方法
         // proto: {},
         // 初始化完成后触发的事件
@@ -34,7 +30,7 @@ const register = (opts) => {
     // 复制数据
     let attrs = defaults.attrs = defaults.attrs.map(val => propToAttr(val));
     defaults.props = defaults.props.map(val => propToAttr(val));
-    defaults.unBubble = defaults.unBubble.map(val => propToAttr(val));
+    // defaults.unBubble = defaults.unBubble.map(val => propToAttr(val));
     defaults.data = cloneObject(defaults.data);
     defaults.watch = Object.assign({}, defaults.watch);
 
@@ -66,7 +62,7 @@ const register = (opts) => {
         constructor() {
             super();
             renderEle(this, defaults);
-            defaults.inited && defaults.inited.call(this);
+            defaults.inited && defaults.inited.call(createXhearEle(this)[PROXYTHIS]);
 
             Object.defineProperties(this, {
                 [RUNARRAY]: {
@@ -80,14 +76,14 @@ const register = (opts) => {
             if (this[RUNARRAY]) {
                 return;
             }
-            defaults.attached && defaults.attached.call(this);
+            defaults.attached && defaults.attached.call(createXhearEle(this)[PROXYTHIS]);
         }
 
         disconnectedCallback() {
             if (this[RUNARRAY]) {
                 return;
             }
-            defaults.detached && defaults.detached.call(this);
+            defaults.detached && defaults.detached.call(createXhearEle(this)[PROXYTHIS]);
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
@@ -166,7 +162,7 @@ const renderEle = (ele, defaults) => {
         // Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
         let tarKey = tar.getAttribute('xv-tar');
         Object.defineProperty(xhearEle, "$" + tarKey, {
-            value: createXhearEle(tar)
+            get: () => createXhearEle(tar)
         });
     });
 
@@ -185,6 +181,9 @@ const renderEle = (ele, defaults) => {
             textnode.textContent = xhearEle[xvkey]
         );
     });
+
+    // :attribute对子元素属性修正方法
+
 
     // 需要跳过的元素列表
     let xvModelJump = new Set();
@@ -234,7 +233,7 @@ const renderEle = (ele, defaults) => {
                                 xhearEle.setData(modelKey, checked);
                             });
                         }
-                        break;
+                        return;
                     case "radio":
                         let allRadios = queAllToArray(sroot, `input[type="radio"][xv-model="${modelKey}"]`);
 
@@ -248,9 +247,9 @@ const renderEle = (ele, defaults) => {
                                 }
                             });
                         });
-                        break;
+                        return;
                 }
-                break;
+            // 其他input 类型继续往下走
             case "textarea":
                 xhearEle.watch(modelKey, (e, val) => {
                     ele.value = val;

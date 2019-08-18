@@ -191,12 +191,11 @@
     };
 
     /**
-     * 触发事件
-     * 不会触发冒泡
-     * @param {String|XEvent} eventName 触发的事件名
-     * @param {Object} emitData 触发事件的自定义数据
+     * 转换为事件对象
+     * @param {String|XEvent} eventName 事件对象或事件名
+     * @param {Object} _this 目标元素
      */
-    const emitHandler = (eventName, emitData, _this) => {
+    const transToEvent = (eventName, _this) => {
         let event;
         // 不是实例对象的话，重新生成
         if (!(eventName instanceof XEvent)) {
@@ -208,55 +207,6 @@
             event = eventName;
             eventName = event.type;
         }
-
-        let evesArr = getEventsArr(eventName, _this);
-
-        // 需要去除的事件对象
-        let needRmove = [];
-
-        // 修正currentTarget
-        event.currentTarget = _this[PROXYTHIS] || _this;
-
-        // 触发callback函数
-        evesArr.some(e => {
-            e.data && (event.data = e.data);
-            e.eventId && (event.eventId = e.eventId);
-
-            // 中转确认对象
-            let middleObj = {
-                self: _this,
-                event,
-                emitData
-            };
-
-            let isRun = e.before ? e.before(middleObj) : 1;
-
-            isRun && e.callback.call(_this[PROXYTHIS] || _this, event, emitData);
-
-            e.after && e.after(middleObj);
-
-            delete event.data;
-            delete event.eventId;
-
-            e.count--;
-
-            if (!e.count) {
-                needRmove.push(e);
-            }
-
-            if (event.cancel) {
-                return true;
-            }
-        });
-
-        delete event.currentTarget;
-
-        // 去除count为0的事件记录对象
-        needRmove.forEach(e => {
-            let id = evesArr.indexOf(e);
-            (id > -1) && evesArr.splice(id, 1);
-        });
-
         return event;
     }
 
@@ -395,7 +345,58 @@
          * @param {Object} emitData 触发事件的自定义数据
          */
         emitHandler(eventName, emitData) {
-            emitHandler(eventName, emitData, this);
+            let event = transToEvent(eventName, this);
+            eventName = event.type;
+
+            let evesArr = getEventsArr(eventName, this);
+
+            // 需要去除的事件对象
+            let needRmove = [];
+
+            // 修正currentTarget
+            event.currentTarget = this[PROXYTHIS] || this;
+
+            // 触发callback函数
+            evesArr.some(e => {
+                e.data && (event.data = e.data);
+                e.eventId && (event.eventId = e.eventId);
+
+                // 中转确认对象
+                let middleObj = {
+                    self: this,
+                    event,
+                    emitData
+                };
+
+                let isRun = e.before ? e.before(middleObj) : 1;
+
+                isRun && e.callback.call(this[PROXYTHIS] || this, event, emitData);
+
+                e.after && e.after(middleObj);
+
+                delete event.data;
+                delete event.eventId;
+
+                e.count--;
+
+                if (!e.count) {
+                    needRmove.push(e);
+                }
+
+                if (event.cancel) {
+                    return true;
+                }
+            });
+
+            delete event.currentTarget;
+
+            // 去除count为0的事件记录对象
+            needRmove.forEach(e => {
+                let id = evesArr.indexOf(e);
+                (id > -1) && evesArr.splice(id, 1);
+            });
+
+            return event;
         }
 
         /**
@@ -405,7 +406,7 @@
          * @param {Object} emitData 触发事件的自定义数据
          */
         emit(eventName, emitData) {
-            let event = emitHandler(eventName, emitData, this);
+            let event = this.emitHandler(eventName, emitData);
 
             // 判断父层并冒泡
             if (event.bubble && !event.cancel) {
@@ -791,6 +792,27 @@
 
         clone() {
             return createXData(cloneObject(this))[PROXYTHIS];
+        }
+
+        // 在emitHandler后做中间件
+        emitHandler(eventName, emitData) {
+            let event = transToEvent(eventName, this);
+
+            // 过滤unBubble和update的数据
+            if (event.type === "update") {
+                let {
+                    _unBubble,
+                    _update
+                } = this;
+                if (_update === false || (_unBubble && _unBubble.includes(event.trend.fromKey))) {
+                    event.bubble = false;
+                    return event;
+                }
+            }
+
+            XEmiter.prototype.emitHandler.call(this, event, emitData);
+
+            return event;
         }
 
         /**
@@ -2455,10 +2477,6 @@
             data: {},
             // 直接监听属性变动对象
             watch: {},
-            // 不冒泡的数据
-            unBubble: [],
-            // 默认数据会向上更新
-            update: true,
             // 原型链上的方法
             // proto: {},
             // 初始化完成后触发的事件
@@ -2473,7 +2491,7 @@
         // 复制数据
         let attrs = defaults.attrs = defaults.attrs.map(val => propToAttr(val));
         defaults.props = defaults.props.map(val => propToAttr(val));
-        defaults.unBubble = defaults.unBubble.map(val => propToAttr(val));
+        // defaults.unBubble = defaults.unBubble.map(val => propToAttr(val));
         defaults.data = cloneObject(defaults.data);
         defaults.watch = Object.assign({}, defaults.watch);
 
@@ -2505,7 +2523,7 @@
             constructor() {
                 super();
                 renderEle(this, defaults);
-                defaults.inited && defaults.inited.call(this);
+                defaults.inited && defaults.inited.call(createXhearEle(this)[PROXYTHIS]);
 
                 Object.defineProperties(this, {
                     [RUNARRAY]: {
@@ -2519,14 +2537,14 @@
                 if (this[RUNARRAY]) {
                     return;
                 }
-                defaults.attached && defaults.attached.call(this);
+                defaults.attached && defaults.attached.call(createXhearEle(this)[PROXYTHIS]);
             }
 
             disconnectedCallback() {
                 if (this[RUNARRAY]) {
                     return;
                 }
-                defaults.detached && defaults.detached.call(this);
+                defaults.detached && defaults.detached.call(createXhearEle(this)[PROXYTHIS]);
             }
 
             attributeChangedCallback(name, oldValue, newValue) {
@@ -2607,7 +2625,7 @@
             // Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
             let tarKey = tar.getAttribute('xv-tar');
             Object.defineProperty(xhearEle, "$" + tarKey, {
-                value: createXhearEle(tar)
+                get: () => createXhearEle(tar)
             });
         });
 
@@ -2626,6 +2644,9 @@
                 textnode.textContent = xhearEle[xvkey]
             );
         });
+
+        // :attribute对子元素属性修正方法
+
 
         // 需要跳过的元素列表
         let xvModelJump = new Set();
@@ -2680,7 +2701,7 @@
                                     xhearEle.setData(modelKey, checked);
                                 });
                             }
-                            break;
+                            return;
                         case "radio":
                             let allRadios = queAllToArray(sroot, `input[type="radio"][xv-model="${modelKey}"]`);
 
@@ -2694,38 +2715,38 @@
                                     }
                                 });
                             });
-                            break;
+                            return;
                     }
-                    break;
-                case "textarea":
-                    xhearEle.watch(modelKey, (e, val) => {
-                        ele.value = val;
-                    });
-                    ele.addEventListener("input", e => {
-                        xhearEle.setData(modelKey, ele.value);
-                    });
-                    break;
-                case "select":
-                    xhearEle.watch(modelKey, (e, val) => {
-                        ele.value = val;
-                    });
-                    ele.addEventListener("change", e => {
-                        xhearEle.setData(modelKey, ele.value);
-                    });
-                    break;
-                default:
-                    // 自定义组件
-                    if (ele.xvele) {
-                        let cEle = ele.__xhear__;
-                        cEle.watch("value", (e, val) => {
-                            xhearEle.setData(modelKey, val);
-                        });
+                    // 其他input 类型继续往下走
+                    case "textarea":
                         xhearEle.watch(modelKey, (e, val) => {
-                            cEle.setData("value", val);
+                            ele.value = val;
                         });
-                    } else {
-                        console.warn(`can't xv-model with thie element => `, ele);
-                    }
+                        ele.addEventListener("input", e => {
+                            xhearEle.setData(modelKey, ele.value);
+                        });
+                        break;
+                    case "select":
+                        xhearEle.watch(modelKey, (e, val) => {
+                            ele.value = val;
+                        });
+                        ele.addEventListener("change", e => {
+                            xhearEle.setData(modelKey, ele.value);
+                        });
+                        break;
+                    default:
+                        // 自定义组件
+                        if (ele.xvele) {
+                            let cEle = ele.__xhear__;
+                            cEle.watch("value", (e, val) => {
+                                xhearEle.setData(modelKey, val);
+                            });
+                            xhearEle.watch(modelKey, (e, val) => {
+                                cEle.setData("value", val);
+                            });
+                        } else {
+                            console.warn(`can't xv-model with thie element => `, ele);
+                        }
             }
         });
         xvModelJump.clear();
