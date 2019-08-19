@@ -57,6 +57,9 @@ class XhearEle extends XData {
 
     get parent() {
         let { parentNode } = this.ele;
+        if (parentNode instanceof DocumentFragment) {
+            return;
+        }
         return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode);
     }
 
@@ -138,11 +141,11 @@ class XhearEle extends XData {
     }
 
     get text() {
-        return this.ele.innerText;
+        return this.ele.textContent;
     }
 
     set text(val) {
-        this.ele.innerText = val;
+        this.ele.textContent = val;
     }
 
     get html() {
@@ -318,14 +321,7 @@ class XhearEle extends XData {
 
     attr(key, value) {
         if (!isUndefined(value)) {
-            if (this.xvRender) {
-                let regTagData = regDatabase.get(this.tag);
-                if (regTagData.attrs.includes(key)) {
-                    this[key] = value;
-                }
-            } else {
-                this.ele.setAttribute(key, value);
-            }
+            this.ele.setAttribute(key, value);
         } else if (key instanceof Object) {
             Object.keys(key).forEach(k => {
                 this.attr(k, key[k]);
@@ -348,10 +344,7 @@ class XhearEle extends XData {
     }
 
     queAll(expr) {
-        let tars = this.ele.querySelectorAll(expr);
-        if (tars) {
-            return Array.from(tars).map(tar => createXhearEle(tar));
-        }
+        return queAllToArray(this.ele, expr).map(tar => createXhearEle(tar));
     }
 
     queShadow(expr) {
@@ -372,10 +365,7 @@ class XhearEle extends XData {
     queAllShadow(expr) {
         let { shadowRoot } = this.ele;
         if (shadowRoot) {
-            let tars = shadowRoot.querySelectorAll(expr);
-            if (tars) {
-                return Array.from(tars).map(tar => createXhearEle(tar));
-            }
+            return queAllToArray(shadowRoot, expr).map(tar => createXhearEle(tar));
         } else {
             throw {
                 target: this,
@@ -384,5 +374,3 @@ class XhearEle extends XData {
         }
     }
 }
-
-window.XhearEle = XhearEle;

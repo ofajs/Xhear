@@ -3,6 +3,8 @@ const regDatabase = new Map();
 
 const RUNARRAY = Symbol("runArray");
 
+const ATTRBINDINGKEY = "attr" + getRandomId();
+
 const register = (opts) => {
     let defaults = {
         // 自定义标签名
@@ -53,6 +55,40 @@ const register = (opts) => {
                 temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
             }
         });
+
+        // 正则匹配 :attribute上的值
+        // let elestr = temp.match(/<.+?>/g);
+        // elestr.forEach(str => {
+
+        // });
+
+        // debugger
+
+        // let fakeEle = document.createElement("div");
+        // fakeEle.innerHTML = temp;
+
+        // // 转换:attr上的值
+        // queAllToArray(fakeEle, "*").forEach(ele => {
+        //     let attrbs = Array.from(ele.attributes);
+        //     let bindStr = "";
+        //     attrbs.forEach(obj => {
+        //         let {
+        //             name, value
+        //         } = obj;
+
+        //         let matchArr = /^:(.+)/.exec(name);
+        //         if (matchArr) {
+        //             let bindAttrName = matchArr[1];
+        //             bindStr += `${bindAttrName} ${value},`;
+        //             ele.removeAttribute(name);
+        //         }
+        //     });
+        //     if (bindStr) {
+        //         ele.setAttribute(ATTRBINDINGKEY, bindStr.slice(0, -1));
+        //     }
+        // });
+
+        // defaults.temp = fakeEle.innerHTML;
 
         defaults.temp = temp;
     }
@@ -106,11 +142,6 @@ const register = (opts) => {
     regDatabase.set(defaults.tag, defaults);
 
     customElements.define(tag, XhearElement);
-}
-
-const queAllToArray = (target, expr) => {
-    let tars = target.querySelectorAll(expr);
-    return tars ? Array.from(tars) : [];
 }
 
 const renderEle = (ele, defaults) => {
@@ -177,13 +208,62 @@ const renderEle = (ele, defaults) => {
         var xvkey = e.getAttribute('xvkey');
 
         // 先设置值，后监听
-        xhearEle.watch(xvkey, e =>
-            textnode.textContent = xhearEle[xvkey]
-        );
+        xhearEle.watch(xvkey, (e, val) => textnode.textContent = val);
     });
 
     // :attribute对子元素属性修正方法
+    queAllToArray(sroot, "*").forEach(ele => {
+        let attrbs = Array.from(ele.attributes);
+        attrbs.forEach(obj => {
+            let {
+                name, value
+            } = obj;
+            let prop = value;
 
+            let matchArr = /^:(.+)/.exec(name);
+            if (matchArr) {
+                let attr = matchArr[1];
+
+                let watchCall;
+                if (ele.xvele) {
+                    watchCall = (e, val) => {
+                        if (val instanceof XhearEle) {
+                            val = val.Object;
+                        }
+                        createXhearEle(ele).setData(attr, val);
+                    }
+                } else {
+                    watchCall = (e, val) => ele.setAttribute(attr, val);
+                }
+                xhearEle.watch(prop, watchCall)
+            }
+        });
+    });
+
+    // queAllToArray(sroot, `[${ATTRBINDINGKEY}]`).forEach(tarEle => {
+    //     let v = tarEle.getAttribute(ATTRBINDINGKEY);
+
+    //     // 分组拆分
+    //     if (v) {
+    //         v.split(",").forEach(str => {
+    //             let [attr, prop] = str.split(" ");
+    //             let watchCall;
+    //             if (tarEle.xvele) {
+    //                 watchCall = (e, val) => {
+    //                     if (val instanceof XhearEle) {
+    //                         val = val.Object;
+    //                     }
+    //                     createXhearEle(tarEle).setData(attr, val);
+    //                 }
+    //             } else {
+    //                 watchCall = (e, val) => tarEle.setAttribute(attr, val);
+    //             }
+    //             xhearEle.watch(prop, watchCall)
+    //         });
+
+    //         tarEle.removeAttribute(ATTRBINDINGKEY);
+    //     }
+    // });
 
     // 需要跳过的元素列表
     let xvModelJump = new Set();
@@ -240,7 +320,7 @@ const renderEle = (ele, defaults) => {
                         let rid = getRandomId();
 
                         allRadios.forEach(radioEle => {
-                            radioEle.setAttribute("name", `radio_${rid}_${modelKey}`);
+                            radioEle.setAttribute("name", `radio_${modelKey}_${rid}`);
                             radioEle.addEventListener("change", e => {
                                 if (radioEle.checked) {
                                     xhearEle.setData(modelKey, radioEle.value);

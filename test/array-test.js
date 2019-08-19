@@ -13,7 +13,7 @@
     tester.ok(testEle[1].text == "2.5", "arrar_test[1] ok");
     tester.ok(testEle.length == 4, "splice ok");
 
-    setTimeout(() => {
+    $.nextTick(() => {
         // 替换
         testEle[3] = {
             tag: "div",
@@ -34,5 +34,5 @@
         tester.ok(parseInt(testEle[1].text) == 2, "sort value ok 2");
         tester.ok(parseFloat(testEle[2].text) == 2.5, "sort value ok 3");
         tester.ok(parseFloat(testEle[3].text) == 3.5, "sort value ok 4");
-    }, 300);
+    });
 })();

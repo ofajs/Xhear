@@ -27,7 +27,9 @@
     }
 
     Object.assign($, {
-        register
+        register,
+        nextTick,
+        xdata: obj => createXData(obj)
     });
 
     glo.$ = $;

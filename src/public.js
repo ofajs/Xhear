@@ -89,3 +89,13 @@ const parseToDom = (expr) => {
     }
     return ele;
 }
+
+/**
+ * 查找元素内相匹配的元素，并以数组形式返回
+ * @param {Element} target 目标节点
+ * @param {String} expr 表达字符串
+ */
+const queAllToArray = (target, expr) => {
+    let tars = target.querySelectorAll(expr);
+    return tars ? Array.from(tars) : [];
+}
