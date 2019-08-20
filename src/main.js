@@ -373,4 +373,78 @@ class XhearEle extends XData {
             };
         }
     }
+
+    // 根据xv-vd生成xdata实例
+    viewData() {
+        let xdata = createXData({});
+
+        // 获取所有toData元素
+        this.queAll('[xv-vd]').forEach(xele => {
+            // 获取vd内容
+            let vdvalue = xele.attr('xv-vd');
+
+            if (xele.xvele) {
+                let syncObj = {};
+
+                if (/ to /.test(vdvalue)) {
+                    // 获取分组
+                    let vGroup = vdvalue.split(",");
+                    vGroup.forEach(g => {
+                        // 拆分 to 两边的值
+                        let toGroup = g.split("to");
+                        if (toGroup.length == 2) {
+                            let key = toGroup[0].trim();
+                            let toKey = toGroup[1].trim();
+                            xdata[toKey] = xele[key];
+                            syncObj[toKey] = key;
+                        }
+                    });
+                } else {
+                    vdvalue = vdvalue.trim();
+                    // 设置同步数据
+                    xdata[vdvalue] = xele.value;
+                    syncObj[vdvalue] = "value";
+                }
+
+                // 数据同步
+                xdata.sync(xele, syncObj);
+            } else {
+                // 普通元素
+                let {
+                    ele
+                } = xele;
+
+                if ('checked' in ele) {
+                    // 设定值
+                    xdata[vd] = ele.checked;
+
+                    // 修正Input
+                    xdata.watch(vd, e => {
+                        ele.checked = xdata[vd];
+                    });
+                    ele.addEventListener("change", e => {
+                        xdata[vd] = ele.checked;
+                    });
+                } else {
+                    // 设定值
+                    xdata[vd] = ele.value;
+
+                    // 修正Input
+                    xdata.watch(vd, e => {
+                        ele.value = xdata[vd];
+                    });
+                    ele.addEventListener("change", e => {
+                        xdata[vd] = ele.value;
+                    });
+                    ele.addEventListener("input", e => {
+                        xdata[vd] = ele.value;
+                    });
+                }
+            }
+
+            xele.removeAttr("xv-vd");
+        });
+
+        return xdata;
+    }
 }

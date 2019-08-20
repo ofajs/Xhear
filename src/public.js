@@ -77,6 +77,7 @@ const parseToDom = (expr) => {
         case "string":
             if (/\<.+\>/.test(expr)) {
                 ele = parseStringToDom(expr);
+                ele = ele[0];
             }
             break;
         case "object":

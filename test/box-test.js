@@ -1,7 +1,7 @@
 (() => {
-    let tester = expect(4, 'normal test');
+    let tester = expect(4, 'box test');
 
-    let boxtar = $('#boxTar');
+    let boxtar = $('#box_test');
 
     tester.ok(boxtar.height == 50, "height ok");
 

@@ -1741,6 +1741,7 @@
             case "string":
                 if (/\<.+\>/.test(expr)) {
                     ele = parseStringToDom(expr);
+                    ele = ele[0];
                 }
                 break;
             case "object":
@@ -2146,6 +2147,80 @@
                 };
             }
         }
+
+        // 根据xv-vd生成xdata实例
+        viewData() {
+            let xdata = createXData({});
+
+            // 获取所有toData元素
+            this.queAll('[xv-vd]').forEach(xele => {
+                // 获取vd内容
+                let vdvalue = xele.attr('xv-vd');
+
+                if (xele.xvele) {
+                    let syncObj = {};
+
+                    if (/ to /.test(vdvalue)) {
+                        // 获取分组
+                        let vGroup = vdvalue.split(",");
+                        vGroup.forEach(g => {
+                            // 拆分 to 两边的值
+                            let toGroup = g.split("to");
+                            if (toGroup.length == 2) {
+                                let key = toGroup[0].trim();
+                                let toKey = toGroup[1].trim();
+                                xdata[toKey] = xele[key];
+                                syncObj[toKey] = key;
+                            }
+                        });
+                    } else {
+                        vdvalue = vdvalue.trim();
+                        // 设置同步数据
+                        xdata[vdvalue] = xele.value;
+                        syncObj[vdvalue] = "value";
+                    }
+
+                    // 数据同步
+                    xdata.sync(xele, syncObj);
+                } else {
+                    // 普通元素
+                    let {
+                        ele
+                    } = xele;
+
+                    if ('checked' in ele) {
+                        // 设定值
+                        xdata[vd] = ele.checked;
+
+                        // 修正Input
+                        xdata.watch(vd, e => {
+                            ele.checked = xdata[vd];
+                        });
+                        ele.addEventListener("change", e => {
+                            xdata[vd] = ele.checked;
+                        });
+                    } else {
+                        // 设定值
+                        xdata[vd] = ele.value;
+
+                        // 修正Input
+                        xdata.watch(vd, e => {
+                            ele.value = xdata[vd];
+                        });
+                        ele.addEventListener("change", e => {
+                            xdata[vd] = ele.value;
+                        });
+                        ele.addEventListener("input", e => {
+                            xdata[vd] = ele.value;
+                        });
+                    }
+                }
+
+                xele.removeAttr("xv-vd");
+            });
+
+            return xdata;
+        }
     }
     Object.defineProperties(XhearEle.prototype, {
         on: {
@@ -2522,40 +2597,6 @@
                 }
             });
 
-            // 正则匹配 :attribute上的值
-            // let elestr = temp.match(/<.+?>/g);
-            // elestr.forEach(str => {
-
-            // });
-
-            // debugger
-
-            // let fakeEle = document.createElement("div");
-            // fakeEle.innerHTML = temp;
-
-            // // 转换:attr上的值
-            // queAllToArray(fakeEle, "*").forEach(ele => {
-            //     let attrbs = Array.from(ele.attributes);
-            //     let bindStr = "";
-            //     attrbs.forEach(obj => {
-            //         let {
-            //             name, value
-            //         } = obj;
-
-            //         let matchArr = /^:(.+)/.exec(name);
-            //         if (matchArr) {
-            //             let bindAttrName = matchArr[1];
-            //             bindStr += `${bindAttrName} ${value},`;
-            //             ele.removeAttribute(name);
-            //         }
-            //     });
-            //     if (bindStr) {
-            //         ele.setAttribute(ATTRBINDINGKEY, bindStr.slice(0, -1));
-            //     }
-            // });
-
-            // defaults.temp = fakeEle.innerHTML;
-
             defaults.temp = temp;
         }
 
@@ -2708,31 +2749,6 @@
                 }
             });
         });
-
-        // queAllToArray(sroot, `[${ATTRBINDINGKEY}]`).forEach(tarEle => {
-        //     let v = tarEle.getAttribute(ATTRBINDINGKEY);
-
-        //     // 分组拆分
-        //     if (v) {
-        //         v.split(",").forEach(str => {
-        //             let [attr, prop] = str.split(" ");
-        //             let watchCall;
-        //             if (tarEle.xvele) {
-        //                 watchCall = (e, val) => {
-        //                     if (val instanceof XhearEle) {
-        //                         val = val.Object;
-        //                     }
-        //                     createXhearEle(tarEle).setData(attr, val);
-        //                 }
-        //             } else {
-        //                 watchCall = (e, val) => tarEle.setAttribute(attr, val);
-        //             }
-        //             xhearEle.watch(prop, watchCall)
-        //         });
-
-        //         tarEle.removeAttribute(ATTRBINDINGKEY);
-        //     }
-        // });
 
         // 需要跳过的元素列表
         let xvModelJump = new Set();

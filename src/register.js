@@ -56,40 +56,6 @@ const register = (opts) => {
             }
         });
 
-        // 正则匹配 :attribute上的值
-        // let elestr = temp.match(/<.+?>/g);
-        // elestr.forEach(str => {
-
-        // });
-
-        // debugger
-
-        // let fakeEle = document.createElement("div");
-        // fakeEle.innerHTML = temp;
-
-        // // 转换:attr上的值
-        // queAllToArray(fakeEle, "*").forEach(ele => {
-        //     let attrbs = Array.from(ele.attributes);
-        //     let bindStr = "";
-        //     attrbs.forEach(obj => {
-        //         let {
-        //             name, value
-        //         } = obj;
-
-        //         let matchArr = /^:(.+)/.exec(name);
-        //         if (matchArr) {
-        //             let bindAttrName = matchArr[1];
-        //             bindStr += `${bindAttrName} ${value},`;
-        //             ele.removeAttribute(name);
-        //         }
-        //     });
-        //     if (bindStr) {
-        //         ele.setAttribute(ATTRBINDINGKEY, bindStr.slice(0, -1));
-        //     }
-        // });
-
-        // defaults.temp = fakeEle.innerHTML;
-
         defaults.temp = temp;
     }
 
@@ -239,31 +205,6 @@ const renderEle = (ele, defaults) => {
             }
         });
     });
-
-    // queAllToArray(sroot, `[${ATTRBINDINGKEY}]`).forEach(tarEle => {
-    //     let v = tarEle.getAttribute(ATTRBINDINGKEY);
-
-    //     // 分组拆分
-    //     if (v) {
-    //         v.split(",").forEach(str => {
-    //             let [attr, prop] = str.split(" ");
-    //             let watchCall;
-    //             if (tarEle.xvele) {
-    //                 watchCall = (e, val) => {
-    //                     if (val instanceof XhearEle) {
-    //                         val = val.Object;
-    //                     }
-    //                     createXhearEle(tarEle).setData(attr, val);
-    //                 }
-    //             } else {
-    //                 watchCall = (e, val) => tarEle.setAttribute(attr, val);
-    //             }
-    //             xhearEle.watch(prop, watchCall)
-    //         });
-
-    //         tarEle.removeAttribute(ATTRBINDINGKEY);
-    //     }
-    // });
 
     // 需要跳过的元素列表
     let xvModelJump = new Set();

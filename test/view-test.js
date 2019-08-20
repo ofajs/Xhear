@@ -1,11 +1,11 @@
 (() => {
-    let tester = expect(3, 'view test');
+    let tester = expect(4, 'view test');
 
-    let main2 = $('#main2');
+    let testEle = $('#view_test');
 
     // 注册两个自定义元素
     $.register({
-        tag: "a1",
+        tag: "a-one",
         data: {
             value: "I am a1"
         },
@@ -17,7 +17,7 @@
     });
 
     $.register({
-        tag: "a2",
+        tag: "a-two",
         data: {
             x: "100",
             y: "200"
@@ -33,9 +33,15 @@
     });
 
     // 创建viewData
-    let vData = main2.viewData();
+    let vData = testEle.viewData();
 
     tester.ok(vData.a1 == "I am a1", "vData ok 1");
     tester.ok(vData.a2X == 300, "vData ok 2");
     tester.ok(vData.a2Y == 200, "vData ok 3");
+
+    // 后续变动
+    $("a-two").y = 400;
+    $.nextTick(() => {
+        tester.ok(vData.a2Y == 400, "vData ok 4");
+    });
 })();
