@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(8, 'register test');
+    let tester = expect(10, 'register test');
 
     let testEle = $("#register_test");
 
@@ -38,7 +38,7 @@
         temp: `
         <div xv-tar="mtitle">reg-ele-title -- {{titleName}}</div>
         <img :src="tarimg" :width="imgwidth" :height="imgheight" />
-        <reg-sub-ele xv-tar="sub1" :itext="titleName" :icolor="color"></reg-sub-ele>
+        <reg-sub-ele xv-tar="sub1" :#itext="titleName" :icolor="color"></reg-sub-ele>
         <reg-sub-ele xv-tar="sub2"></reg-sub-ele>
         <slot></slot>
         `,
@@ -77,12 +77,22 @@
 
     let regele = $("reg-ele");
 
-    $.nextTick(() => {
+    setTimeout(() => {
         tester.ok(regele.getTitle() === "reg-ele-title -- default", "getTitle ok");
         tester.ok(regele.titletext === "reg-ele-title -- default", "titletext ok");
-        tester.ok(regele.$sub2.icolor != regele.color, "no binding color ok");
-        tester.ok(regele.$sub2.itext != regele.titleName, "no ƒbinding titleName ok");
         tester.ok(regele.$sub1.icolor === regele.color, "binding color ok");
         tester.ok(regele.$sub1.itext === regele.titleName, "binding titleName ok");
-    });
+        tester.ok(regele.$sub2.icolor != regele.color, "no binding color ok");
+        tester.ok(regele.$sub2.itext != regele.titleName, "no binding titleName ok");
+
+        // :attr 单向绑定的数据，只能父组件传给子组件
+        regele.color = "#aabbcc";
+
+        // :#attr 双向绑定的数据，子组件也能传给父组件
+        regele.$sub1.itext = "change itext";
+        setTimeout(() => {
+            tester.ok(regele.$sub1.icolor == "#aabbcc", ':attr binding change ok');
+            tester.ok(regele.titleName == "change itext", ':#attr binding change ok');
+        }, 300);
+    }, 300);
 })();

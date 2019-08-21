@@ -115,30 +115,7 @@ const renderEle = (ele, defaults) => {
     let xhearEle = createXhearEle(ele);
 
     // 合并 proto
-    let {
-        proto
-    } = defaults;
-    if (proto) {
-        Object.keys(proto).forEach(k => {
-            // 获取描述
-            let {
-                get,
-                set,
-                value
-            } = Object.getOwnPropertyDescriptor(proto, k);
-
-            if (value) {
-                Object.defineProperty(xhearEle, k, {
-                    value
-                });
-            } else {
-                Object.defineProperty(xhearEle, k, {
-                    get,
-                    set
-                });
-            }
-        });
-    }
+    defaults.proto && xhearEle.extend(defaults.proto);
 
     // 设置值
     Object.defineProperty(ele, "xvele", {
@@ -190,6 +167,13 @@ const renderEle = (ele, defaults) => {
             if (matchArr) {
                 let attr = matchArr[1];
 
+                // 判断是否双向绑定
+                let isEachBinding = /^#(.+)/.exec(attr);
+                if (isEachBinding) {
+                    attr = isEachBinding[1];
+                    isEachBinding = !!isEachBinding;
+                }
+
                 let watchCall;
                 if (ele.xvele) {
                     watchCall = (e, val) => {
@@ -197,6 +181,13 @@ const renderEle = (ele, defaults) => {
                             val = val.Object;
                         }
                         createXhearEle(ele).setData(attr, val);
+                    }
+
+                    // 双向绑定
+                    if (isEachBinding) {
+                        createXhearEle(ele).watch(attr, (e, val) => {
+                            xhearEle.setData(prop, val);
+                        });
                     }
                 } else {
                     watchCall = (e, val) => ele.setAttribute(attr, val);

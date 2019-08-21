@@ -1,6 +1,7 @@
 {
   "name": "Xhear.js",
   "version": "5.0.0",
+  "versionCode": 5000000,
   "description": "a web components solution",
   "scripts": {
     "watch": "node scripts/watch.js"

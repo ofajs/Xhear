@@ -447,4 +447,26 @@ class XhearEle extends XData {
 
         return xdata;
     }
+    extend(proto) {
+        Object.keys(proto).forEach(k => {
+            // 获取描述
+            let {
+                get,
+                set,
+                value
+            } = Object.getOwnPropertyDescriptor(proto, k);
+
+            if (value) {
+                Object.defineProperty(this, k, {
+                    value
+                });
+            } else {
+                Object.defineProperty(this, k, {
+                    get,
+                    set
+                });
+            }
+        });
+        return this;
+    }
 }

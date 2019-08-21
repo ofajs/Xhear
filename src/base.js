@@ -29,7 +29,9 @@
     Object.assign($, {
         register,
         nextTick,
-        xdata: obj => createXData(obj)
+        xdata: obj => createXData(obj),
+        versinCode: 5000000,
+        fn: XhearEle.prototype
     });
 
     glo.$ = $;
