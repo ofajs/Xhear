@@ -31,7 +31,7 @@
         nextTick,
         xdata: obj => createXData(obj),
         versinCode: 5000000,
-        fn: XhearEle.prototype
+        fn: XhearEleFn
     });
 
     glo.$ = $;

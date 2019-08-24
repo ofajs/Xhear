@@ -470,3 +470,5 @@ class XhearEle extends XData {
         return this;
     }
 }
+
+const XhearEleFn = XhearEle.prototype;

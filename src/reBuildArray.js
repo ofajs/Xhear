@@ -2,7 +2,7 @@
 ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
     let arrayFnFunc = Array.prototype[methodName];
     if (arrayFnFunc) {
-        Object.defineProperty(XhearEle.prototype, methodName, {
+        Object.defineProperty(XhearEleFn, methodName, {
             value(...args) {
                 return arrayFnFunc.apply(Array.from(this.ele.children).map(e => createXhearEle(e)[PROXYTHIS]), args);
             }
@@ -77,77 +77,63 @@ const sortByArray = (t, arr) => {
 }
 
 // 重置所有数组方法
-Object.defineProperties(XhearEle.prototype, {
-    push: {
-        // push就是最原始的appendChild，干脆直接appencChild
-        value(...items) {
-            let fragment = document.createDocumentFragment();
-            items.forEach(item => {
-                let ele = parseToDom(item);
-                fragment.appendChild(ele);
+XhearEleFn.extend({
+    // push就是最原始的appendChild，干脆直接appencChild
+    push(...items) {
+        let fragment = document.createDocumentFragment();
+        items.forEach(item => {
+            let ele = parseToDom(item);
+            fragment.appendChild(ele);
+        });
+        this.ele.appendChild(fragment);
+        emitUpdate(this[XDATASELF], "push", items);
+        return this.length;
+    },
+    splice(index, howmany, ...items) {
+        return XhearEleProtoSplice(this, index, howmany, items);
+    },
+    unshift(...items) {
+        XhearEleProtoSplice(this, 0, 0, items);
+        return this.length;
+    },
+    shift() {
+        return XhearEleProtoSplice(this, 0, 1);
+    },
+    pop() {
+        return XhearEleProtoSplice(this, this.length - 1, 1);
+    },
+    reverse() {
+        let childs = Array.from(this.ele.children);
+        let len = childs.length;
+        sortByArray(this, childs.map((e, i) => len - 1 - i));
+        emitUpdate(this[XDATASELF], "reverse", []);
+    },
+    sort(arg) {
+        if (isFunction(arg)) {
+            // 新生成数组
+            let fake_this = Array.from(this.ele.children).map(e => createXhearEle(e));
+            let backup_fake_this = Array.from(fake_this);
+
+            // 执行排序函数
+            fake_this.sort(arg);
+
+            // 记录顺序
+            arg = [];
+            let putId = getRandomId();
+
+            fake_this.forEach(e => {
+                let id = backup_fake_this.indexOf(e);
+                // 防止查到重复值，所以查到过的就清空覆盖
+                backup_fake_this[id] = putId;
+                arg.push(id);
             });
-            this.ele.appendChild(fragment);
-            emitUpdate(this[XDATASELF], "push", items);
-            return this.length;
         }
-    },
-    splice: {
-        value(index, howmany, ...items) {
-            return XhearEleProtoSplice(this, index, howmany, items);
-        }
-    },
-    unshift: {
-        value(...items) {
-            XhearEleProtoSplice(this, 0, 0, items);
-            return this.length;
-        }
-    },
-    shift: {
-        value() {
-            return XhearEleProtoSplice(this, 0, 1);
-        }
-    },
-    pop: {
-        value() {
-            return XhearEleProtoSplice(this, this.length - 1, 1);
-        }
-    },
-    reverse: {
-        value() {
-            let childs = Array.from(this.ele.children);
-            let len = childs.length;
-            sortByArray(this, childs.map((e, i) => len - 1 - i));
-            emitUpdate(this[XDATASELF], "reverse", []);
-        }
-    },
-    sort: {
-        value(arg) {
-            if (isFunction(arg)) {
-                // 新生成数组
-                let fake_this = Array.from(this.ele.children).map(e => createXhearEle(e));
-                let backup_fake_this = Array.from(fake_this);
 
-                // 执行排序函数
-                fake_this.sort(arg);
-
-                // 记录顺序
-                arg = [];
-                let putId = getRandomId();
-
-                fake_this.forEach(e => {
-                    let id = backup_fake_this.indexOf(e);
-                    // 防止查到重复值，所以查到过的就清空覆盖
-                    backup_fake_this[id] = putId;
-                    arg.push(id);
-                });
-            }
-
-            if (arg instanceof Array) {
-                // 修正新顺序
-                sortByArray(this, arg);
-            }
-
-            emitUpdate(this[XDATASELF], "sort", [arg]);
+        if (arg instanceof Array) {
+            // 修正新顺序
+            sortByArray(this, arg);
         }
+
+        emitUpdate(this[XDATASELF], "sort", [arg]);
     }
 });
