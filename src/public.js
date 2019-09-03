@@ -36,17 +36,15 @@ const parseDataToDom = (objData) => {
 
     // 添加数据
     objData.class && ele.setAttribute('class', objData.class);
+    objData.slot && ele.setAttribute('slot', objData.slot);
     objData.text && (ele.textContent = objData.text);
-    if (objData.data) {
-        let {
-            data
-        } = objData;
-
-        Object.keys(data).forEach(k => {
-            let val = data[k];
-            ele.dataset[k] = val;
-        });
-    }
+    let {
+        data
+    } = objData;
+    data && Object.keys(data).forEach(k => {
+        let val = data[k];
+        ele.dataset[k] = val;
+    });
 
     if (ele.xvele) {
         let xhearele = createXhearEle(ele);

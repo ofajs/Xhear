@@ -21,7 +21,7 @@ const propToAttr = key => {
 const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
 
 // 不可设置的key
-const UnSetKeys = new Set(["parent", "index"]);
+const UnSetKeys = new Set(["parent", "index", "slot"]);
 
 const XDataSetData = XData.prototype.setData;
 
@@ -198,12 +198,12 @@ class XhearEle extends XData {
         let _this = this[XDATASELF];
 
         // 只有在允许列表里才能进行set操作
-        let canSetKeys = this[CANSETKEYS];
+        let canSetKey = this[CANSETKEYS];
         if (xEleDefaultSetKeys.has(key)) {
             // 直接设置
             _this[key] = value;
             return true;
-        } else if (canSetKeys && canSetKeys.has(key)) {
+        } else if (canSetKey && canSetKey.has(key)) {
             // 直接走xdata的逻辑
             return XDataSetData.call(_this, key, value);
         } else if (!/\D/.test(key)) {

@@ -11,9 +11,8 @@ const register = (opts) => {
         tag: "",
         // 正文内容字符串
         temp: "",
-        // 属性绑定keys
+        // 和attributes绑定的keys
         attrs: [],
-        props: [],
         // 默认数据
         data: {},
         // 直接监听属性变动对象
@@ -31,8 +30,6 @@ const register = (opts) => {
 
     // 复制数据
     let attrs = defaults.attrs = defaults.attrs.map(val => propToAttr(val));
-    defaults.props = defaults.props.map(val => propToAttr(val));
-    // defaults.unBubble = defaults.unBubble.map(val => propToAttr(val));
     defaults.data = cloneObject(defaults.data);
     defaults.watch = Object.assign({}, defaults.watch);
 
@@ -305,10 +302,10 @@ const renderEle = (ele, defaults) => {
     // attrs 上的数据
     defaults.attrs.forEach(attrName => {
         // 获取属性值并设置
-        let attrVal = ele.getAttribute(attrName);
-        if (!isUndefined(attrVal) && attrVal != null) {
-            rData[attrName] = attrVal;
-        }
+        // let attrVal = ele.getAttribute(attrName);
+        // if (!isUndefined(attrVal) && attrVal != null) {
+        //     rData[attrName] = attrVal;
+        // }
 
         // 绑定值
         xhearEle.watch(attrName, d => {
@@ -317,21 +314,38 @@ const renderEle = (ele, defaults) => {
         });
     });
 
-    // props 上的数据
-    defaults.props.forEach(attrName => {
-        let attrVal = ele.getAttribute(attrName);
-        (!isUndefined(attrVal) && attrVal != null) && (rData[attrName] = attrVal);
-    });
-
     // 添加_exkey
     let canSetKey = Object.keys(rData);
     canSetKey.push(...defaults.attrs);
-    canSetKey.push(...defaults.props);
     canSetKey.push(...Object.keys(defaults.watch));
     canSetKey = new Set(canSetKey);
     Object.defineProperty(xhearEle, CANSETKEYS, {
         value: canSetKey
     });
+
+    // 根据attributes抽取值
+    let attributes = Array.from(ele.attributes);
+    if (attributes.length) {
+        attributes.forEach(e => {
+            // 属性在数据列表内，进行rData数据覆盖
+            let { name } = e;
+            if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
+                rData[name] = e.value;
+            }
+        });
+    }
+
+    // 判断是否有value，进行vaule绑定
+    if (canSetKey.has("value")) {
+        Object.defineProperty(ele, "value", {
+            get() {
+                return xhearEle.value;
+            },
+            set(val) {
+                xhearEle.value = val;
+            }
+        });
+    }
 
     // 合并数据后设置
     canSetKey.forEach(k => {
