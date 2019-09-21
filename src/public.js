@@ -98,3 +98,5 @@ const queAllToArray = (target, expr) => {
     let tars = target.querySelectorAll(expr);
     return tars ? Array.from(tars) : [];
 }
+
+const isXhear = (target) => target instanceof XhearEle;

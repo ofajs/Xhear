@@ -197,14 +197,14 @@ class XhearEle extends XData {
 
         let _this = this[XDATASELF];
 
-        if (/^_.+/.test(key)) {
-            Object.defineProperty(this, key, {
-                configurable: true,
-                writable: true,
-                value
-            })
-            return true;
-        }
+        // if (/^_.+/.test(key)) {
+        //     Object.defineProperty(this, key, {
+        //         configurable: true,
+        //         writable: true,
+        //         value
+        //     })
+        //     return true;
+        // }
 
         // 只有在允许列表里才能进行set操作
         let canSetKey = this[CANSETKEYS];
