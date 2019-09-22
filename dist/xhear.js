@@ -1864,9 +1864,6 @@
     }
 
     const isXhear = (target) => target instanceof XhearEle;
-    // 可setData的key
-    const CANSETKEYS = Symbol("cansetkeys");
-    const ORIEVE = Symbol("orignEvents");
 
     // 将 element attribute 横杠转换为大小写模式
     const attrToProp = key => {
@@ -1882,6 +1879,9 @@
         }
         return key;
     }
+    // 可setData的key
+    const CANSETKEYS = Symbol("cansetkeys");
+    const ORIEVE = Symbol("orignEvents");
 
     // 可直接设置的Key
     const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
@@ -2850,6 +2850,7 @@
                     value
                 } = obj;
                 let prop = value;
+                name = attrToProp(name);
 
                 let matchArr = /^:(.+)/.exec(name);
                 if (matchArr) {
@@ -3027,6 +3028,7 @@
                 let {
                     name
                 } = e;
+                name = attrToProp(name);
                 if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
                     rData[name] = e.value;
                 }

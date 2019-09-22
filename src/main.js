@@ -2,21 +2,6 @@
 const CANSETKEYS = Symbol("cansetkeys");
 const ORIEVE = Symbol("orignEvents");
 
-// 将 element attribute 横杠转换为大小写模式
-const attrToProp = key => {
-    // 判断是否有横线
-    if (/\-/.test(key)) {
-        key = key.replace(/\-[\D]/g, (letter) => letter.substr(1).toUpperCase());
-    }
-    return key;
-}
-const propToAttr = key => {
-    if (/[A-Z]/.test(key)) {
-        key = key.replace(/[A-Z]/g, letter => "-" + letter.toLowerCase());
-    }
-    return key;
-}
-
 // 可直接设置的Key
 const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
 
