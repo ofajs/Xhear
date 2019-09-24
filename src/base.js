@@ -29,7 +29,7 @@
     Object.assign($, {
         register,
         nextTick,
-        xdata: obj => createXData(obj),
+        xdata: obj => createXData(obj)[PROXYTHIS],
         versinCode: 5000000,
         fn: XhearEleFn,
         isXhear
