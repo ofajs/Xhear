@@ -5,6 +5,9 @@ const ORIEVE = Symbol("orignEvents");
 // 可直接设置的Key
 const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
 
+// 可直接设置的Key并且能冒泡
+const xEleDefaultSetKeysCanUpdate = new Set(["text", "html"]);
+
 // 不可设置的key
 const UnSetKeys = new Set(["parent", "index", "slot"]);
 
@@ -182,20 +185,19 @@ class XhearEle extends XData {
 
         let _this = this[XDATASELF];
 
-        // if (/^_.+/.test(key)) {
-        //     Object.defineProperty(this, key, {
-        //         configurable: true,
-        //         writable: true,
-        //         value
-        //     })
-        //     return true;
-        // }
-
         // 只有在允许列表里才能进行set操作
         let canSetKey = this[CANSETKEYS];
         if (xEleDefaultSetKeys.has(key)) {
+            let oldVal = _this[key];
+
             // 直接设置
             _this[key] = value;
+
+            if (xEleDefaultSetKeysCanUpdate.has(key)) {
+                emitUpdate(_this, "setData", [key, value], {
+                    oldValue: oldVal
+                });
+            }
             return true;
         } else if ((canSetKey && canSetKey.has(key)) || /^_.+/.test(key)) {
             // 直接走xdata的逻辑
