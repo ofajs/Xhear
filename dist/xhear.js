@@ -677,6 +677,7 @@
                     }
                     _this = _this[k];
                 });
+                return true;
             }
 
             if (getType(key) === "string") {
@@ -707,6 +708,8 @@
                 emitUpdate(_this, "setData", [key, value], {
                     oldValue: oldVal
                 });
+
+                return true;
 
             } else if (key instanceof Object) {
                 let data = key;
@@ -1121,6 +1124,7 @@
                                 callback.call(callSelf, {
                                     expr,
                                     val,
+                                    old: cacheObj.trends[0].args[1],
                                     trends: Array.from(cacheObj.trends)
                                 }, val);
 
@@ -2715,7 +2719,7 @@
             // 原型链上的方法
             // proto: {},
             // 初始化完成后触发的事件
-            // inited() {},
+            // ready() {},
             // 添加进document执行的callback
             // attached() {},
             // 删除后执行的callback
@@ -2731,32 +2735,44 @@
         // 转换tag
         let tag = defaults.tag = propToAttr(defaults.tag);
 
-        if (defaults.temp) {
-            let {
-                temp
-            } = defaults;
+        // if (defaults.temp) {
+        //     let {
+        //         temp
+        //     } = defaults;
 
-            // 去除无用的代码（注释代码）
-            temp = temp.replace(/<!--.+?-->/g, "");
+        //     // 去除无用的代码（注释代码）
+        //     temp = temp.replace(/<!--.+?-->/g, "");
 
-            // 准换自定义字符串数据
-            var textDataArr = temp.match(/{{.+?}}/g);
-            textDataArr && textDataArr.forEach((e) => {
-                var key = /{{(.+?)}}/.exec(e);
-                if (key) {
-                    temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
-                }
-            });
+        //     // 准换自定义字符串数据
+        //     var textDataArr = temp.match(/{{.+?}}/g);
+        //     textDataArr && textDataArr.forEach((e) => {
+        //         var key = /{{(.+?)}}/.exec(e);
+        //         if (key) {
+        //             temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
+        //         }
+        //     });
 
-            defaults.temp = temp;
-        }
+        //     defaults.temp = temp;
+        // }
 
         // 注册自定义元素
         let XhearElement = class extends HTMLElement {
             constructor() {
                 super();
-                renderEle(this, defaults);
-                defaults.inited && defaults.inited.call(createXhearEle(this)[PROXYTHIS]);
+
+                let _xhearThis = createXhearEle(this);
+
+                (async () => {
+                    let options = Object.assign({}, defaults);
+                    if (defaults.created) {
+                        let opts = await defaults.created.call(_xhearThis[PROXYTHIS]);
+                        if (opts) {
+                            Object.assign(options, opts);
+                        }
+                    }
+                    renderEle(this, options);
+                    options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
+                })();
 
                 Object.defineProperties(this, {
                     [RUNARRAY]: {
@@ -2823,8 +2839,24 @@
                 mode: "open"
             });
 
+            let {
+                temp
+            } = defaults;
+
+            // 去除无用的代码（注释代码）
+            temp = temp.replace(/<!--.+?-->/g, "");
+
+            // 准换自定义字符串数据
+            var textDataArr = temp.match(/{{.+?}}/g);
+            textDataArr && textDataArr.forEach((e) => {
+                var key = /{{(.+?)}}/.exec(e);
+                if (key) {
+                    temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
+                }
+            });
+
             // 填充默认内容
-            sroot.innerHTML = defaults.temp;
+            sroot.innerHTML = temp;
 
             // 设置其他 xv-tar
             queAllToArray(sroot, `[xv-tar]`).forEach(tar => {
@@ -3030,25 +3062,23 @@
         });
 
         // 根据attributes抽取值
-        let attributes = Array.from(ele.attributes);
-        if (attributes.length) {
-            attributes.forEach(e => {
-                // 属性在数据列表内，进行rData数据覆盖
-                let {
-                    name
-                } = e;
+        // let attributes = Array.from(ele.attributes);
+        // if (attributes.length) {
+        //     attributes.forEach(e => {
+        //         // 属性在数据列表内，进行rData数据覆盖
+        //         let { name } = e;
 
-                // 下划线的属性不能直接定义
-                if (/^_.*/.test(name)) {
-                    return;
-                }
+        //         // 下划线的属性不能直接定义
+        //         if (/^_.*/.test(name)) {
+        //             return;
+        //         }
 
-                name = attrToProp(name);
-                if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
-                    rData[name] = e.value;
-                }
-            });
-        }
+        //         name = attrToProp(name);
+        //         if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
+        //             rData[name] = e.value;
+        //         }
+        //     });
+        // }
 
         // 判断是否有value，进行vaule绑定
         if (canSetKey.has("value")) {
