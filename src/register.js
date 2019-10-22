@@ -36,26 +36,6 @@ const register = (opts) => {
     // 转换tag
     let tag = defaults.tag = propToAttr(defaults.tag);
 
-    // if (defaults.temp) {
-    //     let {
-    //         temp
-    //     } = defaults;
-
-    //     // 去除无用的代码（注释代码）
-    //     temp = temp.replace(/<!--.+?-->/g, "");
-
-    //     // 准换自定义字符串数据
-    //     var textDataArr = temp.match(/{{.+?}}/g);
-    //     textDataArr && textDataArr.forEach((e) => {
-    //         var key = /{{(.+?)}}/.exec(e);
-    //         if (key) {
-    //             temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
-    //         }
-    //     });
-
-    //     defaults.temp = temp;
-    // }
-
     // 注册自定义元素
     let XhearElement = class extends HTMLElement {
         constructor() {
@@ -63,17 +43,21 @@ const register = (opts) => {
 
             let _xhearThis = createXhearEle(this);
 
-            (async () => {
-                let options = Object.assign({}, defaults);
-                if (defaults.created) {
+            let options = Object.assign({}, defaults);
+
+            if (defaults.created) {
+                $.nextTick(async () => {
                     let opts = await defaults.created.call(_xhearThis[PROXYTHIS]);
                     if (opts) {
                         Object.assign(options, opts);
                     }
-                }
+                    renderEle(this, options);
+                    options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
+                });
+            } else {
                 renderEle(this, options);
                 options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
-            })();
+            }
 
             Object.defineProperties(this, {
                 [RUNARRAY]: {
@@ -134,11 +118,11 @@ const renderEle = (ele, defaults) => {
         value: true
     });
 
-    if (defaults.temp) {
+    let { temp } = defaults;
+
+    if (temp) {
         // 添加shadow root
         let sroot = ele.attachShadow({ mode: "open" });
-
-        let { temp } = defaults;
 
         // 去除无用的代码（注释代码）
         temp = temp.replace(/<!--.+?-->/g, "");
@@ -353,23 +337,23 @@ const renderEle = (ele, defaults) => {
     });
 
     // 根据attributes抽取值
-    // let attributes = Array.from(ele.attributes);
-    // if (attributes.length) {
-    //     attributes.forEach(e => {
-    //         // 属性在数据列表内，进行rData数据覆盖
-    //         let { name } = e;
+    let attributes = Array.from(ele.attributes);
+    if (attributes.length) {
+        attributes.forEach(e => {
+            // 属性在数据列表内，进行rData数据覆盖
+            let { name } = e;
 
-    //         // 下划线的属性不能直接定义
-    //         if (/^_.*/.test(name)) {
-    //             return;
-    //         }
+            // 下划线的属性不能直接定义
+            if (/^_.*/.test(name)) {
+                return;
+            }
 
-    //         name = attrToProp(name);
-    //         if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
-    //             rData[name] = e.value;
-    //         }
-    //     });
-    // }
+            name = attrToProp(name);
+            if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
+                rData[name] = e.value;
+            }
+        });
+    }
 
     // 判断是否有value，进行vaule绑定
     if (canSetKey.has("value")) {
