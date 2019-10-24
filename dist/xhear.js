@@ -2742,21 +2742,44 @@
 
                 let _xhearThis = createXhearEle(this);
 
+                // 设置渲染识别属性
+                Object.defineProperty(this, "xvele", {
+                    value: true
+                });
+                Object.defineProperty(_xhearThis, "xvele", {
+                    value: true
+                });
+
                 let options = Object.assign({}, defaults);
 
-                if (defaults.created) {
-                    $.nextTick(async () => {
-                        let opts = await defaults.created.call(_xhearThis[PROXYTHIS]);
-                        if (opts) {
-                            Object.assign(options, opts);
-                        }
-                        renderEle(this, options);
-                        options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
-                    });
-                } else {
-                    renderEle(this, options);
-                    options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
-                }
+                // if (defaults.created) {
+                //     $.nextTick(async () => {
+                //         let { attributes } = this;
+                //         let attrData = {};
+                //         Array.from(attributes).forEach(e => {
+                //             let name = e.name;
+                //             switch (name) {
+                //                 case "class":
+                //                 case "id":
+                //                     break
+                //                 default:
+                //                     attrData[name] = e.value;
+                //             }
+                //         });
+
+                //         let opts = await defaults.created.call(_xhearThis[PROXYTHIS], {
+                //             data: attrData
+                //         });
+                //         if (opts) {
+                //             Object.assign(options, opts);
+                //         }
+                //         renderEle(this, options);
+                //         options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
+                //     });
+                // } else {
+                renderEle(this, options);
+                options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
+                // }
 
                 Object.defineProperties(this, {
                     [RUNARRAY]: {
@@ -2808,14 +2831,6 @@
 
         // 合并 proto
         defaults.proto && xhearEle.extend(defaults.proto);
-
-        // 设置值
-        Object.defineProperty(ele, "xvele", {
-            value: true
-        });
-        Object.defineProperty(xhearEle, "xvele", {
-            value: true
-        });
 
         let {
             temp
@@ -3023,12 +3038,6 @@
 
         // attrs 上的数据
         defaults.attrs.forEach(attrName => {
-            // 获取属性值并设置
-            // let attrVal = ele.getAttribute(attrName);
-            // if (!isUndefined(attrVal) && attrVal != null) {
-            //     rData[attrName] = attrVal;
-            // }
-
             // 绑定值
             xhearEle.watch(attrName, d => {
                 // 绑定值
@@ -3041,30 +3050,39 @@
         canSetKey.push(...defaults.attrs);
         canSetKey.push(...Object.keys(defaults.watch));
         canSetKey = new Set(canSetKey);
-        Object.defineProperty(xhearEle, CANSETKEYS, {
-            value: canSetKey
+        canSetKey.forEach(k => {
+            // 去除私有属性
+            if (/^_.+/.test(k)) {
+                canSetKey.delete(k);
+            }
         });
+        let ck = xhearEle[CANSETKEYS];
+        if (!ck) {
+            Object.defineProperty(xhearEle, CANSETKEYS, {
+                value: canSetKey
+            });
+        } else {
+            canSetKey.forEach(k => ck.add(k))
+        }
 
         // 根据attributes抽取值
-        let attributes = Array.from(ele.attributes);
-        if (attributes.length) {
-            attributes.forEach(e => {
-                // 属性在数据列表内，进行rData数据覆盖
-                let {
-                    name
-                } = e;
+        // let attributes = Array.from(ele.attributes);
+        // if (attributes.length) {
+        //     attributes.forEach(e => {
+        //         // 属性在数据列表内，进行rData数据覆盖
+        //         let { name } = e;
 
-                // 下划线的属性不能直接定义
-                if (/^_.*/.test(name)) {
-                    return;
-                }
+        //         // 下划线的属性不能直接定义
+        //         if (/^_.*/.test(name)) {
+        //             return;
+        //         }
 
-                name = attrToProp(name);
-                if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
-                    rData[name] = e.value;
-                }
-            });
-        }
+        //         name = attrToProp(name);
+        //         if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
+        //             rData[name] = e.value;
+        //         }
+        //     });
+        // }
 
         // 判断是否有value，进行vaule绑定
         if (canSetKey.has("value")) {
