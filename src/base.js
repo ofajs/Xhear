@@ -26,13 +26,22 @@
         return ele ? createXhearEle(ele)[PROXYTHIS] : null;
     }
 
+    // 扩展函数（只是辅助将内部函数暴露出去而已）
+    const ext = (callback) => {
+        callback({
+            // 渲染shadow的内部方法
+            renderEle
+        });
+    }
+
     Object.assign($, {
         register,
         nextTick,
         xdata: obj => createXData(obj)[PROXYTHIS],
         versinCode: 5000000,
         fn: XhearEleFn,
-        isXhear
+        isXhear,
+        ext
     });
 
     glo.$ = $;
