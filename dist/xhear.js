@@ -1768,16 +1768,30 @@
 
     // business function
     // 判断元素是否符合条件
+    // const meetsEle = (ele, expr) => {
+    //     if (ele === expr) {
+    //         return !0;
+    //     }
+    //     let fadeParent = document.createElement('div');
+    //     if (ele === document) {
+    //         return false;
+    //     }
+    //     fadeParent.appendChild(ele.cloneNode(false));
+    //     return !!fadeParent.querySelector(expr);
+    // }
+
     const meetsEle = (ele, expr) => {
         if (ele === expr) {
             return !0;
         }
-        let fadeParent = document.createElement('div');
         if (ele === document) {
             return false;
         }
-        fadeParent.appendChild(ele.cloneNode(false));
-        return !!fadeParent.querySelector(expr);
+        let tempEle = document.createElement('template');
+        let html = `<${ele.tagName.toLowerCase()} ${Array.from(ele.attributes).map(e => e.name + '="' + e.value + '"').join(" ")} />`
+
+        tempEle.innerHTML = html;
+        return !!tempEle.content.querySelector(expr);
     }
 
     // 转换元素
@@ -1914,10 +1928,11 @@
                     value: this
                 }
             });
+            let tagValue = ele.tagName ? ele.tagName.toLowerCase() : '';
             Object.defineProperties(this, {
                 tag: {
                     enumerable: true,
-                    value: ele.tagName.toLowerCase()
+                    value: tagValue
                 },
                 ele: {
                     value: ele
@@ -2067,6 +2082,13 @@
             });
 
             Object.assign(style, d);
+        }
+
+        get $shadow() {
+            let {
+                shadowRoot
+            } = this.ele;
+            return shadowRoot && createXhearEle(shadowRoot);
         }
 
         setData(key, value) {
@@ -2239,13 +2261,10 @@
 
         queShadow(expr) {
             let {
-                shadowRoot
-            } = this.ele;
-            if (shadowRoot) {
-                let tar = shadowRoot.querySelector(expr);
-                if (tar) {
-                    return createXhearEle(tar);
-                }
+                $shadow
+            } = this;
+            if ($shadow) {
+                return $shadow.que(expr);
             } else {
                 throw {
                     target: this,
@@ -2256,10 +2275,10 @@
 
         queAllShadow(expr) {
             let {
-                shadowRoot
-            } = this.ele;
-            if (shadowRoot) {
-                return queAllToArray(shadowRoot, expr).map(tar => createXhearEle(tar));
+                $shadow
+            } = this;
+            if ($shadow) {
+                return $shadow.queAll(expr);
             } else {
                 throw {
                     target: this,
@@ -2728,7 +2747,7 @@
         Object.assign(defaults, opts);
 
         // 复制数据
-        let attrs = defaults.attrs = defaults.attrs.map(val => propToAttr(val));
+        let attrs = defaults.attrs = defaults.attrs.map(e => attrToProp(e));
         defaults.data = cloneObject(defaults.data);
         defaults.watch = Object.assign({}, defaults.watch);
 
@@ -2805,13 +2824,14 @@
 
             attributeChangedCallback(name, oldValue, newValue) {
                 let xEle = this.__xhear__;
+                name = attrToProp(name);
                 if (newValue != xEle[name]) {
                     xEle[name] = newValue;
                 }
             }
 
             static get observedAttributes() {
-                return attrs;
+                return attrs.map(e => propToAttr(e));
             }
         }
 
@@ -3041,7 +3061,7 @@
             // 绑定值
             xhearEle.watch(attrName, d => {
                 // 绑定值
-                ele.setAttribute(attrName, d.val);
+                ele.setAttribute(propToAttr(attrName), d.val);
             });
         });
 

@@ -1,15 +1,29 @@
 // business function
 // 判断元素是否符合条件
+// const meetsEle = (ele, expr) => {
+//     if (ele === expr) {
+//         return !0;
+//     }
+//     let fadeParent = document.createElement('div');
+//     if (ele === document) {
+//         return false;
+//     }
+//     fadeParent.appendChild(ele.cloneNode(false));
+//     return !!fadeParent.querySelector(expr);
+// }
+
 const meetsEle = (ele, expr) => {
     if (ele === expr) {
         return !0;
     }
-    let fadeParent = document.createElement('div');
     if (ele === document) {
         return false;
     }
-    fadeParent.appendChild(ele.cloneNode(false));
-    return !!fadeParent.querySelector(expr);
+    let tempEle = document.createElement('template');
+    let html = `<${ele.tagName.toLowerCase()} ${Array.from(ele.attributes).map(e => e.name + '="' + e.value + '"').join(" ")} />`
+
+    tempEle.innerHTML = html;
+    return !!tempEle.content.querySelector(expr);
 }
 
 // 转换元素

@@ -29,7 +29,7 @@ const register = (opts) => {
     Object.assign(defaults, opts);
 
     // 复制数据
-    let attrs = defaults.attrs = defaults.attrs.map(val => propToAttr(val));
+    let attrs = defaults.attrs = defaults.attrs.map(e => attrToProp(e));
     defaults.data = cloneObject(defaults.data);
     defaults.watch = Object.assign({}, defaults.watch);
 
@@ -106,13 +106,14 @@ const register = (opts) => {
 
         attributeChangedCallback(name, oldValue, newValue) {
             let xEle = this.__xhear__;
+            name = attrToProp(name);
             if (newValue != xEle[name]) {
                 xEle[name] = newValue;
             }
         }
 
         static get observedAttributes() {
-            return attrs;
+            return attrs.map(e => propToAttr(e));
         }
     }
 
@@ -332,7 +333,7 @@ const renderEle = (ele, defaults) => {
         // 绑定值
         xhearEle.watch(attrName, d => {
             // 绑定值
-            ele.setAttribute(attrName, d.val);
+            ele.setAttribute(propToAttr(attrName), d.val);
         });
     });
 

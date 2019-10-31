@@ -24,10 +24,11 @@ class XhearEle extends XData {
                 value: this
             }
         });
+        let tagValue = ele.tagName ? ele.tagName.toLowerCase() : '';
         Object.defineProperties(this, {
             tag: {
                 enumerable: true,
-                value: ele.tagName.toLowerCase()
+                value: tagValue
             },
             ele: {
                 value: ele
@@ -173,6 +174,11 @@ class XhearEle extends XData {
         });
 
         Object.assign(style, d);
+    }
+
+    get $shadow() {
+        let { shadowRoot } = this.ele;
+        return shadowRoot && createXhearEle(shadowRoot);
     }
 
     setData(key, value) {
@@ -344,12 +350,9 @@ class XhearEle extends XData {
     }
 
     queShadow(expr) {
-        let { shadowRoot } = this.ele;
-        if (shadowRoot) {
-            let tar = shadowRoot.querySelector(expr);
-            if (tar) {
-                return createXhearEle(tar);
-            }
+        let { $shadow } = this;
+        if ($shadow) {
+            return $shadow.que(expr);
         } else {
             throw {
                 target: this,
@@ -359,9 +362,9 @@ class XhearEle extends XData {
     }
 
     queAllShadow(expr) {
-        let { shadowRoot } = this.ele;
-        if (shadowRoot) {
-            return queAllToArray(shadowRoot, expr).map(tar => createXhearEle(tar));
+        let { $shadow } = this;
+        if ($shadow) {
+            return $shadow.queAll(expr);
         } else {
             throw {
                 target: this,
