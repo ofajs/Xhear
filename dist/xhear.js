@@ -1955,7 +1955,7 @@
             if (parentNode instanceof DocumentFragment) {
                 return;
             }
-            return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode);
+            return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode)[PROXYTHIS];
         }
 
         get index() {
@@ -2088,7 +2088,7 @@
             let {
                 shadowRoot
             } = this.ele;
-            return shadowRoot && createXhearEle(shadowRoot);
+            return shadowRoot && createXhearEle(shadowRoot)[PROXYTHIS];
         }
 
         setData(key, value) {
@@ -2151,7 +2151,7 @@
             if (!/\D/.test(key)) {
                 // 纯数字，直接获取children
                 target = _this.ele.children[key];
-                target && (target = createXhearEle(target));
+                target && (target = createXhearEle(target)[PROXYTHIS]);
             } else {
                 target = _this[key];
             }
@@ -2180,7 +2180,7 @@
                 });
             }
 
-            return parChilds.map(e => createXhearEle(e));
+            return parChilds.map(e => createXhearEle(e)[PROXYTHIS]);
         }
 
         empty() {
@@ -2251,12 +2251,12 @@
         que(expr) {
             let tar = this.ele.querySelector(expr);
             if (tar) {
-                return createXhearEle(tar);
+                return createXhearEle(tar)[PROXYTHIS];
             }
         }
 
         queAll(expr) {
-            return queAllToArray(this.ele, expr).map(tar => createXhearEle(tar));
+            return queAllToArray(this.ele, expr).map(tar => createXhearEle(tar)[PROXYTHIS]);
         }
 
         queShadow(expr) {
