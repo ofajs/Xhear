@@ -158,6 +158,11 @@ class XhearEle extends XData {
     }
 
     set style(d) {
+        if (getType(d) == "string") {
+            this.ele.style = d;
+            return;
+        }
+
         let {
             style
         } = this;
