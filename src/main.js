@@ -186,6 +186,19 @@ class XhearEle extends XData {
         return shadowRoot && createXhearEle(shadowRoot)[PROXYTHIS];
     }
 
+    get root() {
+        let root = this.ele;
+        while (root.parentNode) {
+            root = root.parentNode;
+        }
+        return root;
+    }
+
+    get host() {
+        let { root } = this;
+        return root && root.host && $(root.host);
+    }
+
     setData(key, value) {
         if (UnSetKeys.has(key)) {
             console.warn(`can't set this key => `, key);
