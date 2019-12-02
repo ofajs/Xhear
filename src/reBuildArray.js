@@ -4,7 +4,7 @@
     if (arrayFnFunc) {
         Object.defineProperty(XhearEleFn, methodName, {
             value(...args) {
-                return arrayFnFunc.apply(Array.from(this.ele.children).map(e => createXhearEle(e)[PROXYTHIS]), args);
+                return arrayFnFunc.apply(Array.from(this.ele.children).map(e => createXhearProxy(e)), args);
             }
         });
     }
@@ -29,7 +29,7 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
     while (howmany > 0) {
         let childEle = children[index];
 
-        reArr.push(createXhearEle(childEle));
+        reArr.push(createXhearProxy(childEle));
 
         // 删除目标元素
         tarele.removeChild(childEle);
@@ -52,6 +52,8 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
         }
     }
     emitUpdate(_this, "splice", [index, howmany, ...items]);
+
+    return reArr;
 }
 
 /**

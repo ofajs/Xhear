@@ -94,14 +94,14 @@ const register = (opts) => {
             if (this[RUNARRAY]) {
                 return;
             }
-            defaults.attached && defaults.attached.call(createXhearEle(this)[PROXYTHIS]);
+            defaults.attached && defaults.attached.call(createXhearProxy(this));
         }
 
         disconnectedCallback() {
             if (this[RUNARRAY]) {
                 return;
             }
-            defaults.detached && defaults.detached.call(createXhearEle(this)[PROXYTHIS]);
+            defaults.detached && defaults.detached.call(createXhearProxy(this));
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
@@ -160,7 +160,7 @@ const renderEle = (ele, defaults) => {
             // Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
             let tarKey = tar.getAttribute('xv-tar');
             Object.defineProperty(xhearEle, "$" + tarKey, {
-                get: () => createXhearEle(tar)
+                get: () => createXhearProxy(tar)
             });
         });
 

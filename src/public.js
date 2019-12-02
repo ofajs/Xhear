@@ -101,7 +101,7 @@ const parseToDom = (expr) => {
             ele = parseDataToDom(expr);
             break;
         default:
-            if (expr instanceof Element) {
+            if (expr instanceof Element || expr instanceof DocumentFragment || expr instanceof Document) {
                 ele = expr;
             }
     }

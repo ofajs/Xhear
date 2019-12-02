@@ -49,7 +49,7 @@ class XhearEle extends XData {
         if (parentNode instanceof DocumentFragment) {
             return;
         }
-        return (!parentNode || parentNode === document) ? null : createXhearEle(parentNode)[PROXYTHIS];
+        return (!parentNode || parentNode === document) ? null : createXhearProxy(parentNode);
     }
 
     get index() {
@@ -183,20 +183,20 @@ class XhearEle extends XData {
 
     get $shadow() {
         let { shadowRoot } = this.ele;
-        return shadowRoot && createXhearEle(shadowRoot)[PROXYTHIS];
+        return shadowRoot && createXhearProxy(shadowRoot);
     }
 
-    get root() {
+    get $root() {
         let root = this.ele;
         while (root.parentNode) {
             root = root.parentNode;
         }
-        return root;
+        return root && createXhearProxy(root);
     }
 
-    get host() {
-        let { root } = this;
-        return root && root.host && $(root.host);
+    get $host() {
+        let { $root } = this;
+        return $root && $root.ele.host && createXhearProxy($root.host);
     }
 
     setData(key, value) {
@@ -259,7 +259,7 @@ class XhearEle extends XData {
         if (!/\D/.test(key)) {
             // 纯数字，直接获取children
             target = _this.ele.children[key];
-            target && (target = createXhearEle(target)[PROXYTHIS]);
+            target && (target = createXhearProxy(target));
         } else {
             target = _this[key];
         }
@@ -288,7 +288,7 @@ class XhearEle extends XData {
             });
         }
 
-        return parChilds.map(e => createXhearEle(e)[PROXYTHIS]);
+        return parChilds.map(e => createXhearProxy(e));
     }
 
     empty() {
@@ -359,12 +359,12 @@ class XhearEle extends XData {
     que(expr) {
         let tar = this.ele.querySelector(expr);
         if (tar) {
-            return createXhearEle(tar)[PROXYTHIS];
+            return createXhearProxy(tar);
         }
     }
 
     queAll(expr) {
-        return queAllToArray(this.ele, expr).map(tar => createXhearEle(tar)[PROXYTHIS]);
+        return queAllToArray(this.ele, expr).map(tar => createXhearProxy(tar));
     }
 
     queShadow(expr) {

@@ -8,6 +8,7 @@
     //<!--register-->
 
     const createXhearEle = ele => (ele.__xhear__ || new XhearEle(ele));
+    const createXhearProxy = ele => createXhearEle(ele)[PROXYTHIS];
 
     // 全局用$
     let $ = (expr) => {
@@ -23,7 +24,7 @@
             ele = parseToDom(expr);
         }
 
-        return ele ? createXhearEle(ele)[PROXYTHIS] : null;
+        return ele ? createXhearProxy(ele) : null;
     }
 
     // 扩展函数（只是辅助将内部函数暴露出去而已）
