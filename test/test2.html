@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>test2</title>
+    <script src="../dist/xhear.js"></script>
+</head>
+
+<body>
+    <test-one></test-one>
+    <script>
+        $.register({
+            tag: "test-one",
+            data: {
+                count: 0
+            },
+            proto: {
+                addOne(e) {
+                    debugger
+                    this.count++;
+                },
+                emptyFun() { }
+            },
+            temp: `
+                <div>{{count}}</div>
+                <button @click="addOne">AddOne</button>
+                <button @click.once="addOne">AddOne Once</button>
+                <a @click.prevent="addOne" href="http://baidu.com/">假的跳转</a>
+                <div @click="addOne" style="color:red;">
+                    <span>点击有效区域</span>
+                    <div style="color:blue;" @click.stop="emptyFun">点击无效区域</div>    
+                    <a style="color:green;" href="http://baidu.com/" @click.stop.prevent="emptyFun">无效叠加区域</a>    
+                </div>
+                `
+        });
+    </script>
+</body>
+
+</html>

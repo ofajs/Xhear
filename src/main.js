@@ -21,7 +21,8 @@ class XhearEle extends XData {
         delete this.length;
         Object.defineProperties(ele, {
             __xhear__: {
-                value: this
+                value: this,
+                configurable: true
             }
         });
         let tagValue = ele.tagName ? ele.tagName.toLowerCase() : '';

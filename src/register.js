@@ -36,12 +36,23 @@ const register = (opts) => {
     // 转换tag
     let tag = defaults.tag = propToAttr(defaults.tag);
 
+    // 自定义元素
+    const CustomXhearEle = class extends XhearEle {
+        constructor(...args) {
+            super(...args);
+        }
+    }
+
+    defaults.proto && CustomXhearEle.prototype.extend(defaults.proto);
+
     // 注册自定义元素
-    let XhearElement = class extends HTMLElement {
+    const XhearElement = class extends HTMLElement {
         constructor() {
             super();
 
-            let _xhearThis = createXhearEle(this);
+            // 删除旧依赖
+            delete this.__xhear__;
+            let _xhearThis = new CustomXhearEle(this);
 
             // 设置渲染识别属性
             Object.defineProperty(this, "xvele", {
@@ -53,34 +64,8 @@ const register = (opts) => {
 
             let options = Object.assign({}, defaults);
 
-            // if (defaults.created) {
-            //     $.nextTick(async () => {
-            //         let { attributes } = this;
-            //         let attrData = {};
-            //         Array.from(attributes).forEach(e => {
-            //             let name = e.name;
-            //             switch (name) {
-            //                 case "class":
-            //                 case "id":
-            //                     break
-            //                 default:
-            //                     attrData[name] = e.value;
-            //             }
-            //         });
-
-            //         let opts = await defaults.created.call(_xhearThis[PROXYTHIS], {
-            //             data: attrData
-            //         });
-            //         if (opts) {
-            //             Object.assign(options, opts);
-            //         }
-            //         renderEle(this, options);
-            //         options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
-            //     });
-            // } else {
             renderEle(this, options);
             options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
-            // }
 
             Object.defineProperties(this, {
                 [RUNARRAY]: {
@@ -188,9 +173,9 @@ const renderEle = (ele, defaults) => {
                 let prop = value;
                 name = attrToProp(name);
 
-                let matchArr = /^:(.+)/.exec(name);
-                if (matchArr) {
-                    let attr = matchArr[1];
+                let colonExecs = /^:(.+)/.exec(name);
+                if (colonExecs) {
+                    let attr = colonExecs[1];
 
                     // 判断是否双向绑定
                     let isEachBinding = /^#(.+)/.exec(attr);
@@ -218,6 +203,30 @@ const renderEle = (ele, defaults) => {
                         watchCall = (e, val) => ele.setAttribute(attr, val);
                     }
                     xhearEle.watch(prop, watchCall)
+                }
+
+                let atExecs = /^@(.+)/.exec(name);
+                if (atExecs) {
+                    // 参数分解
+                    let [eventName, ...opts] = atExecs[1].split(".") || "";
+
+                    let functionName = "on";
+                    if (opts.includes("once")) {
+                        functionName = "one";
+                    }
+
+                    // 绑定事件
+                    createXhearEle(ele)[functionName](eventName, (event, data) => {
+                        if (opts.includes("prevent")) {
+                            event.preventDefault();
+                        }
+
+                        if (opts.includes("stop")) {
+                            event.bubble = false;
+                        }
+
+                        xhearEle[prop].call(xhearEle[PROXYTHIS], event, data);
+                    });
                 }
             });
         });
