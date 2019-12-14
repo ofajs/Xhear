@@ -685,7 +685,7 @@
 
                 if (value === oldVal) {
                     // 一样还瞎折腾干嘛
-                    return;
+                    return true;
                 }
 
                 // 去除旧的依赖
@@ -1037,7 +1037,7 @@
          * 若 seek 的表达式，则监听表达式的值是否有变化
          * @param {string} expr 监听键值，可以是 keyName 可以是 seek表达式
          * @param {Function} callback 相应值变动后出发的callback
-         * @param {Boolean} ImmeOpt 是否即可触发callback
+         * @param {Boolean} ImmeOpt 是否立刻触发callback
          */
         watch(expr, callback, ImmeOpt) {
             // 调整参数
@@ -2308,6 +2308,19 @@
             }
         }
 
+        clone() {
+            let cloneEle = createXhearProxy(this.ele.cloneNode(true));
+
+            // 数据重新设置
+            Object.keys(this).forEach(key => {
+                if (key !== "tag") {
+                    cloneEle[key] = this[key];
+                }
+            });
+
+            return cloneEle;
+        }
+
         // 根据xv-vd生成xdata实例
         viewData() {
             let xdata = createXData({});
@@ -2483,7 +2496,7 @@
 
                     // 当target不一致时，修正target
                     if (event.target.ele !== e.target) {
-                        event.target = createXhearEle(e.target);
+                        event.target = createXhearProxy(e.target);
                     }
 
                     let newKeys = [];
@@ -2501,7 +2514,7 @@
                 } else {
                     event = new XEvent({
                         type: eventName,
-                        target: createXhearEle(e.target)
+                        target: createXhearProxy(e.target)
                     });
 
                     // 事件方法转移
@@ -2755,7 +2768,7 @@
         sort(arg) {
             if (isFunction(arg)) {
                 // 新生成数组
-                let fake_this = Array.from(this.ele.children).map(e => createXhearEle(e));
+                let fake_this = Array.from(this.ele.children).map(e => createXhearProxy(e));
                 let backup_fake_this = Array.from(fake_this);
 
                 // 执行排序函数
@@ -2988,7 +3001,9 @@
                                 });
                             }
                         } else {
-                            watchCall = (e, val) => ele.setAttribute(attr, val);
+                            watchCall = (e, val) => {
+                                ele.setAttribute(attr, val);
+                            };
                         }
                         xhearEle.watch(prop, watchCall)
                     }

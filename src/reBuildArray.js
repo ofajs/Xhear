@@ -113,7 +113,7 @@ XhearEleFn.extend({
     sort(arg) {
         if (isFunction(arg)) {
             // 新生成数组
-            let fake_this = Array.from(this.ele.children).map(e => createXhearEle(e));
+            let fake_this = Array.from(this.ele.children).map(e => createXhearProxy(e));
             let backup_fake_this = Array.from(fake_this);
 
             // 执行排序函数

@@ -200,7 +200,9 @@ const renderEle = (ele, defaults) => {
                             });
                         }
                     } else {
-                        watchCall = (e, val) => ele.setAttribute(attr, val);
+                        watchCall = (e, val) => {
+                            ele.setAttribute(attr, val);
+                        };
                     }
                     xhearEle.watch(prop, watchCall)
                 }

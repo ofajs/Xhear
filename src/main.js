@@ -392,6 +392,19 @@ class XhearEle extends XData {
         }
     }
 
+    clone() {
+        let cloneEle = createXhearProxy(this.ele.cloneNode(true));
+
+        // 数据重新设置
+        Object.keys(this).forEach(key => {
+            if (key !== "tag") {
+                cloneEle[key] = this[key];
+            }
+        });
+
+        return cloneEle;
+    }
+
     // 根据xv-vd生成xdata实例
     viewData() {
         let xdata = createXData({});

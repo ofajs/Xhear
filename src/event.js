@@ -65,7 +65,7 @@ function onEve(args, onOpts = {
 
                 // 当target不一致时，修正target
                 if (event.target.ele !== e.target) {
-                    event.target = createXhearEle(e.target);
+                    event.target = createXhearProxy(e.target);
                 }
 
                 let newKeys = [];
@@ -83,7 +83,7 @@ function onEve(args, onOpts = {
             } else {
                 event = new XEvent({
                     type: eventName,
-                    target: createXhearEle(e.target)
+                    target: createXhearProxy(e.target)
                 });
 
                 // 事件方法转移
