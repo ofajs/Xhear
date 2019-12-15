@@ -496,6 +496,11 @@ class XhearEle extends XData {
                     get,
                     set
                 });
+
+                if (set) {
+                    // 添加到可设置key权限内
+                    xEleDefaultSetKeys.add(k);
+                }
             }
         });
         return this;

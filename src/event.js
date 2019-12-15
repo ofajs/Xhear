@@ -193,16 +193,23 @@ XhearEleFn.extend({
         });
         return this;
     },
-    trigger(type) {
+    trigger(type, opts) {
         let event;
+
+        let defaults = {
+            bubbles: true,
+            cancelable: true
+        };
+
+        Object.assign(defaults, opts);
 
         if (type instanceof Event) {
             event = type;
         } else {
             let E = EventMap.get(type) || Event;
             event = new E(type, {
-                bubbles: true,
-                cancelable: true
+                bubbles: defaults.bubbles,
+                cancelable: defaults.cancelable
             });
         }
 

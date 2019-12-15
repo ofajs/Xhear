@@ -408,4 +408,8 @@ const renderEle = (ele, defaults) => {
             xhearEle.setData(k, val);
         }
     });
+
+    xhearEle.trigger('renderend', {
+        bubbles: false
+    });
 }
