@@ -400,7 +400,7 @@ const renderEle = (ele, defaults) => {
     }
 
     // 合并数据后设置
-    canSetKey.forEach(k => {
+    Object.keys(rData).forEach(k => {
         let val = rData[k];
 
         if (!isUndefined(val)) {
