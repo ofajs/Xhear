@@ -862,11 +862,21 @@
             if (event.type === "update") {
                 let {
                     _unBubble,
-                    _update
+                    _update,
+                    _unsync
                 } = this;
-                if (_update === false || (_unBubble && _unBubble.includes(event.trend.fromKey))) {
+                let {
+                    fromKey
+                } = event.trend;
+                if (_update === false || (_unBubble && _unBubble.includes(fromKey))) {
                     event.bubble = false;
                     return event;
+                }
+
+                if (_unsync && _unsync.includes(fromKey)) {
+                    Object.defineProperty(event, "_unsync", {
+                        value: true
+                    });
                 }
             }
 
@@ -1279,8 +1289,14 @@
                 mid,
                 keys,
                 name,
-                args
+                args,
+                _unsync
             } = trend;
+
+            if (_unsync) {
+                // 不同步的就返回
+                return;
+            }
 
             if (!mid) {
                 throw {
@@ -1288,13 +1304,14 @@
                 };
             }
 
-            if (getXDataProp(this, MODIFYIDS).includes(mid)) {
-                return false;
-            }
-
             // 获取相应目标，并运行方法
             let target = this.getTarget(keys);
             let targetSelf = target[XDATASELF];
+
+            if (getXDataProp(targetSelf, MODIFYIDS).includes(mid)) {
+                return false;
+            }
+
             targetSelf._modifyId = mid;
             // target._modifyId = mid;
             targetSelf[name](...args);
@@ -1313,6 +1330,7 @@
     class XDataTrend {
         constructor(xevent) {
             if (xevent instanceof XEvent) {
+                // 元对象数据会被修改，必须深克隆数据
                 let {
                     modify: {
                         name,
@@ -1321,6 +1339,16 @@
                     },
                     keys
                 } = cloneObject(xevent);
+                let {
+                    _unsync
+                } = xevent;
+                // let { modify: { name, args, mid }, keys, _unsync } = xevent;
+
+                if (_unsync) {
+                    Object.defineProperty(this, "_unsync", {
+                        value: true
+                    });
+                }
 
                 Object.assign(this, {
                     name,
@@ -1328,6 +1356,7 @@
                     mid,
                     keys
                 });
+
             } else {
                 Object.assign(this, xevent);
             }
@@ -1537,7 +1566,11 @@
                     break
                 default:
                     if (isCoverRight) {
-                        xdata.setData(this.object);
+                        let obj = this.object;
+
+                        Object.keys(obj).forEach(k => {
+                            xdata.setData(k, obj[k]);
+                        });
                     }
 
                     leftFun = e => e.trends.forEach(trend => xdata.entrend(trend))
@@ -2152,10 +2185,11 @@
                 let xele = $(value);
 
                 let targetChild = _this.ele.children[key];
-                let oldVal = _this.getData(key).object;
 
                 // 这里还欠缺冒泡机制的
                 if (targetChild) {
+                    let oldVal = _this.getData(key).object;
+
                     _this.ele.insertBefore(xele.ele, targetChild);
                     _this.ele.removeChild(targetChild);
 
@@ -2165,6 +2199,11 @@
                     });
                 } else {
                     _this.ele.appendChild(xele.ele);
+
+                    // 冒泡设置
+                    emitUpdate(_this, "setData", [key, value], {
+                        oldValue: undefined
+                    });
                 }
             }
 

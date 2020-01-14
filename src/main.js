@@ -231,10 +231,11 @@ class XhearEle extends XData {
             let xele = $(value);
 
             let targetChild = _this.ele.children[key];
-            let oldVal = _this.getData(key).object;
 
             // 这里还欠缺冒泡机制的
             if (targetChild) {
+                let oldVal = _this.getData(key).object;
+
                 _this.ele.insertBefore(xele.ele, targetChild);
                 _this.ele.removeChild(targetChild);
 
@@ -244,6 +245,11 @@ class XhearEle extends XData {
                 });
             } else {
                 _this.ele.appendChild(xele.ele);
+
+                // 冒泡设置
+                emitUpdate(_this, "setData", [key, value], {
+                    oldValue: undefined
+                });
             }
         }
 

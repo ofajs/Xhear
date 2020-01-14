@@ -29,7 +29,6 @@
             debugger
         });
 
-        debugger
         testone.temp = "change one";
 
         tester.ok(testone.temp === "change one", "proto set data ok");
