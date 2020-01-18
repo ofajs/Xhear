@@ -166,6 +166,7 @@ const renderEle = (ele, defaults) => {
         // :attribute对子元素属性修正方法
         queAllToArray(sroot, "*").forEach(ele => {
             let attrbs = Array.from(ele.attributes);
+            let attrOriExpr = '';
             attrbs.forEach(obj => {
                 let {
                     name, value
@@ -205,6 +206,15 @@ const renderEle = (ele, defaults) => {
                         };
                     }
                     xhearEle.watch(prop, watchCall)
+
+                    // 删除绑定表达属性
+                    ele.removeAttribute(colonExecs[0]);
+                    attrOriExpr += `${name}=${value},`;
+                }
+
+                if (attrOriExpr) {
+                    attrOriExpr = attrOriExpr.slice(0, -1);
+                    ele.setAttribute('xv-binding-expr', attrOriExpr);
                 }
 
                 let atExecs = /^@(.+)/.exec(name);
