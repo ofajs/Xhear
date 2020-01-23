@@ -3325,7 +3325,10 @@
         versinCode: 5000000,
         fn: XhearEleFn,
         isXhear,
-        ext
+        ext,
+        queAll(expr) {
+            return queAllToArray(document, expr).map(tar => createXhearProxy(tar));
+        }
     });
 
     glo.$ = $;
