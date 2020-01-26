@@ -29,6 +29,10 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
     while (howmany > 0) {
         let childEle = children[index];
 
+        if (!childEle) {
+            break;
+        }
+
         reArr.push(createXhearProxy(childEle));
 
         // 删除目标元素
