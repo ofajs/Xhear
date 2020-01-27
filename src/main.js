@@ -197,7 +197,7 @@ class XhearEle extends XData {
 
     get $host() {
         let { $root } = this;
-        return $root && $root.ele.host && createXhearProxy($root.host);
+        return $root && $root.ele.host && createXhearProxy($root.ele.host);
     }
 
     setData(key, value) {
