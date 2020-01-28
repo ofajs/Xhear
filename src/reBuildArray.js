@@ -26,7 +26,9 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
     let tarele = _this.ele;
     let { children } = tarele;
 
-    while (howmany > 0) {
+    let c_howmany = howmany;
+
+    while (c_howmany > 0) {
         let childEle = children[index];
 
         if (!childEle) {
@@ -39,7 +41,7 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
         tarele.removeChild(childEle);
 
         // 数量减少
-        howmany--;
+        c_howmany--;
     }
 
     // 定位目标子元素

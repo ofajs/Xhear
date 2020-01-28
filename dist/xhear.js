@@ -1067,6 +1067,7 @@
                 });
                 return;
             } else if (/function/.test(arg1Type)) {
+                ImmeOpt = callback;
                 callback = expr;
                 expr = "";
             }
@@ -2741,7 +2742,9 @@
             children
         } = tarele;
 
-        while (howmany > 0) {
+        let c_howmany = howmany;
+
+        while (c_howmany > 0) {
             let childEle = children[index];
 
             if (!childEle) {
@@ -2754,7 +2757,7 @@
             tarele.removeChild(childEle);
 
             // 数量减少
-            howmany--;
+            c_howmany--;
         }
 
         // 定位目标子元素
