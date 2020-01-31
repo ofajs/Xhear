@@ -2558,6 +2558,9 @@
                     let tarEle = e.target;
                     while (tarEle !== e.currentTarget) {
                         let par = tarEle.parentNode;
+                        if (!par) {
+                            break;
+                        }
                         let tarId = Array.from(par.children).indexOf(tarEle);
                         newKeys.unshift(tarId);
                         tarEle = par;
@@ -2677,6 +2680,7 @@
                 // 原生函数注册也干掉
                 let oriFun = originEve.get(eventName);
                 oriFun && this.ele.removeEventListener(eventName, oriFun);
+                originEve.delete(eventName);
             }
             return this;
         },
