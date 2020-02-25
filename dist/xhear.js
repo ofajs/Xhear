@@ -1077,6 +1077,8 @@
 
             if (expr === "") {
                 watchType = "watchSelf";
+            } else if (expr instanceof RegExp) {
+                watchType = "watchKeyReg";
             } else if (/\[.+\]/.test(expr)) {
                 watchType = "seekData";
             } else if (/\./.test(expr)) {
@@ -1130,12 +1132,13 @@
                     }
                     break;
                 case "watchKey":
+                case "watchKeyReg":
                     // 监听key
                     updateMethod = e => {
                         let {
                             trend
                         } = e;
-                        if (trend.fromKey == expr) {
+                        if ((watchType === "watchKeyReg" && expr.test(trend.fromKey)) || trend.fromKey == expr) {
                             cacheObj.trends.push(e.trend);
 
                             nextTick(() => {
@@ -1299,6 +1302,14 @@
                 return;
             }
 
+            let {
+                _unpull
+            } = this;
+            let fkey = getFromKey(trend);
+            if (_unpull && _unpull.includes(fkey)) {
+                return;
+            }
+
             if (!mid) {
                 throw {
                     text: "Illegal trend data"
@@ -1320,6 +1331,16 @@
 
             return true;
         }
+    }
+
+    const getFromKey = (_this) => {
+        let keyOne = _this.keys[0];
+
+        if (isUndefined(keyOne) && (_this.name === "setData" || _this.name === "remove")) {
+            keyOne = _this.args[0];
+        }
+
+        return keyOne;
     }
 
     /**
@@ -1379,13 +1400,15 @@
         }
 
         get fromKey() {
-            let keyOne = this.keys[0];
+            return getFromKey(this);
 
-            if (isUndefined(keyOne) && (this.name === "setData" || this.name === "remove")) {
-                keyOne = this.args[0];
-            }
+            // let keyOne = this.keys[0];
 
-            return keyOne;
+            // if (isUndefined(keyOne) && (this.name === "setData" || this.name === "remove")) {
+            //     keyOne = this.args[0];
+            // }
+
+            // return keyOne;
         }
 
         set fromKey(keyName) {
