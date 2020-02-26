@@ -62,7 +62,12 @@ const register = (opts) => {
                 value: true
             });
 
+            let xvid = this.xvid = "xv" + getRandomId();
+
             let options = Object.assign({}, defaults);
+
+            // 设置xv-ele
+            nextTick(() => this.setAttribute("xv-ele", ""), xvid);
 
             renderEle(this, options);
             options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
@@ -120,10 +125,11 @@ const renderEle = (ele, defaults) => {
     defaults.proto && xhearEle.extend(defaults.proto);
 
     let { temp } = defaults;
+    let sroot;
 
     if (temp) {
         // 添加shadow root
-        let sroot = ele.attachShadow({ mode: "open" });
+        sroot = ele.attachShadow({ mode: "open" });
 
         // 去除无用的代码（注释代码）
         temp = temp.replace(/<!--.+?-->/g, "");
@@ -378,25 +384,6 @@ const renderEle = (ele, defaults) => {
         canSetKey.forEach(k => ck.add(k))
     }
 
-    // 根据attributes抽取值
-    // let attributes = Array.from(ele.attributes);
-    // if (attributes.length) {
-    //     attributes.forEach(e => {
-    //         // 属性在数据列表内，进行rData数据覆盖
-    //         let { name } = e;
-
-    //         // 下划线的属性不能直接定义
-    //         if (/^_.*/.test(name)) {
-    //             return;
-    //         }
-
-    //         name = attrToProp(name);
-    //         if (!/^xv\-/.test(name) && !/^:/.test(name) && canSetKey.has(name)) {
-    //             rData[name] = e.value;
-    //         }
-    //     });
-    // }
-
     // 判断是否有value，进行vaule绑定
     if (canSetKey.has("value")) {
         Object.defineProperty(ele, "value", {
@@ -418,6 +405,30 @@ const renderEle = (ele, defaults) => {
             xhearEle.setData(k, val);
         }
     });
+
+    // 查找是否有link为完成
+    let isSetOne = 0;
+    if (sroot) {
+        let links = queAllToArray(sroot, `link`);
+        if (links.length) {
+            Promise.all(links.map(link => new Promise(res => {
+                if (link.sheet) {
+                    res();
+                } else {
+                    link.onload = () => {
+                        res();
+                        link.onload = null;
+                    };
+                }
+            }))).then(() => nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid))
+        } else {
+            isSetOne = 1;
+        }
+    } else {
+        isSetOne = 1;
+    }
+
+    isSetOne && nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid);
 
     xhearEle.trigger('renderend', {
         bubbles: false
