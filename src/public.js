@@ -122,3 +122,46 @@ const propToAttr = key => {
     }
     return key;
 }
+
+// 设置属性
+const attrsHandler = {
+    get: function (target, prop) {
+        return target._ele.getAttribute(propToAttr(prop));
+    },
+    set: function (target, prop, value) {
+        if (value === null) {
+            target._ele.removeAttribute(prop);
+        } else {
+            target._ele.setAttribute(propToAttr(prop), String(value));
+        }
+
+        return true;
+    }
+};
+
+/**
+ * 元素 attributes 代理对象
+ */
+class Attrs {
+    constructor(ele) {
+        Object.defineProperties(this, {
+            _ele: {
+                get: () => ele
+            }
+        });
+    }
+}
+
+/**
+ * 生成代理attrs对象
+ * @param {HTMLElement} ele 目标html元素
+ */
+const createProxyAttrs = (ele) => {
+    let proxyAttrs = ele.__p_attrs;
+
+    if (!proxyAttrs) {
+        ele.__p_attrs = proxyAttrs = new Proxy(new Attrs(ele), attrsHandler);
+    }
+
+    return proxyAttrs;
+}

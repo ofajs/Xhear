@@ -200,6 +200,10 @@ class XhearEle extends XData {
         return $root && $root.ele.host && createXhearProxy($root.ele.host);
     }
 
+    get attrs() {
+        return createProxyAttrs(this.ele);
+    }
+
     setData(key, value) {
         if (UnSetKeys.has(key)) {
             console.warn(`can't set this key => `, key);
@@ -346,22 +350,22 @@ class XhearEle extends XData {
         return meetsEle(this.ele, expr)
     }
 
-    attr(key, value) {
-        if (!isUndefined(value)) {
-            this.ele.setAttribute(key, value);
-        } else if (key instanceof Object) {
-            Object.keys(key).forEach(k => {
-                this.attr(k, key[k]);
-            });
-        } else {
-            return this.ele.getAttribute(key);
-        }
-    }
+    // attr(key, value) {
+    //     if (!isUndefined(value)) {
+    //         this.ele.setAttribute(key, value);
+    //     } else if (key instanceof Object) {
+    //         Object.keys(key).forEach(k => {
+    //             this.attr(k, key[k]);
+    //         });
+    //     } else {
+    //         return this.ele.getAttribute(key);
+    //     }
+    // }
 
-    removeAttr(key) {
-        this.ele.removeAttribute(key);
-        return this;
-    }
+    // removeAttr(key) {
+    //     this.ele.removeAttribute(key);
+    //     return this;
+    // }
 
     que(expr) {
         let tar = this.ele.querySelector(expr);
@@ -418,7 +422,7 @@ class XhearEle extends XData {
         // 获取所有toData元素
         this.queAll('[xv-vd]').forEach(xele => {
             // 获取vd内容
-            let vdvalue = xele.attr('xv-vd');
+            let vdvalue = xele.attrs.xvVd;
 
             if (xele.xvele) {
                 let syncObj = {};
@@ -479,7 +483,7 @@ class XhearEle extends XData {
                 }
             }
 
-            xele.removeAttr("xv-vd");
+            xele.attrs.xvVd = null;
         });
 
         return xdata;
