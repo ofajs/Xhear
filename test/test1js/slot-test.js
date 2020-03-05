@@ -12,7 +12,10 @@
             <div xv-tar="shaEle"></div>
         <br>
         <br>
-        `
+        `,
+        slotchange(e) {
+            console.log("slotchange =>", e);
+        }
     });
 
     // 添加进去看看

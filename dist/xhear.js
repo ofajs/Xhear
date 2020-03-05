@@ -2999,6 +2999,8 @@
                 renderEle(this, options);
                 options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
 
+                options.slotchange && _xhearThis.$shadow.on('slotchange', options.slotchange)
+
                 Object.defineProperties(this, {
                     [RUNARRAY]: {
                         writable: true,
