@@ -10,6 +10,11 @@
         attrs: ['selected'],
         data: {
             selected: 0
+        },
+        watch: {
+            selected(e, selected) {
+                console.log("selected =>", selected);
+            }
         }
     });
 
@@ -32,26 +37,26 @@
             tag: "w-test",
             text: "t2-1"
         }, {
+            tag: "w-test",
+            0: {
+                tag: "w-test",
+                text: "t2-2-1"
+            },
+            1: {
                 tag: "w-test",
                 0: {
                     tag: "w-test",
-                    text: "t2-2-1"
+                    text: "t2-2-2-1",
                 },
                 1: {
                     tag: "w-test",
-                    0: {
-                        tag: "w-test",
-                        text: "t2-2-2-1",
-                    },
-                    1: {
-                        tag: "w-test",
-                        text: "t2-2-2-2",
-                    }
+                    text: "t2-2-2-2",
                 }
-            }, {
-                tag: "w-test",
-                text: "t2-3"
-            });
+            }
+        }, {
+            tag: "w-test",
+            text: "t2-3"
+        });
 
         // 监听 selected=1 的
         let cid = 0;

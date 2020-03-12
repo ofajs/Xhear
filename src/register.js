@@ -72,7 +72,7 @@ const register = (opts) => {
             renderEle(this, options);
             options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
 
-            options.slotchange && _xhearThis.$shadow.on('slotchange', options.slotchange)
+            options.slotchange && _xhearThis.$shadow.on('slotchange', (e) => options.slotchange.call(_xhearThis[PROXYTHIS], e))
 
             Object.defineProperties(this, {
                 [RUNARRAY]: {
@@ -100,7 +100,8 @@ const register = (opts) => {
             let xEle = this.__xhear__;
             name = attrToProp(name);
             if (newValue != xEle[name]) {
-                xEle[name] = newValue;
+                xEle.setData(name, newValue);
+                // xEle[name] = newValue;
             }
         }
 

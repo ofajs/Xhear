@@ -14,7 +14,7 @@
         <br>
         `,
         slotchange(e) {
-            console.log("slotchange =>", e);
+            console.log("slotchange =>", this, e);
         }
     });
 
