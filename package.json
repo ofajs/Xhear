@@ -6,7 +6,11 @@
   "scripts": {
     "watch": "node scripts/watch.js"
   },
-  "author": "YAO",
+  "author": {
+      "name": "YAO",
+      "email": "kirayao@hotmail.com",
+      "url": "https://kirakiray.com/"
+  },
   "license": "MIT",
   "devDependencies": {
     "js-beautify": "^1.10.0",

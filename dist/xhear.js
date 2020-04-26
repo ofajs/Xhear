@@ -2,7 +2,7 @@
  * xhear v5.0.0
  * https://github.com/kirakiray/Xhear#readme
  * 
- * (c) 2018-2020 undefined
+ * (c) 2018-2020 YAO
  * Released under the MIT License.
  */
 ((glo) => {
