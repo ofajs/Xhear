@@ -1,6 +1,12 @@
+/*!
+ * xhear v5.0.0
+ * https://github.com/kirakiray/Xhear#readme
+ * 
+ * (c) 2018-2020 undefined
+ * Released under the MIT License.
+ */
 ((glo) => {
     "use strict";
-
     const getRandomId = () => Math.random().toString(32).substr(2);
     let objectToString = Object.prototype.toString;
     const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
@@ -1831,7 +1837,6 @@
             }
         }
     });
-
     // business function
     // 判断元素是否符合条件
     const meetsEle = (ele, expr) => {
@@ -3407,7 +3412,8 @@
         register,
         nextTick,
         xdata: obj => createXData(obj)[PROXYTHIS],
-        versinCode: 5000000,
+        v: 5000000,
+        version: "5.0.0",
         fn: XhearEleFn,
         isXhear,
         ext,

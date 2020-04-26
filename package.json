@@ -1,5 +1,5 @@
 {
-  "name": "Xhear.js",
+  "name": "xhear",
   "version": "5.0.0",
   "versionCode": 5000000,
   "description": "a web components solution",
@@ -9,6 +9,23 @@
   "author": "YAO",
   "license": "MIT",
   "devDependencies": {
-    "js-beautify": "^1.10.0"
+    "js-beautify": "^1.10.0",
+    "uglify-es": "^3.3.9"
+  },
+  "main": "dist/xhear.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kirakiray/Xhear.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kirakiray/Xhear/issues"
+  },
+  "homepage": "https://github.com/kirakiray/Xhear#readme",
+  "watchjs": {
+    "startyear": "2018"
   }
 }
