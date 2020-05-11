@@ -20,7 +20,7 @@
             <other-test-one>test one haha</other-test-one>
         `));
 
-        let testone = testEle.que(`other-test-one`);
+        let testone = testEle.$(`other-test-one`);
 
         tester.ok(testone.temp === "test one haha", "proto get data ok");
 

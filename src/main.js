@@ -367,39 +367,15 @@ class XhearEle extends XData {
     //     return this;
     // }
 
-    que(expr) {
+    $(expr) {
         let tar = this.ele.querySelector(expr);
         if (tar) {
             return createXhearProxy(tar);
         }
     }
 
-    queAll(expr) {
+    all(expr) {
         return queAllToArray(this.ele, expr).map(tar => createXhearProxy(tar));
-    }
-
-    queShadow(expr) {
-        let { $shadow } = this;
-        if ($shadow) {
-            return $shadow.que(expr);
-        } else {
-            throw {
-                target: this,
-                msg: `it must be a customElement`
-            };
-        }
-    }
-
-    queAllShadow(expr) {
-        let { $shadow } = this;
-        if ($shadow) {
-            return $shadow.queAll(expr);
-        } else {
-            throw {
-                target: this,
-                msg: `it must be a customElement`
-            };
-        }
     }
 
     clone() {
@@ -420,7 +396,7 @@ class XhearEle extends XData {
         let xdata = createXData({});
 
         // 获取所有toData元素
-        this.queAll('[xv-vd]').forEach(xele => {
+        this.all('[xv-vd]').forEach(xele => {
             // 获取vd内容
             let vdvalue = xele.attrs.xvVd;
 

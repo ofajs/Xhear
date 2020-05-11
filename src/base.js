@@ -44,9 +44,9 @@
         fn: XhearEleFn,
         isXhear,
         ext,
-        queAll(expr) {
+        all(expr) {
             return queAllToArray(document, expr).map(tar => createXhearProxy(tar));
-        }
+        },
     });
 
     glo.$ = $;
