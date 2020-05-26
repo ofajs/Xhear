@@ -5,6 +5,26 @@ const RUNARRAY = Symbol("runArray");
 
 const ATTRBINDINGKEY = "attr" + getRandomId();
 
+// 是否表达式
+const isFunctionExpr = (str) => /[ \|\&\(\)\?\:\!]/.test(str.trim());
+
+// 获取函数
+const exprToFunc = (expr) => {
+    return new Function("$event", `with(this){return ${expr}}`);
+}
+
+// 嵌入函数监听公用方法
+const embedWatch = ({ target, callback, expr }) => {
+    // 判断expr是否为函数表达式
+    if (isFunctionExpr(expr)) {
+        let func = exprToFunc(expr);
+        target.watch(e => callback(func.call(target[PROXYTHIS])))
+    } else {
+        // 先设置值，后监听塞入
+        target.watch(expr, (e, val) => callback(val));
+    }
+}
+
 const register = (opts) => {
     let defaults = {
         // 自定义标签名
@@ -101,7 +121,6 @@ const register = (opts) => {
             name = attrToProp(name);
             if (newValue != xEle[name]) {
                 xEle.setData(name, newValue);
-                // xEle[name] = newValue;
             }
         }
 
@@ -149,6 +168,43 @@ const renderEle = (ele, defaults) => {
         // 填充默认内容
         sroot.innerHTML = temp;
 
+        // xv-if 条件转换
+        queAllToArray(sroot, `[xv-if]`).forEach(e => {
+            // xv-if 不能和 xv-tar 配合使用
+            if (e.getAttribute("xv-tar")) {
+                console.error({
+                    target: e,
+                    desc: "xv-if cannot be used with xv-tar"
+                });
+                return;
+            }
+
+            // 添加定位text
+            var textnode = document.createTextNode("");
+            e.parentNode.insertBefore(textnode, e);
+
+            // 是否存在
+            let targetEle = e;
+
+            embedWatch({
+                target: xhearEle,
+                expr: e.getAttribute("xv-if"),
+                callback(val) {
+                    if (val) {
+                        // 不存在的情况下添加一份
+                        if (!targetEle) {
+                            targetEle = e.cloneNode();
+                            textnode.parentNode.insertBefore(targetEle, textnode);
+                        }
+                    } else {
+                        // 不能存在就删除
+                        targetEle.parentNode.removeChild(targetEle);
+                        targetEle = null;
+                    }
+                }
+            });
+        });
+
         // 设置其他 xv-tar
         queAllToArray(sroot, `[xv-tar]`).forEach(tar => {
             // Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
@@ -165,11 +221,29 @@ const renderEle = (ele, defaults) => {
             e.parentNode.insertBefore(textnode, e);
             e.parentNode.removeChild(e);
 
-            // 文本数据绑定
-            var xvkey = e.getAttribute('xvkey');
+            // 函数绑定
+            embedWatch({
+                target: xhearEle,
+                expr: e.getAttribute('xvkey'),
+                callback(val) {
+                    textnode.textContent = val;
+                }
+            });
+        });
 
-            // 先设置值，后监听
-            xhearEle.watch(xvkey, (e, val) => textnode.textContent = val);
+        // xv-show 条件转换
+        queAllToArray(sroot, `[xv-show]`).forEach(e => {
+            embedWatch({
+                target: xhearEle,
+                expr: e.getAttribute('xv-show'),
+                callback(val) {
+                    if (val) {
+                        e.style.display = "";
+                    } else {
+                        e.style.display = "none";
+                    }
+                }
+            });
         });
 
         // :attribute对子元素属性修正方法
@@ -183,6 +257,10 @@ const renderEle = (ele, defaults) => {
                 let prop = value;
                 name = attrToProp(name);
 
+                // 判断prop是否函数表达式
+                const isExpr = isFunctionExpr(prop);
+
+                // 属性绑定
                 let colonExecs = /^:(.+)/.exec(name);
                 if (colonExecs) {
                     let attr = colonExecs[1];
@@ -192,29 +270,56 @@ const renderEle = (ele, defaults) => {
                     if (isEachBinding) {
                         attr = isEachBinding[1];
                         isEachBinding = !!isEachBinding;
+
+                        // 函数表达式不能用于双向绑定
+                        if (isExpr) {
+                            throw {
+                                desc: "Function expressions cannot be used for sync binding",
+                            };
+                        }
                     }
 
-                    let watchCall;
-                    if (ele.xvele) {
-                        watchCall = (e, val) => {
-                            if (val instanceof XhearEle) {
-                                val = val.Object;
+                    if (!isExpr) {
+                        // 属性监听
+                        let watchCall;
+                        if (ele.xvele) {
+                            watchCall = (e, val) => {
+                                if (val instanceof XhearEle) {
+                                    val = val.object;
+                                }
+                                createXhearEle(ele).setData(attr, val);
                             }
-                            createXhearEle(ele).setData(attr, val);
+
+                            if (isEachBinding) {
+                                // 双向绑定
+                                createXhearEle(ele).watch(attr, (e, val) => {
+                                    xhearEle.setData(prop, val);
+                                });
+                            }
+                        } else {
+                            watchCall = (e, val) => {
+                                ele.setAttribute(attr, val);
+                            };
                         }
 
-                        // 双向绑定
-                        if (isEachBinding) {
-                            createXhearEle(ele).watch(attr, (e, val) => {
-                                xhearEle.setData(prop, val);
-                            });
-                        }
+                        xhearEle.watch(prop, watchCall)
                     } else {
-                        watchCall = (e, val) => {
-                            ele.setAttribute(attr, val);
-                        };
+                        let func = exprToFunc(prop);
+
+                        // 表达式
+                        xhearEle.watch(e => {
+                            let val = func.call(xhearEle[PROXYTHIS]);
+
+                            if (ele.xvele) {
+                                if (val instanceof XhearEle) {
+                                    val = val.object;
+                                }
+                                createXhearEle(ele).setData(attr, val);
+                            } else {
+                                ele.setAttribute(attr, val);
+                            }
+                        });
                     }
-                    xhearEle.watch(prop, watchCall)
 
                     // 删除绑定表达属性
                     ele.removeAttribute(colonExecs[0]);
@@ -226,6 +331,7 @@ const renderEle = (ele, defaults) => {
                     ele.setAttribute('xv-binding-expr', attrOriExpr);
                 }
 
+                // 事件绑定
                 let atExecs = /^@(.+)/.exec(name);
                 if (atExecs) {
                     // 参数分解
@@ -234,6 +340,14 @@ const renderEle = (ele, defaults) => {
                     let functionName = "on";
                     if (opts.includes("once")) {
                         functionName = "one";
+                    }
+
+                    // 函数表达式的话提前生成函数，属性的话直接绑定
+                    let func;
+                    if (isExpr) {
+                        func = exprToFunc(prop);
+                    } else {
+                        func = xhearEle[prop];
                     }
 
                     // 绑定事件
@@ -246,7 +360,7 @@ const renderEle = (ele, defaults) => {
                             event.bubble = false;
                         }
 
-                        xhearEle[prop].call(xhearEle[PROXYTHIS], event, data);
+                        func.call(xhearEle[PROXYTHIS], event, data);
                     });
                 }
             });
