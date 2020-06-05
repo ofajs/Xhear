@@ -15,6 +15,22 @@
     const cloneObject = obj => JSON.parse(JSON.stringify(obj));
 
     const nextTick = (() => {
+        if (document.currentScript.getAttribute("debug") !== null) {
+            let nMap = new Map();
+            return (fun, key) => {
+                if (!key) {
+                    key = getRandomId();
+                }
+
+                let timer = nMap.get(key);
+                clearTimeout(timer);
+                nMap.set(key, setTimeout(() => {
+                    fun();
+                    nMap.delete(key);
+                }));
+            };
+        }
+
         let inTick = false;
 
         // 定位对象寄存器
