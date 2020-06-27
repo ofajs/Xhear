@@ -2011,7 +2011,7 @@
         },
         set: function(target, prop, value) {
             if (value === null) {
-                target._ele.removeAttribute(prop);
+                target._ele.removeAttribute(propToAttr(prop));
             } else {
                 target._ele.setAttribute(propToAttr(prop), String(value));
             }
