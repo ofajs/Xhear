@@ -1,5 +1,5 @@
 /*!
- * xhear v5.1.1
+ * xhear v5.1.2
  * https://github.com/kirakiray/Xhear#readme
  * 
  * (c) 2018-2020 YAO
@@ -2956,7 +2956,19 @@
 
     // 获取函数
     const exprToFunc = (expr) => {
-        return new Function("$event", `with(this){return ${expr}}`);
+        return new Function("$event", `
+with(this){
+    try{
+        return ${expr}
+    }catch(e){
+        let errObj = {
+            expr:'${expr}',
+        }
+        ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+        console.error(errObj,e);
+    }
+}
+    `);
     }
 
     // 嵌入函数监听公用方法
@@ -3015,12 +3027,20 @@
 
         defaults.proto && CustomXhearEle.prototype.extend(defaults.proto);
 
+        // 注册组件的地址
+        let scriptSrc = document.currentScript && document.currentScript.src;
+
         // 注册自定义元素
         const XhearElement = class extends HTMLElement {
             constructor() {
                 super();
 
-                // 删除旧依赖
+                // 设置相关数据
+                this.__xInfo = {
+                    scriptSrc
+                };
+
+                // 删除旧依赖，防止组件注册前的xhear实例缓存
                 delete this.__xhear__;
                 let _xhearThis = new CustomXhearEle(this);
 
@@ -3544,8 +3564,8 @@
         register,
         nextTick,
         xdata: obj => createXData(obj)[PROXYTHIS],
-        v: 5001001,
-        version: "5.1.1",
+        v: 5001002,
+        version: "5.1.2",
         fn: XhearEleFn,
         isXhear,
         ext,
