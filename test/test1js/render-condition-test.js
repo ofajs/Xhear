@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(10, 'render condition test');
+    let tester = expect(14, 'render condition test');
 
     let container = $(`
     <div id="condition-container">
@@ -60,6 +60,17 @@
             tester.ok($("condition-test").$shadow.$(".s2"), "v-if condition ok");
             tester.ok($("condition-test").$h1.display, "v-show bind ok");
             tester.ok($("condition-test").$h2.display === "none", "v-show condition ok");
+
+            // 更换数据，查看状态修正
+            $("condition-test").showS1 = true;
+            $("condition-test").showS2 = false;
+
+            setTimeout(() => {
+                tester.ok($("condition-test").$shadow.$(".s1"), "v-if bind ok2");
+                tester.ok(!$("condition-test").$shadow.$(".s2"), "v-if condition ok2");
+                tester.ok($("condition-test").$h1.display === "none", "v-show bind ok2");
+                tester.ok($("condition-test").$h2.display, "v-show condition ok2");
+            }, 100);
         }, 100);
 
     }, 300);
