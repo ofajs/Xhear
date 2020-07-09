@@ -318,7 +318,11 @@ const renderEle = (ele, defaults) => {
                             }
                         } else {
                             watchCall = (e, val) => {
-                                ele.setAttribute(attr, val);
+                                if (val === undefined || val === null) {
+                                    ele.removeAttribute(attr);
+                                } else {
+                                    ele.setAttribute(attr, val);
+                                }
                             };
                         }
 
@@ -336,7 +340,11 @@ const renderEle = (ele, defaults) => {
                                 }
                                 createXhearEle(ele).setData(attr, val);
                             } else {
-                                ele.setAttribute(attr, val);
+                                if (val === undefined || val === null) {
+                                    ele.removeAttribute(attr);
+                                } else {
+                                    ele.setAttribute(attr, val);
+                                }
                             }
                         });
                     }

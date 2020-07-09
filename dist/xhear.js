@@ -3183,7 +3183,11 @@ with(this){
                                 }
                             } else {
                                 watchCall = (e, val) => {
-                                    ele.setAttribute(attr, val);
+                                    if (val === undefined || val === null) {
+                                        ele.removeAttribute(attr);
+                                    } else {
+                                        ele.setAttribute(attr, val);
+                                    }
                                 };
                             }
 
@@ -3201,7 +3205,11 @@ with(this){
                                     }
                                     createXhearEle(ele).setData(attr, val);
                                 } else {
-                                    ele.setAttribute(attr, val);
+                                    if (val === undefined || val === null) {
+                                        ele.removeAttribute(attr);
+                                    } else {
+                                        ele.setAttribute(attr, val);
+                                    }
                                 }
                             });
                         }
