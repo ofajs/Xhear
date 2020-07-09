@@ -496,8 +496,12 @@ const renderEle = (ele, defaults) => {
     defaults.attrs.forEach(attrName => {
         // 绑定值
         xhearEle.watch(attrName, d => {
-            // 绑定值
-            ele.setAttribute(propToAttr(attrName), d.val);
+            if (d.val === null || d.val === undefined) {
+                ele.removeAttribute(propToAttr(attrName));
+            } else {
+                // 绑定值
+                ele.setAttribute(propToAttr(attrName), d.val);
+            }
         });
     });
 

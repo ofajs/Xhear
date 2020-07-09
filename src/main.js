@@ -283,7 +283,7 @@ class XhearEle extends XData {
     }
 
     siblings(expr) {
-        // 获取父层的所有子元素
+        // 获取相邻元素
         let parChilds = Array.from(this.ele.parentElement.children);
 
         // 删除自身
@@ -350,23 +350,6 @@ class XhearEle extends XData {
         return meetsEle(this.ele, expr)
     }
 
-    // attr(key, value) {
-    //     if (!isUndefined(value)) {
-    //         this.ele.setAttribute(key, value);
-    //     } else if (key instanceof Object) {
-    //         Object.keys(key).forEach(k => {
-    //             this.attr(k, key[k]);
-    //         });
-    //     } else {
-    //         return this.ele.getAttribute(key);
-    //     }
-    // }
-
-    // removeAttr(key) {
-    //     this.ele.removeAttribute(key);
-    //     return this;
-    // }
-
     $(expr) {
         let tar = this.ele.querySelector(expr);
         if (tar) {
@@ -391,79 +374,6 @@ class XhearEle extends XData {
         return cloneEle;
     }
 
-    // 根据xv-vd生成xdata实例
-    viewData() {
-        let xdata = createXData({});
-
-        // 获取所有toData元素
-        this.all('[xv-vd]').forEach(xele => {
-            // 获取vd内容
-            let vdvalue = xele.attrs.xvVd;
-
-            if (xele.xvele) {
-                let syncObj = {};
-
-                if (/ to /.test(vdvalue)) {
-                    // 获取分组
-                    let vGroup = vdvalue.split(",");
-                    vGroup.forEach(g => {
-                        // 拆分 to 两边的值
-                        let toGroup = g.split("to");
-                        if (toGroup.length == 2) {
-                            let key = toGroup[0].trim();
-                            let toKey = toGroup[1].trim();
-                            xdata[toKey] = xele[key];
-                            syncObj[toKey] = key;
-                        }
-                    });
-                } else {
-                    vdvalue = vdvalue.trim();
-                    // 设置同步数据
-                    xdata[vdvalue] = xele.value;
-                    syncObj[vdvalue] = "value";
-                }
-
-                // 数据同步
-                xdata.sync(xele, syncObj);
-            } else {
-                // 普通元素
-                let {
-                    ele
-                } = xele;
-
-                if ('checked' in ele) {
-                    // 设定值
-                    xdata[vd] = ele.checked;
-
-                    // 修正Input
-                    xdata.watch(vd, e => {
-                        ele.checked = xdata[vd];
-                    });
-                    ele.addEventListener("change", e => {
-                        xdata[vd] = ele.checked;
-                    });
-                } else {
-                    // 设定值
-                    xdata[vd] = ele.value;
-
-                    // 修正Input
-                    xdata.watch(vd, e => {
-                        ele.value = xdata[vd];
-                    });
-                    ele.addEventListener("change", e => {
-                        xdata[vd] = ele.value;
-                    });
-                    ele.addEventListener("input", e => {
-                        xdata[vd] = ele.value;
-                    });
-                }
-            }
-
-            xele.attrs.xvVd = null;
-        });
-
-        return xdata;
-    }
     extend(proto) {
         Object.keys(proto).forEach(k => {
             // 获取描述
