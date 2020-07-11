@@ -190,11 +190,11 @@ const renderEle = (ele, defaults) => {
 
         // xv-if 条件转换
         queAllToArray(sroot, `[xv-if]`).forEach(e => {
-            // xv-if 不能和 xv-tar 配合使用
-            if (e.getAttribute("xv-tar")) {
+            // xv-if 不能和 $ 配合使用
+            if (e.getAttribute("$")) {
                 console.error({
                     target: e,
-                    desc: "xv-if cannot be used with xv-tar"
+                    desc: "xv-if cannot be used with $element"
                 });
                 return;
             }
@@ -226,13 +226,12 @@ const renderEle = (ele, defaults) => {
         });
 
         // 设置其他 xv-tar
-        queAllToArray(sroot, `[xv-tar]`).forEach(tar => {
-            // Array.from(sroot.querySelectorAll(`[xv-tar]`)).forEach(tar => {
-            let tarKey = tar.getAttribute('xv-tar');
-            Object.defineProperty(xhearEle, "$" + tarKey, {
-                get: () => createXhearProxy(tar)
-            });
-        });
+        // queAllToArray(sroot, `[xv-tar]`).forEach(tar => {
+        //     let tarKey = tar.getAttribute('xv-tar');
+        //     Object.defineProperty(xhearEle, "$" + tarKey, {
+        //         get: () => createXhearProxy(tar)
+        //     });
+        // });
 
         // 转换 xv-span 元素
         queAllToArray(sroot, `xv-span`).forEach(e => {
@@ -276,6 +275,13 @@ const renderEle = (ele, defaults) => {
                 } = obj;
                 let prop = value;
                 name = attrToProp(name);
+
+                if (name === "$") {
+                    Object.defineProperty(xhearEle, "$" + value, {
+                        get: () => createXhearProxy(ele)
+                    });
+                    return;
+                }
 
                 // 判断prop是否函数表达式
                 const isExpr = isFunctionExpr(prop);

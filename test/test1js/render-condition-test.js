@@ -21,14 +21,14 @@
         temp: `
             <style> div{color:white;} [a="1"]{color:rgb(0,128,0);} [a="2"]{color:rgb(255,0,0);}</style>
             <div> 我是condition-test
-                <div xv-tar="c1" @click="clickFun"></div>
-                <div xv-tar="c2" @click="canClick && clickFun2($event)"></div>
-                <div xv-tar="a1" :a="a">{{a}}</div>
-                <div xv-tar="a2" :a="canClick ? 2 : 1">{{canClick ? 2 : 1}}</div>
+                <div $="c1" @click="clickFun"></div>
+                <div $="c2" @click="canClick && clickFun2($event)"></div>
+                <div $="a1" :a="a">{{a}}</div>
+                <div $="a2" :a="canClick ? 2 : 1">{{canClick ? 2 : 1}}</div>
                 <div class="s1" xv-if="showS1">s1</div>
                 <div class="s2" xv-if="!showS1">s2</div>
-                <div xv-tar="h1" xv-show="showS2">h1</div>
-                <div xv-tar="h2" xv-show="!showS2">h2</div>
+                <div $="h1" xv-show="showS2">h1</div>
+                <div $="h2" xv-show="!showS2">h2</div>
             </div>
         `,
         proto: {
