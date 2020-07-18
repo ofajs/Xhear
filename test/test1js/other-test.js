@@ -1,10 +1,13 @@
 (() => {
-    let tester = expect(2, 'other test');
+    let tester = expect(3, 'other test');
 
     let testEle = $("<div></div>");
 
     $.register({
         tag: "other-test-one",
+        attrs: {
+            other: 1
+        },
         proto: {
             set temp(val) {
                 this.html = val;
@@ -32,5 +35,9 @@
         testone.temp = "change one";
 
         tester.ok(testone.temp === "change one", "proto set data ok");
+
+        setTimeout(e => {
+            tester.ok(testEle.$("other-test-one").ele.getAttribute("other") == 1, "attributes ok");
+        }, 100);
     });
 })();
