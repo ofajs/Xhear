@@ -204,6 +204,41 @@ class XhearEle extends XData {
         return createProxyAttrs(this.ele);
     }
 
+    // 监听指定元素的变动
+    moni(queStr, func) {
+        let olds;
+        this.watch(() => {
+            let eles = this.all(queStr);
+            let isSame = true;
+
+            // 确保数据一致
+            if (olds && olds.length == eles.length) {
+                eles.some(e => {
+                    if (!olds.includes(e)) {
+                        isSame = false;
+                        return true;
+                    }
+                });
+            } else {
+                isSame = false;
+            }
+
+            if (isSame) {
+                return;
+            }
+
+            let obj = {
+                old: olds,
+                val: eles
+            };
+
+            olds = eles;
+
+            func(eles, obj);
+        }, true);
+    }
+
+
     setData(key, value) {
         if (UnSetKeys.has(key)) {
             console.warn(`can't set this key => `, key);
