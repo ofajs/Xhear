@@ -125,7 +125,12 @@ const register = (opts) => {
             let options = Object.assign({}, defaults);
 
             // 设置xv-ele
-            nextTick(() => this.setAttribute("xv-ele", ""), xvid);
+            // nextTick(() => this.setAttribute("xv-ele", ""), xvid);
+            if (this.parentElement) {
+                this.setAttribute("xv-ele", "");
+            } else {
+                nextTick(() => this.setAttribute("xv-ele", ""), xvid);
+            }
 
             renderEle(this, options);
             options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
@@ -180,6 +185,9 @@ const register = (opts) => {
 const renderEle = (ele, defaults) => {
     // 初始化元素
     let xhearEle = createXhearEle(ele);
+
+    // 存储promise队列
+    let renderTasks = [];
 
     // 合并 proto
     defaults.proto && xhearEle.extend(defaults.proto);
@@ -580,30 +588,44 @@ const renderEle = (ele, defaults) => {
     });
 
     // 查找是否有link为完成
-    let isSetOne = 0;
     if (sroot) {
         let links = queAllToArray(sroot, `link`);
         if (links.length) {
-            Promise.all(links.map(link => new Promise(res => {
-                if (link.sheet) {
-                    res();
-                } else {
-                    link.onload = () => {
-                        res();
-                        link.onload = null;
-                    };
-                }
-            }))).then(() => nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid))
-        } else {
-            isSetOne = 1;
+            links.forEach(link => {
+                renderTasks.push(new Promise((resolve, reject) => {
+                    if (link.sheet) {
+                        resolve();
+                    } else {
+                        link.addEventListener("load", e => {
+                            resolve();
+                        });
+                        link.addEventListener("error", e => {
+                            reject({
+                                desc: "link load error",
+                                error: e,
+                                target: ele
+                            });
+                        });
+                    }
+                }));
+            });
         }
-    } else {
-        isSetOne = 1;
     }
 
-    isSetOne && nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid);
+    // 设置渲染完毕
+    let setRenderend = () => {
+        nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid)
+        xhearEle.trigger('renderend', {
+            bubbles: false
+        });
+        setRenderend = null;
+    }
 
-    xhearEle.trigger('renderend', {
-        bubbles: false
-    });
+    if (renderTasks.length) {
+        Promise.all(renderTasks).then(() => {
+            setRenderend();
+        });
+    } else {
+        setRenderend();
+    }
 }

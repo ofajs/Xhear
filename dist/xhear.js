@@ -15,7 +15,8 @@
     const cloneObject = obj => JSON.parse(JSON.stringify(obj));
 
     const nextTick = (() => {
-        if (document.currentScript.getAttribute("debug") !== null) {
+        let isDebug = document.currentScript.getAttribute("debug") !== null;
+        if (isDebug) {
             let nMap = new Map();
             return (fun, key) => {
                 if (!key) {
@@ -51,7 +52,11 @@
                             key,
                             fun
                         }) => {
-                            fun();
+                            try {
+                                fun();
+                            } catch (e) {
+                                console.error(e);
+                            }
                             nextTickMap.delete(key);
                         });
                     }
@@ -3020,7 +3025,12 @@ with(this){
                 let options = Object.assign({}, defaults);
 
                 // 设置xv-ele
-                nextTick(() => this.setAttribute("xv-ele", ""), xvid);
+                // nextTick(() => this.setAttribute("xv-ele", ""), xvid);
+                if (this.parentElement) {
+                    this.setAttribute("xv-ele", "");
+                } else {
+                    nextTick(() => this.setAttribute("xv-ele", ""), xvid);
+                }
 
                 renderEle(this, options);
                 options.ready && options.ready.call(_xhearThis[PROXYTHIS]);
@@ -3075,6 +3085,9 @@ with(this){
     const renderEle = (ele, defaults) => {
         // 初始化元素
         let xhearEle = createXhearEle(ele);
+
+        // 存储promise队列
+        let renderTasks = [];
 
         // 合并 proto
         defaults.proto && xhearEle.extend(defaults.proto);
@@ -3485,32 +3498,46 @@ with(this){
         });
 
         // 查找是否有link为完成
-        let isSetOne = 0;
         if (sroot) {
             let links = queAllToArray(sroot, `link`);
             if (links.length) {
-                Promise.all(links.map(link => new Promise(res => {
-                    if (link.sheet) {
-                        res();
-                    } else {
-                        link.onload = () => {
-                            res();
-                            link.onload = null;
-                        };
-                    }
-                }))).then(() => nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid))
-            } else {
-                isSetOne = 1;
+                links.forEach(link => {
+                    renderTasks.push(new Promise((resolve, reject) => {
+                        if (link.sheet) {
+                            resolve();
+                        } else {
+                            link.addEventListener("load", e => {
+                                resolve();
+                            });
+                            link.addEventListener("error", e => {
+                                reject({
+                                    desc: "link load error",
+                                    error: e,
+                                    target: ele
+                                });
+                            });
+                        }
+                    }));
+                });
             }
-        } else {
-            isSetOne = 1;
         }
 
-        isSetOne && nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid);
+        // 设置渲染完毕
+        let setRenderend = () => {
+            nextTick(() => ele.setAttribute("xv-ele", 1), ele.xvid)
+            xhearEle.trigger('renderend', {
+                bubbles: false
+            });
+            setRenderend = null;
+        }
 
-        xhearEle.trigger('renderend', {
-            bubbles: false
-        });
+        if (renderTasks.length) {
+            Promise.all(renderTasks).then(() => {
+                setRenderend();
+            });
+        } else {
+            setRenderend();
+        }
     }
 
     const createXhearEle = ele => (ele.__xhear__ || new XhearEle(ele));
