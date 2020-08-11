@@ -433,7 +433,11 @@ const renderEle = (ele, defaults) => {
                             event.bubble = false;
                         }
 
-                        func.call(xhearEle[PROXYTHIS], event, data);
+                        if (isFunction(func)) {
+                            func.call(xhearEle[PROXYTHIS], event, data);
+                        } else if (!func) {
+                            console.warn(xhearEle[PROXYTHIS], `bind ${functionName} is not function`);
+                        }
                     });
                 }
             });
