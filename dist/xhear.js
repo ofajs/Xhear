@@ -2429,7 +2429,7 @@
             return this;
         }
 
-        parents(expr) {
+        parents(expr, until) {
             let pars = [];
             let tempTar = this.parent;
 
@@ -2446,22 +2446,28 @@
                         }
                         tempTar = tempTar.parent;
                     }
-                } else {
-                    if (expr instanceof XhearEle) {
-                        expr = expr.ele;
-                    }
+                }
+            }
 
-                    // 从属 element
-                    if (expr instanceof Element) {
-                        while (tempTar) {
-                            if (tempTar.ele == expr) {
-                                return true;
-                            }
-                            tempTar = tempTar.parent;
+            if (until) {
+                if (until instanceof XhearEle) {
+                    let newPars = [];
+                    pars.some(e => {
+                        if (e === until) {
+                            return true;
                         }
-                    }
-
-                    return false;
+                        newPars.push(e);
+                    });
+                    pars = newPars;
+                } else if (getType(until) == "string") {
+                    let newPars = [];
+                    pars.some(e => {
+                        if (e.is(until)) {
+                            return true;
+                        }
+                        newPars.push(e);
+                    });
+                    pars = newPars;
                 }
             }
 
