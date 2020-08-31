@@ -155,8 +155,11 @@
         }
         let _this = xobj[XDATASELF];
         if (_this) {
-            _this.index = undefined;
-            _this.parent = undefined;
+            try {
+                // 防止index和parent被重定向导致失败
+                _this.index = undefined;
+                _this.parent = undefined;
+            } catch (e) {}
         }
 
         // 解除virData绑定
@@ -3103,7 +3106,13 @@ with(this){
                 if (this[RUNARRAY]) {
                     return;
                 }
-                defaults.detached && defaults.detached.call(createXhearProxy(this));
+
+                let _this = createXhearProxy(this)
+
+                defaults.detached && defaults.detached.call(_this);
+
+                // 深度清除数据
+                _this.deepClear();
             }
 
             attributeChangedCallback(name, oldValue, newValue) {

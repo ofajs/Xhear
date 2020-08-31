@@ -169,7 +169,13 @@ const register = (opts) => {
             if (this[RUNARRAY]) {
                 return;
             }
-            defaults.detached && defaults.detached.call(createXhearProxy(this));
+
+            let _this = createXhearProxy(this)
+
+            defaults.detached && defaults.detached.call(_this);
+
+            // 深度清除数据
+            _this.deepClear();
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
