@@ -1,126 +1,17 @@
-// 获取随机id
-const getRandomId = () => Math.random().toString(32).substr(2);
-let objectToString = Object.prototype.toString;
-const getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
-const isUndefined = val => val === undefined;
-// 克隆object
-const cloneObject = obj => JSON.parse(JSON.stringify(obj));
-
-// 设置不可枚举的方法
-const setNotEnumer = (tar, obj) => {
-    for (let k in obj) {
-        defineProperty(tar, k, {
-            // enumerable: false,
-            writable: true,
-            value: obj[k]
-        });
-    }
-}
-
-let {
-    defineProperty,
-    defineProperties,
-    assign
-} = Object;
-
-//改良异步方法
-const nextTick = (() => {
-    let isTick = false;
-    let nextTickArr = [];
-    return (fun) => {
-        if (!isTick) {
-            isTick = true;
-            setTimeout(() => {
-                for (let i = 0; i < nextTickArr.length; i++) {
-                    nextTickArr[i]();
-                }
-                nextTickArr = [];
-                isTick = false;
-            }, 0);
-        }
-        nextTickArr.push(fun);
-    };
-})();
-
-// common
-// // XhearElement寄存在element内的函数寄宿对象key
-// const XHEAREVENT = "_xevent_" + getRandomId();
-// // xhearElement初始化存放的变量key
-// const XHEARELEMENT = "_xhearEle_" + getRandomId();
-// // 属于可动变量的key组合
-// const EXKEYS = "_exkeys_" + getRandomId();
-// const ATTACHED = "_attached_" + getRandomId();
-// const DETACHED = "_detached_" + getRandomId();
-
-// XhearElement寄存在element内的函数寄宿对象key
-const XHEAREVENT = Symbol("xhearEvents");
-// xhearElement初始化存放的变量key
-const XHEARELEMENT = Symbol("xhearElement");
-// 属于可动变量的key组合
-const EXKEYS = Symbol("exkeys");
-const ATTACHED = Symbol("attached");
-const DETACHED = Symbol("detached");
-
-// database
-// 注册数据
-const regDatabase = new Map();
-
-// 可以走默认setter的key Map
-const defaultKeys = new Set(["display", "text", "html", "style"]);
-
 // business function
-// 获取 content 容器
-const getContentEle = (tarEle) => {
-    let contentEle = tarEle;
-
-    // 判断是否xvRender
-    while (contentEle.xvRender) {
-        let xhearEle = contentEle[XHEARELEMENT];
-
-        if (xhearEle) {
-            let {
-                $content
-            } = xhearEle;
-
-            if ($content) {
-                contentEle = $content.ele;
-            } else {
-                break;
-            }
-        }
-    }
-
-    return contentEle;
-}
-
-// 获取父容器
-const getParentEle = (tarEle) => {
-    let {
-        parentElement
-    } = tarEle;
-
-    if (!parentElement) {
-        return;
-    }
-
-    while (parentElement.hostId) {
-        parentElement = parentElement[XHEARELEMENT].$host.ele;
-    }
-
-    return parentElement;
-}
-
 // 判断元素是否符合条件
 const meetsEle = (ele, expr) => {
     if (ele === expr) {
         return !0;
     }
-    let fadeParent = document.createElement('div');
     if (ele === document) {
         return false;
     }
-    fadeParent.appendChild(ele.cloneNode(false));
-    return !!fadeParent.querySelector(expr);
+    let tempEle = document.createElement('template');
+    let html = `<${ele.tagName.toLowerCase()} ${Array.from(ele.attributes).map(e => e.name + '="' + e.value + '"').join(" ")} />`
+
+    tempEle.innerHTML = html;
+    return !!tempEle.content.querySelector(expr);
 }
 
 // 转换元素
@@ -136,7 +27,6 @@ const parseStringToDom = (str) => {
     });
 };
 
-// 转换 tag data 到 element
 const parseDataToDom = (objData) => {
     if (!objData.tag) {
         console.error("this data need tag =>", objData);
@@ -148,121 +38,130 @@ const parseDataToDom = (objData) => {
 
     // 添加数据
     objData.class && ele.setAttribute('class', objData.class);
+    objData.slot && ele.setAttribute('slot', objData.slot);
     objData.text && (ele.textContent = objData.text);
-    if (objData.data) {
-        let {
-            data
-        } = objData;
-
-        Object.keys(data).forEach(k => {
-            let val = data[k];
-            ele.dataset[k] = val;
-        });
-    }
-
-    // 判断是否xv-ele
     let {
-        xvele
+        data
     } = objData;
+    data && Object.keys(data).forEach(k => {
+        let val = data[k];
+        ele.dataset[k] = val;
+    });
 
-    let xhearEle;
+    if (ele.xvele) {
+        let xhearele = createXhearEle(ele);
 
-    if (xvele) {
-        // 克隆一份，去除数字
-        let cloneData = {};
-
-        Object.keys(objData).forEach(k => {
-            // 非数字和非xvele tag
-            if (k !== "xvele" && k !== "tag" && /\D/.test(k)) {
-                cloneData[k] = objData[k];
+        xhearele[CANSETKEYS].forEach(k => {
+            let val = objData[k];
+            if (!isUndefined(val)) {
+                xhearele[k] = val;
             }
         });
-
-        ele.setAttribute('xv-ele', "");
-
-        // 数据代入渲染
-        renderEle(ele, cloneData);
-        // renderEle(ele);
-
-        xhearEle = createXHearElement(ele);
-
-        // 数据合并
-        // xhearEle[EXKEYS].forEach(k => {
-        //     let val = objData[k];
-        //     !isUndefined(val) && (xhearEle[k] = val);
-        // });
     }
 
-    // 填充内容
+    // 填充子元素
     let akey = 0;
     while (akey in objData) {
         // 转换数据
         let childEle = parseDataToDom(objData[akey]);
-
-        if (xhearEle) {
-            let {
-                $content
-            } = xhearEle;
-
-            if ($content) {
-                $content.ele.appendChild(childEle);
-            }
-        } else {
-            ele.appendChild(childEle);
-        }
+        ele.appendChild(childEle);
         akey++;
     }
 
     return ele;
 }
 
-// 将element转换成xhearElement
-const createXHearElement = (ele) => {
-    let xhearEle = ele[XHEARELEMENT];
-    if (!xhearEle) {
-        xhearEle = new XhearElement(ele);
-        ele[XHEARELEMENT] = xhearEle;
-    }
-    return xhearEle;
-}
+const parseToDom = (expr) => {
+    let ele;
 
-// 渲染所有xv-ele
-const renderAllXvEle = (ele) => {
-    // 判断内部元素是否有xv-ele
-    let eles = ele.querySelectorAll('[xv-ele]');
-    Array.from(eles).forEach(e => {
-        renderEle(e);
-    });
-
-    let isXvEle = ele.getAttribute('xv-ele');
-    if (!isUndefined(isXvEle) && isXvEle !== null) {
-        renderEle(ele);
-    }
-}
-
-
-// 转化成XhearElement
-const parseToXHearElement = expr => {
-    if (expr instanceof XhearElement) {
-        return expr;
+    if (expr instanceof XhearEle) {
+        return expr.ele;
     }
 
-    let reobj;
-
-    // expr type
     switch (getType(expr)) {
-        case "object":
-            reobj = parseDataToDom(expr);
-            reobj = createXHearElement(reobj);
-            break;
         case "string":
-            expr = parseStringToDom(expr)[0];
+            if (/\<.+\>/.test(expr)) {
+                ele = parseStringToDom(expr);
+                ele = ele[0];
+            }
+            break;
+        case "object":
+            ele = parseDataToDom(expr);
+            break;
         default:
-            if (expr instanceof Element) {
-                renderAllXvEle(expr);
-                reobj = createXHearElement(expr);
+            if (expr instanceof Element || expr instanceof DocumentFragment || expr instanceof Document) {
+                ele = expr;
             }
     }
+    return ele;
+}
 
-    return reobj;
+/**
+ * 查找元素内相匹配的元素，并以数组形式返回
+ * @param {Element} target 目标节点
+ * @param {String} expr 表达字符串
+ */
+const queAllToArray = (target, expr) => {
+    let tars = target.querySelectorAll(expr);
+    return tars ? Array.from(tars) : [];
+}
+
+const isXhear = (target) => target instanceof XhearEle;
+
+// 将 element attribute 横杠转换为大小写模式
+const attrToProp = key => {
+    // 判断是否有横线
+    if (/\-/.test(key)) {
+        key = key.replace(/\-[\D]/g, (letter) => letter.substr(1).toUpperCase());
+    }
+    return key;
+}
+const propToAttr = key => {
+    if (/[A-Z]/.test(key)) {
+        key = key.replace(/[A-Z]/g, letter => "-" + letter.toLowerCase());
+    }
+    return key;
+}
+
+// 设置属性
+const attrsHandler = {
+    get: function (target, prop) {
+        return target._ele.getAttribute(propToAttr(prop));
+    },
+    set: function (target, prop, value) {
+        if (value === null) {
+            target._ele.removeAttribute(propToAttr(prop));
+        } else {
+            target._ele.setAttribute(propToAttr(prop), String(value));
+        }
+
+        return true;
+    }
+};
+
+/**
+ * 元素 attributes 代理对象
+ */
+class Attrs {
+    constructor(ele) {
+        Object.defineProperties(this, {
+            _ele: {
+                get: () => ele
+            }
+        });
+    }
+}
+
+/**
+ * 生成代理attrs对象
+ * @param {HTMLElement} ele 目标html元素
+ */
+const createProxyAttrs = (ele) => {
+    let proxyAttrs = ele.__p_attrs;
+
+    if (!proxyAttrs) {
+        ele.__p_attrs = proxyAttrs = new Proxy(new Attrs(ele), attrsHandler);
+    }
+
+    return proxyAttrs;
 }

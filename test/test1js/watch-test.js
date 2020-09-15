@@ -2,7 +2,7 @@
     let tester = expect(9, 'watch test');
 
     $.register({
-        tag: "t2",
+        tag: "w-test",
         temp: `
         <div style="color:red;font-size:10px;">selected:{{selected}}</div>
         <div xv-content style="font-size:12px;"></div>
@@ -11,14 +11,14 @@
         data: {
             selected: 0
         },
-        // watch: {
-        //     selected(d) {
-        //         debugger
-        //     }
-        // }
+        watch: {
+            selected(e, selected) {
+                console.log("selected =>", selected);
+            }
+        }
     });
 
-    let d = $('#d');
+    let d = $("#watch_test");
 
     // 等渲染完毕
     setTimeout(() => {
@@ -27,55 +27,46 @@
 
         // watch监听
         d.watch(e => {
-            tester.ok(e.modifys.length == 4, 'modifys length ok');
-            tester.ok(e.modifys[0].genre == "arrayMethod", 'modifys genre ok 1');
-            tester.ok(e.modifys[1].genre == "change", 'modifys genre ok 2');
+            tester.ok(e.trends.length == 4, 'trends length ok');
+            tester.ok(e.trends[0].name === "push", 'trends name ok 1');
+            tester.ok(e.trends[1].name == "setData", 'trends name ok 2');
         });
 
         // 直接设置多个元素
         d.push({
-            tag: "t2",
-            xvele: 1,
+            tag: "w-test",
             text: "t2-1"
         }, {
-            tag: "t2",
-            xvele: 1,
+            tag: "w-test",
             0: {
-                tag: "t2",
-                xvele: 1,
+                tag: "w-test",
                 text: "t2-2-1"
             },
             1: {
-                tag: "t2",
-                xvele: 1,
+                tag: "w-test",
                 0: {
-                    tag: "t2",
-                    xvele: 1,
+                    tag: "w-test",
                     text: "t2-2-2-1",
                 },
                 1: {
-                    tag: "t2",
-                    xvele: 1,
+                    tag: "w-test",
                     text: "t2-2-2-2",
                 }
             }
         }, {
-            tag: "t2",
-            xvele: 1,
+            tag: "w-test",
             text: "t2-3"
         });
 
         // 监听 selected=1 的
         let cid = 0;
         d.watch('[selected=1]', (e) => {
-            switch (cid) {
-                case 1:
-                    tester.ok(e.val.length == 1, "[selected=1] ok 1");
-                    tester.ok(e.val[0].ele === d[1].ele, "[selected=1] ok 2");
-                    break;
+            if (cid > 0) {
+                tester.ok(e.val.length == 1, "[selected=1] ok 1");
+                tester.ok(e.val[0].ele === d[1].ele, "[selected=1] ok 2");
             }
             cid++;
-        });
+        }, true);
 
         // 判断是否push成功
         tester.ok(d.length == 3, 'length ok');
@@ -83,8 +74,7 @@
 
         // 替换元素
         d[0] = {
-            tag: "t2",
-            xvele: 1,
+            tag: "w-test",
             text: "change t2-1",
             selected: 1
         };

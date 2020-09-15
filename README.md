@@ -1,90 +1,25 @@
-# Xhear
+# Xhear 5.0
 
-## 什么是Xhear?
+将基于 stanz 6.0 开发，大幅度优化代码，提高兼容性；
 
-Xhear 是 jQuery的精神延续产品，有很多类似jQuery的使用方法，直接在浏览器引用就能使用；但Xhear是一个 **vm模型**，负责做封装组件的底层；
+将新增 `:attr` 等模板语法；
 
-## 什么是 **vm模型**？
+将采用 web components 方案封装，相比4.0性能更强，体积更小，使用更容易；
 
-数据本身就是视图，视图本身就是数据；
+相比 xhear 4.0，优化事件绑定机制；
 
-比如下面的table，我们使用 Xhear 给它排序，代码非常简单；
+想要运行 watch编译，请将 stanz 6 放在与项目同一个目录；
 
-```html
-<table>
-    <thead>
-        <td>人物</td>
-        <td>年龄</td>
-    </thead>
-    <tbody>
-        <tr>
-            <td>孙悟空</td>
-            <td>512</td>
-        </tr>
-        <tr>
-            <td>沉香</td>
-            <td>24</td>
-        </tr>
-        <tr>
-            <td>玉皇大帝</td>
-            <td>226800000</td>
-        </tr>
-        <tr>
-            <td>杨戬</td>
-            <td>1024</td>
-        </tr>
-    </tbody>
-</table>
+# Xhear 4.0
 
-<script>
-$('tbody').sort((a, b) => {
-    return a[1].text - b[1].text;
-});
-</script>
-```
+基于新的 stanz 5.0 开发，增强性能，优化代码结构；
 
-只需要三行代码，表格就会按照年龄顺序排列；[查看案例 tableSort](https://kirakiray.github.io/Xhear/readmeSource/table_sort.html)
+## Xhear 3.0
 
-使用Xhear封装的组件也非常简单；直接使用封装好的 element标签(加上属性`xv-ele`) 即可；
+xhear 3.0 摆脱了jQuery，借鉴jQuery，脱胎于stanz；
 
-```html
-<!DOCTYPE html>
-<html lang="en">
+相对于xhear2，大量精简代码，减少错误，增强性能；
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>markdown test</title>
-    <script src="../drill.js"></script>
-    <script src="../../dist/xhear.js"></script>
-    <script>
-        // 加载markdown库
-        load("./markdown");
-    </script>
-</head>
+### Xhear 2.0
 
-<body>
-    <markdown xv-ele src="README.md" style="padding:20px;">
-        正在请求数据中；
-    </markdown>
-</body>
-
-</html>
-```
-
-[markdown案例](https://kirakiray.github.io/Xhear/demo/markdown/test.html)，打开案例后，右键选择 查看页面源代码；
-
-## 文档
-
-[中文文档](doc/cn/)
-
-## Xhear的优势？
-
-封装简单，使用更简单；只需要浏览器，没有编译层，不强制依赖webpack，拿上手就能构建控件，轻松实现mvvm或mvc；
-
-Xhear这里推荐和 [drill.js](https://github.com/kirakiray/drill.js) 一起使用，纯web工程，开发更方便；
-
-## Xhear原理
-
-Xhear是基于 [stanz](https://github.com/kirakiray/stanz) 开发的，Xhear组件也能使用 `stanz` 的方法；
+Xhear 1.0 使用过程中发现很多问题，需要精简很多没用和容易出错的功能，干脆重构；

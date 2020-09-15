@@ -12,27 +12,27 @@
         val: "test data"
     });
 
-    let b = $('#b');
+    let testEle = $('#event_test');
 
-    b.one('update', (e, data) => {
+    testEle.one('update', (e, data) => {
         tester.ok(JSON.stringify(e.keys) == "[0]", "update keys ok");
-        tester.ok(e.modify.key == 1, "update modify key ok");
+        tester.ok(e.modify.args[0] == 1, "update modify key ok");
     });
 
-    b[0][1] = {
+    testEle[0][1] = {
         tag: "div",
         text: "bbb1_2",
         class: "bbb1_2"
     };
 
-    // 模拟 selector 测试
-    b.on('ka', '.bbb', (e) => {
+    // // 模拟 selector 测试
+    let selector = ".a_con";
+    testEle.on('ka', selector, (e) => {
         tester.ok(1, 'selector ok 1');
-        tester.ok(e.selector === '.bbb', 'selector ok 2');
-        tester.ok(e.delegateTarget.is('.bbb'), 'selector ok 3');
+        tester.ok(e.selector === selector, 'selector ok 2');
+        tester.ok(e.delegateTarget.is(selector), 'selector ok 3');
     });
 
-    $('.bbb1_2').emit('ka');
-    $('.bbb2_1').emit('ka');
-
+    $('.b_con_child').emit('ka');
+    $('#a1_2').emit('ka');
 })();
