@@ -1360,6 +1360,29 @@
         }
 
         /**
+         * 监听表达式为正确时就返回成功
+         * @param {String} expr 监听表达式
+         */
+        watchUntil(expr) {
+            if (/[^=]=[^=]/.test(expr)) {
+                throw 'cannot use single =';
+            }
+            return new Promise(resolve => {
+                let f;
+                let exprFun = new Function(`with(this){
+                return ${expr}
+            }`).bind(this);
+                this.watch(f = () => {
+                    let reVal = exprFun();
+                    if (reVal) {
+                        this.unwatch(f);
+                        resolve(reVal);
+                    }
+                });
+            });
+        }
+
+        /**
          * 趋势数据的入口，用于同步数据
          * @param {Object} trend 趋势数据
          */
@@ -2087,8 +2110,8 @@
     // 可直接设置的Key
     const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
 
-    // 可直接设置的Key并且能冒泡
-    const xEleDefaultSetKeysCanUpdate = new Set(["text", "html"]);
+    // 可直接设置的Key并且能冒泡（在普通元素下，非组件）
+    // const xEleDefaultSetKeysCanUpdate = new Set(["text", "html"]);
 
     // 不可设置的key
     const UnSetKeys = new Set(["parent", "index", "slot"]);
@@ -2347,11 +2370,11 @@
                 // 直接设置
                 _this[key] = value;
 
-                if (xEleDefaultSetKeysCanUpdate.has(key)) {
-                    emitUpdate(_this, "setData", [key, value], {
-                        oldValue: oldVal
-                    });
-                }
+                // if (xEleDefaultSetKeysCanUpdate.has(key)) {
+                //     emitUpdate(_this, "setData", [key, value], {
+                //         oldValue: oldVal
+                //     });
+                // }
                 return true;
             } else if ((canSetKey && canSetKey.has(key)) || /^_.+/.test(key)) {
                 // 直接走xdata的逻辑

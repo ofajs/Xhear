@@ -5,8 +5,8 @@ const ORIEVE = Symbol("orignEvents");
 // 可直接设置的Key
 const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
 
-// 可直接设置的Key并且能冒泡
-const xEleDefaultSetKeysCanUpdate = new Set(["text", "html"]);
+// 可直接设置的Key并且能冒泡（在普通元素下，非组件）
+// const xEleDefaultSetKeysCanUpdate = new Set(["text", "html"]);
 
 // 不可设置的key
 const UnSetKeys = new Set(["parent", "index", "slot"]);
@@ -257,11 +257,11 @@ class XhearEle extends XData {
             // 直接设置
             _this[key] = value;
 
-            if (xEleDefaultSetKeysCanUpdate.has(key)) {
-                emitUpdate(_this, "setData", [key, value], {
-                    oldValue: oldVal
-                });
-            }
+            // if (xEleDefaultSetKeysCanUpdate.has(key)) {
+            //     emitUpdate(_this, "setData", [key, value], {
+            //         oldValue: oldVal
+            //     });
+            // }
             return true;
         } else if ((canSetKey && canSetKey.has(key)) || /^_.+/.test(key)) {
             // 直接走xdata的逻辑
