@@ -3236,14 +3236,6 @@ with(this){
                 });
             });
 
-            // 设置其他 xv-tar
-            // queAllToArray(sroot, `[xv-tar]`).forEach(tar => {
-            //     let tarKey = tar.getAttribute('xv-tar');
-            //     Object.defineProperty(xhearEle, "$" + tarKey, {
-            //         get: () => createXhearProxy(tar)
-            //     });
-            // });
-
             // 转换 xv-span 元素
             queAllToArray(sroot, `xv-span`).forEach(e => {
                 // 替换xv-span
@@ -3415,6 +3407,38 @@ with(this){
                     }
                 });
             });
+
+            // 修正 style 内的动态值变动
+            // queAllToArray(sroot, `style`).forEach(styleEle => {
+            //     let oriStyleHTML = styleEle.innerHTML;
+
+            //     // 匹配到动态值
+            //     let sarr = oriStyleHTML.match(/<xv-span xvkey=".+?"><\/xv-span>/g);
+            //     if (sarr && sarr.length) {
+            //         // 去重
+            //         let s_key = Array.from(new Set(sarr)).map(e => e.replace(/<xv-span xvkey="(.+)"><\/xv-span>/, "$1"));
+
+            //         // 抽取关键元素并监听
+            //         s_key.forEach(expr => {
+            //             // 监听内容，根据值变动去更新style内部的所有Html
+            //             embedWatch({
+            //                 target: xhearEle,
+            //                 expr,
+            //                 callback(val) {
+            //                     // 重新渲染样式内容
+            //                     let b_style = oriStyleHTML;
+
+            //                     s_key.forEach(key => {
+            //                         let reg = new RegExp(`<xv-span xvkey="${key}"><\/xv-span>`, "g");
+            //                         b_style = b_style.replace(reg, xhearEle[key]);
+            //                     });
+
+            //                     styleEle.innerHTML = b_style;
+            //                 }
+            //             });
+            //         });
+            //     }
+            // });
 
             // 需要跳过的元素列表
             let xvModelJump = new Set();
