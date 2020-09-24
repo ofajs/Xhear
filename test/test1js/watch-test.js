@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(9, 'watch test');
+    let tester = expect(10, 'watch test');
 
     $.register({
         tag: "w-test",
@@ -87,6 +87,34 @@
         setTimeout(() => {
             tester.ok(cloneDObj[1].selected == 1, 'sync ok');
         }, 500);
-
     }, 100);
+
+
+    // nextTick顺序测试
+    let nt_arr = [];
+    $.register({
+        tag: "w-tow",
+        data: {
+            d: [1]
+        },
+        watch: {
+            d(e, d) {
+                nt_arr.push(d);
+            }
+        }
+    });
+
+    let dtowele = $({
+        tag: "w-tow"
+    })
+
+    $.nextTick(() => {
+        dtowele.d.push(2)
+
+        $.nextTick(() => {
+            dtowele.d.push(3)
+            tester.ok(dtowele.d.string === '[1,2,3]',"nextTick order ok");
+        });
+    });
+
 })();
