@@ -1,6 +1,6 @@
 {
   "name": "xhear",
-  "version": "5.1.6",
+  "version": "5.2.0",
   "description": "a web components solution",
   "scripts": {
     "watch": "node scripts/watch.js"
