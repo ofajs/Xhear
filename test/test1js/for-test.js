@@ -7,11 +7,14 @@
             ha: "hahahah",
             a: 1,
             arr: [{
-                val: "val 1"
+                val: "val 2",
+                d: 2
             }, {
-                val: "val 2"
+                val: "val 3",
+                d: 3
             }, {
-                val: "val 3"
+                val: "val 1",
+                d: 1
             }]
         },
         proto: {
@@ -24,20 +27,27 @@
         },
         temp: `
             <div>{{getBB()}}</div>
-            <div xv-for="item in arr">
+            <div xv-for="item in arr" style="margin:40px 0;">
                 <div>for line </div>
                 <div>{{ha}}</div>
-                <h4>{{item.val}}</h4>
+                <div style="font-weight:bold;">{{item.val}} - {{item.d}}</div>
+                <div xv-show="item.d == 2" style="color:blue;">item.d is 2</div>
             </div>
-            <div :ha="ha" @click="conHa" @submit="no">
+            <div :haattr="ha" @click.stop="conHa" @submit="no" style="cursor:pointer;">
             {{ha}}
             </div>
-            <div xv-if="a === 1">if test</div>
+            <div xv-show="a === 1">xv-show test</div>
         `,
         ready() {
             setTimeout(() => {
                 // this.arr.splice(1, 1);
-                this.arr[1].val = "change val2";
+                this.arr[1].val = "change val3";
+
+                setTimeout(() => {
+                    this.arr.sort((a, b) => {
+                        return a.d - b.d;
+                    });
+                }, 1000);
             }, 1000);
         }
     });

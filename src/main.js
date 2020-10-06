@@ -47,9 +47,9 @@ class XhearEle extends XData {
 
     get parent() {
         let { parentNode } = this.ele;
-        if (parentNode instanceof DocumentFragment) {
-            return;
-        }
+        // if (parentNode instanceof DocumentFragment) {
+        //     return;
+        // }
         return (!parentNode || parentNode === document) ? null : createXhearProxy(parentNode);
     }
 

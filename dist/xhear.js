@@ -2172,9 +2172,9 @@
             let {
                 parentNode
             } = this.ele;
-            if (parentNode instanceof DocumentFragment) {
-                return;
-            }
+            // if (parentNode instanceof DocumentFragment) {
+            //     return;
+            // }
             return (!parentNode || parentNode === document) ? null : createXhearProxy(parentNode);
         }
 
@@ -3201,7 +3201,12 @@ with(this){
             let item_expr, key_expr, target_expr;
 
             const ele = e.cloneNode(true);
-            // ele.removeAttribute("xv-for");
+
+            // 添加标识
+            const forId = getRandomId();
+            ele.setAttribute("for-id", forId);
+
+            ele.removeAttribute("xv-for");
 
             // 定位元素
             let textnode = document.createTextNode("");
@@ -3230,9 +3235,17 @@ with(this){
             getProcessArr(target_expr).push({
                 change(vals, trends) {
                     // 确定是重新设置值
-                    let isSetArr = trends.find(e => e.name == "setData" && !trends.keys.length && e.args && e.args[0] === "arr");
+                    let isSetArr = trends.find(e => e.name == "setData" && !trends.keys.length && e.args && e.args[0] === target_expr);
 
-                    if (isSetArr) {
+                    // 影响顺序
+                    let isSortArr = trends.find(e => e.keys.length === 1 && e.keys[0] === target_expr);
+
+                    if (isSetArr || isSortArr) {
+                        // 清除旧的数据
+                        $(par).all(`[for-id="${forId}"]`).forEach(e => {
+                            e.remove();
+                        });
+
                         // 重新渲染数组元素
                         let fragment = document.createDocumentFragment();
 
@@ -3271,16 +3284,29 @@ with(this){
                         });
 
                         par.insertBefore(fragment, textnode);
-                    } else {
-                        // 属于修改值更新，不理
-                        // debugger
                     }
                 }
             });
         });
 
         // xv-if判断
+        // 这个属性容易导致前端屎山样式代码，对性能减弱较大，5.2之后不允许使用if，请改用xv-show
+        // queAllToArray(sroot, "[xv-if]").forEach(e => {
+        //     debugger
+        // });
 
+        // xv-show
+        queAllToArray(sroot, "[xv-show]").forEach(e => {
+            getProcessArr(e.getAttribute("xv-show")).push({
+                change: val => {
+                    if (val) {
+                        e.style.display = "";
+                    } else {
+                        e.style.display = "none";
+                    }
+                }
+            });
+        });
 
         // 文本渲染
         queAllToArray(sroot, "xv-span").forEach(e => {
@@ -3299,6 +3325,50 @@ with(this){
             });
         });
 
+        // 事件修正
+        queAllToArray(sroot, `[xv-on]`).forEach(e => {
+            let data = JSON.parse(e.getAttribute("xv-on"));
+
+            let $ele = createXhearEle(e);
+
+            Object.keys(data).forEach(eventStr => {
+                let [eventName, ...opts] = eventStr.split('.');
+
+                let prop = data[eventStr];
+
+                let func;
+                if (isFunctionExpr(prop)) {
+                    func = exprToFunc(prop);
+                } else {
+                    func = proxyEle[prop];
+                }
+
+                let functionName = "on";
+                if (opts.includes("once")) {
+                    functionName = "one";
+                }
+
+                $ele[functionName](eventName, (event, data) => {
+                    if (opts.includes("prevent")) {
+                        event.preventDefault();
+                    }
+
+                    if (opts.includes("stop")) {
+                        event.bubble = false;
+                    }
+
+                    func.call(proxyEle, event, data);
+                });
+            });
+        });
+
+        // 属性修正
+        queAllToArray(sroot, `[xv-bind]`).forEach(e => {
+            let data = JSON.parse(e.getAttribute("xv-bind"));
+
+            debugger
+
+        });
 
         const canSetKey = proxyEle[CANSETKEYS];
 
@@ -3332,7 +3402,7 @@ with(this){
         }
     }
 
-    // 渲染元素ƒ
+    // 渲染元素
     const renderEle = (ele, defaults) => {
         // 初始化元素
         let xhearEle = createXhearEle(ele);
@@ -3468,109 +3538,6 @@ with(this){
                 proxyEle: xhearEle[PROXYTHIS],
             });
 
-            // // 去除无用的代码（注释代码）
-            // temp = temp.replace(/<!--.+?-->/g, "");
-
-            // // 准换自定义字符串数据
-            // var textDataArr = temp.match(/{{.+?}}/g);
-            // textDataArr && textDataArr.forEach((e) => {
-            //     var key = /{{(.+?)}}/.exec(e);
-            //     if (key) {
-            //         temp = temp.replace(e, `<xv-span xvkey="${key[1].trim()}"></xv-span>`);
-            //     }
-            // });
-
-            // // 填充默认内容
-            // sroot.innerHTML = temp;
-
-            // // 对for循环元素进行修正
-            // queAllToArray(sroot, '[xv-for]').forEach(e => {
-            //     // 拆分key和value
-            //     let xvfor = e.getAttribute('xv-for');
-
-            //     let xvforSplit = xvfor.split("in");
-            //     if (!xvforSplit) {
-            //         throw {
-            //             desc: "xv-for value expression error",
-            //             value: xvfor
-            //         };
-            //     }
-
-            //     let [beforeExpr, targetExpr] = xvforSplit;
-
-            //     // 获取相应值
-            //     targetExpr = targetExpr.trim();
-            //     debugger
-            // });
-
-            // // xv-if 条件转换
-            // queAllToArray(sroot, `[xv-if]`).forEach(e => {
-            //     // xv-if 不能和 $ 配合使用
-            //     if (e.getAttribute("$")) {
-            //         console.error({
-            //             target: e,
-            //             desc: "xv-if cannot be used with $element"
-            //         });
-            //         return;
-            //     }
-
-            //     // 添加定位text
-            //     var textnode = document.createTextNode("");
-            //     e.parentNode.insertBefore(textnode, e);
-
-            //     // 是否存在
-            //     let targetEle = e;
-
-            //     embedWatch({
-            //         target: xhearEle,
-            //         expr: e.getAttribute("xv-if"),
-            //         callback(val) {
-            //             if (val) {
-            //                 // 不存在的情况下添加一份
-            //                 if (!targetEle) {
-            //                     targetEle = e.cloneNode();
-            //                     textnode.parentNode.insertBefore(targetEle, textnode);
-            //                 }
-            //             } else {
-            //                 // 不能存在就删除
-            //                 targetEle.parentNode.removeChild(targetEle);
-            //                 targetEle = null;
-            //             }
-            //         }
-            //     });
-            // });
-
-            // // 转换 xv-span 元素
-            // queAllToArray(sroot, `xv-span`).forEach(e => {
-            //     // 替换xv-span
-            //     var textnode = document.createTextNode("");
-            //     e.parentNode.insertBefore(textnode, e);
-            //     e.parentNode.removeChild(e);
-
-            //     // 函数绑定
-            //     embedWatch({
-            //         target: xhearEle,
-            //         expr: e.getAttribute('xvkey'),
-            //         callback(val) {
-            //             textnode.textContent = val;
-            //         }
-            //     });
-            // });
-
-            // // xv-show 条件转换
-            // queAllToArray(sroot, `[xv-show]`).forEach(e => {
-            //     embedWatch({
-            //         target: xhearEle,
-            //         expr: e.getAttribute('xv-show'),
-            //         callback(val) {
-            //             if (val) {
-            //                 e.style.display = "";
-            //             } else {
-            //                 e.style.display = "none";
-            //             }
-            //         }
-            //     });
-            // });
 
             // // :attribute对子元素属性修正方法
             // queAllToArray(sroot, "*").forEach(ele => {
@@ -3670,43 +3637,6 @@ with(this){
             //         if (attrOriExpr) {
             //             attrOriExpr = attrOriExpr.slice(0, -1);
             //             ele.setAttribute('xv-binding-expr', attrOriExpr);
-            //         }
-
-            //         // 事件绑定
-            //         let atExecs = /^@(.+)/.exec(name);
-            //         if (atExecs) {
-            //             // 参数分解
-            //             let [eventName, ...opts] = atExecs[1].split(".") || "";
-
-            //             let functionName = "on";
-            //             if (opts.includes("once")) {
-            //                 functionName = "one";
-            //             }
-
-            //             // 函数表达式的话提前生成函数，属性的话直接绑定
-            //             let func;
-            //             if (isExpr) {
-            //                 func = exprToFunc(prop);
-            //             } else {
-            //                 func = xhearEle[prop];
-            //             }
-
-            //             // 绑定事件
-            //             createXhearEle(ele)[functionName](eventName, (event, data) => {
-            //                 if (opts.includes("prevent")) {
-            //                     event.preventDefault();
-            //                 }
-
-            //                 if (opts.includes("stop")) {
-            //                     event.bubble = false;
-            //                 }
-
-            //                 if (isFunction(func)) {
-            //                     func.call(xhearEle[PROXYTHIS], event, data);
-            //                 } else if (!func) {
-            //                     console.warn(xhearEle[PROXYTHIS], `bind ${functionName} is not function`);
-            //                 }
-            //             });
             //         }
             //     });
             // });
