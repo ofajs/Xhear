@@ -260,7 +260,7 @@ const renderTemp = ({ sroot, proxyEle, syncData = false }) => {
 
                 if (isSetArr || isSortArr) {
                     // 清除旧的数据
-                    $(par).all(`[for-id="${forId}"]`).forEach(e => {
+                    createXhearEle(par).all(`[for-id="${forId}"]`).forEach(e => {
                         e.remove();
                     });
 
@@ -381,7 +381,12 @@ const renderTemp = ({ sroot, proxyEle, syncData = false }) => {
     });
 
     // 属性修正
-    queAllToArray(sroot, `[xv-bind]`).forEach(ele => {
+    let bindEles = queAllToArray(sroot, `[xv-bind]`);
+    if (!(sroot instanceof DocumentFragment) && createXhearEle(sroot).is("[xv-bind]")) {
+        bindEles.unshift(sroot);
+    }
+
+    bindEles.forEach(ele => {
         let data = JSON.parse(ele.getAttribute("xv-bind"));
 
         Object.keys(data).forEach(attrName => {

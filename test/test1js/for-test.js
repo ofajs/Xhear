@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(7, 'for test');
+    let tester = expect(5, 'for test');
 
     $.register({
         tag: "f-test",
@@ -30,7 +30,7 @@
         .test_forline{margin:40px 0;}
         </style>
             <div>{{getBB()}}</div>
-            <div xv-for="item in arr" class="test_forline" :aa="item.val">
+            <div xv-for="item in arr" class="test_forline" :aa="item.val" :d="item.d">
                 <div :bb="item.val">for line </div>
                 <div>{{ha}}</div>
                 <div style="font-weight:bold;">{{item.val}} - {{item.d}}</div>
@@ -44,17 +44,24 @@
         ready() {
             setTimeout(() => {
                 tester.ok(this.$shadow.all(".test_forline").length === 3, "for element count ok");
-                tester.ok(this.$shadow.all(".test_forline")[1].text, "for element count ok");
+                tester.ok(this.$shadow.all(".test_forline")[1].attrs.aa === this.arr[1].val, "for item attr ok1");
+                tester.ok(this.$shadow.all(".test_forline")[1][0].attrs.bb === this.arr[1].val, "for item attr ok2");
 
                 // this.arr.splice(1, 1);
                 this.arr[1].val = "change val3";
 
                 setTimeout(() => {
+                    tester.ok(this.$shadow.all(".test_forline")[1].attrs.aa == "change val3", "binding val ok");
                     this.arr.sort((a, b) => {
                         return a.d - b.d;
                     });
-                }, 1000);
-            }, 1000);
+
+                    setTimeout(() => {
+                        let arr = this.$shadow.all(".test_forline").map(e => parseInt(e.attrs.d));
+                        tester.ok(JSON.stringify(arr) == "[1,2,3]", "bind sort ok");
+                    }, 100);
+                }, 300);
+            }, 300);
         }
     });
 
