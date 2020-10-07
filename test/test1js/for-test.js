@@ -6,15 +6,19 @@
         data: {
             ha: "hahahah",
             a: 1,
+            arr0: [2, 4, 6],
             arr: [{
                 val: "val 2",
-                d: 2
+                d: 2,
+                arr: [2, 2, 2]
             }, {
                 val: "val 3",
-                d: 3
+                d: 3,
+                arr: [3, 3, 3]
             }, {
                 val: "val 1",
-                d: 1
+                d: 1,
+                arr: [1, 1, 1]
             }]
         },
         proto: {
@@ -35,6 +39,7 @@
                 <div>{{ha}}</div>
                 <div style="font-weight:bold;">{{item.val}} - {{item.d}}</div>
                 <div xv-show="item.d == 2" style="color:blue;">item.d is 2</div>
+                <!-- <div xv-for="item2 in item.arr">{{item2}}</div> -->
             </div>
             <div :hattr="ha" @click.stop="conHa" @submit="no" style="cursor:pointer;">
             {{ha}}

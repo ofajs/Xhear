@@ -3194,8 +3194,26 @@ with(this){
             return arr;
         };
 
+        // 已经遍历过的元素
+        let runnedForEle = new Set();
+
         // 对for进行渲染
         queAllToArray(sroot, "[xv-for]").forEach(e => {
+            // 循环内不允许在套二次循环，出现难调的垃圾代码
+            let childsFor = Array.from(e.querySelectorAll('[xv-for]'));
+            if (childsFor.length) {
+                childsFor.forEach(e2 => runnedForEle.add(e2));
+                throw {
+                    desc: "xv-for can not inside xv-for element",
+                    target: e,
+                    insideTargets: childsFor
+                };
+            }
+            if (runnedForEle.has(e)) {
+                // 属于子节点的for不运行
+                return;
+            }
+
             // 拆分key和value
             let xvfor = e.getAttribute('xv-for');
             let item_expr, key_expr, target_expr;
