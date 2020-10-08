@@ -10,15 +10,15 @@
             arr: [{
                 val: "val 2",
                 d: 2,
-                arr: [2, 2, 2]
+                // arr: [2, 2, 2]
             }, {
                 val: "val 3",
                 d: 3,
-                arr: [3, 3, 3]
+                // arr: [3, 3, 3]
             }, {
                 val: "val 1",
                 d: 1,
-                arr: [1, 1, 1]
+                // arr: [1, 1, 1]
             }]
         },
         proto: {
@@ -39,9 +39,10 @@
                 <div>{{ha}}</div>
                 <div style="font-weight:bold;">{{item.val}} - {{item.d}}</div>
                 <div xv-show="item.d == 2" style="color:blue;">item.d is 2</div>
-                <!-- <div xv-for="item2 in item.arr">{{item2}}</div> -->
+                <!--  <div xv-for="item2 in item.arr">{{item2}}</div> -->
             </div>
             <div :hattr="ha" @click.stop="conHa" @submit="no" style="cursor:pointer;">
+            <f-test-item xv-sync-for="arr"></f-test-item>
             {{ha}}
             </div>
             <div xv-show="a === 1">xv-show test</div>
@@ -68,6 +69,16 @@
                 }, 300);
             }, 300);
         }
+    });
+
+    $.register({
+        tag: "f-test-item",
+        data: {
+            val: ""
+        },
+        temp: `
+        <div style="color:green;">f-test-item {{val}}</div>
+        `
     });
 
     $("body").push({

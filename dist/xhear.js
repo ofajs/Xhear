@@ -3199,15 +3199,15 @@ with(this){
 
         // 对for进行渲染
         queAllToArray(sroot, "[xv-for]").forEach(e => {
-            // 循环内不允许在套二次循环，出现难调的垃圾代码
             let childsFor = Array.from(e.querySelectorAll('[xv-for]'));
             if (childsFor.length) {
-                childsFor.forEach(e2 => runnedForEle.add(e2));
+                // 循环内不允许在套二次循环，出现难调的垃圾代码
                 throw {
                     desc: "xv-for can not inside xv-for element",
                     target: e,
                     insideTargets: childsFor
                 };
+                childsFor.forEach(e2 => runnedForEle.add(e2));
             }
             if (runnedForEle.has(e)) {
                 // 属于子节点的for不运行
@@ -3256,9 +3256,9 @@ with(this){
                     let isSetArr = trends.find(e => e.name == "setData" && !trends.keys.length && e.args && e.args[0] === target_expr);
 
                     // 影响顺序
-                    let isSortArr = trends.find(e => e.keys.length === 1 && e.keys[0] === target_expr);
+                    let isSortArr = trends.find(e => e.name !== "setData");
 
-                    if (isSetArr || isSortArr) {
+                    if (trends.length === 0 || isSetArr || isSortArr) {
                         // 清除旧的数据
                         createXhearEle(par).all(`[for-id="${forId}"]`).forEach(e => {
                             e.remove();
@@ -3302,9 +3302,17 @@ with(this){
                         });
 
                         par.insertBefore(fragment, textnode);
+                    } else if (isSortArr) {
+                        // diff修正
                     }
                 }
             });
+        });
+
+        // xv-sync-for 组件渲染
+        queAllToArray(sroot, '[xv-sync-for]').forEach(e => {
+            let fkey = e.getAttribute("xv-sync-for");
+            debugger
         });
 
         // xv-if判断
@@ -3547,7 +3555,7 @@ with(this){
                 proxyEle.watch(e => {
                     let val = f.call(proxyEle);
 
-                    if (val === old_val) {
+                    if (val === old_val || (val instanceof XData && val.string === old_val)) {
                         return;
                     }
 
@@ -3556,7 +3564,11 @@ with(this){
                     } = e;
                     calls.forEach(d => d.change(val, trends));
 
-                    old_val = val;
+                    if (val instanceof XData) {
+                        old_val = val.string;
+                    } else {
+                        old_val = val;
+                    }
                 }, syncData);
 
             }
@@ -3701,109 +3713,6 @@ with(this){
                 sroot,
                 proxyEle: xhearEle[PROXYTHIS],
             });
-
-
-            // // :attribute对子元素属性修正方法
-            // queAllToArray(sroot, "*").forEach(ele => {
-            //     let attrbs = Array.from(ele.attributes);
-            //     let attrOriExpr = '';
-            //     attrbs.forEach(obj => {
-            //         let {
-            //             name, value
-            //         } = obj;
-            //         let prop = value;
-            //         name = attrToProp(name);
-
-            //         if (name === "$") {
-            //             Object.defineProperty(xhearEle, "$" + value, {
-            //                 get: () => createXhearProxy(ele)
-            //             });
-            //             return;
-            //         }
-
-            //         // 判断prop是否函数表达式
-            //         const isExpr = isFunctionExpr(prop);
-
-            //         // 属性绑定
-            //         let colonExecs = /^:(.+)/.exec(name);
-            //         if (colonExecs) {
-            //             let attr = colonExecs[1];
-
-            //             // 判断是否双向绑定
-            //             let isEachBinding = /^#(.+)/.exec(attr);
-            //             if (isEachBinding) {
-            //                 attr = isEachBinding[1];
-            //                 isEachBinding = !!isEachBinding;
-
-            //                 // 函数表达式不能用于双向绑定
-            //                 if (isExpr) {
-            //                     throw {
-            //                         desc: "Function expressions cannot be used for sync binding",
-            //                     };
-            //                 }
-            //             }
-
-            //             if (!isExpr) {
-            //                 // 属性监听
-            //                 let watchCall;
-            //                 if (ele.xvele) {
-            //                     watchCall = (e, val) => {
-            //                         if (val instanceof XhearEle) {
-            //                             val = val.object;
-            //                         }
-            //                         createXhearEle(ele).setData(attr, val);
-            //                     }
-
-            //                     if (isEachBinding) {
-            //                         // 双向绑定
-            //                         createXhearEle(ele).watch(attr, (e, val) => {
-            //                             xhearEle.setData(prop, val);
-            //                         });
-            //                     }
-            //                 } else {
-            //                     watchCall = (e, val) => {
-            //                         if (val === undefined || val === null) {
-            //                             ele.removeAttribute(attr);
-            //                         } else {
-            //                             ele.setAttribute(attr, val);
-            //                         }
-            //                     };
-            //                 }
-
-            //                 xhearEle.watch(prop, watchCall)
-            //             } else {
-            //                 let func = exprToFunc(prop);
-
-            //                 // 表达式
-            //                 xhearEle.watch(e => {
-            //                     let val = func.call(xhearEle[PROXYTHIS]);
-
-            //                     if (ele.xvele) {
-            //                         if (val instanceof XhearEle) {
-            //                             val = val.object;
-            //                         }
-            //                         createXhearEle(ele).setData(attr, val);
-            //                     } else {
-            //                         if (val === undefined || val === null) {
-            //                             ele.removeAttribute(attr);
-            //                         } else {
-            //                             ele.setAttribute(attr, val);
-            //                         }
-            //                     }
-            //                 });
-            //             }
-
-            //             // 删除绑定表达属性
-            //             ele.removeAttribute(colonExecs[0]);
-            //             attrOriExpr += `${name}=${value},`;
-            //         }
-
-            //         if (attrOriExpr) {
-            //             attrOriExpr = attrOriExpr.slice(0, -1);
-            //             ele.setAttribute('xv-binding-expr', attrOriExpr);
-            //         }
-            //     });
-            // });
 
             // // 修正 style 内的动态值变动
             // // queAllToArray(sroot, `style`).forEach(styleEle => {
