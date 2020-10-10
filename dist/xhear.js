@@ -180,7 +180,7 @@
         // 清除sync
         if (_this[SYNCSHOST]) {
             for (let [oppXdata, e] of _this[SYNCSHOST]) {
-                _this.unsync(oppXdata);
+                xobj.unsync(oppXdata);
             }
         }
 
@@ -3176,6 +3176,41 @@ with(this){
         customElements.define(tag, XhearElement);
     }
 
+    // 定位元素
+    const postionNode = (e) => {
+        let textnode = document.createTextNode("");
+        let par = e.parentNode;
+        par.insertBefore(textnode, e);
+        par.removeChild(e);
+
+        return {
+            textnode,
+            par
+        };
+    }
+
+    // 组件for绑定复制并绑定元素
+    const createForComp = (ele, e) => {
+        let new_ele = ele.cloneNode(true);
+
+        // 数据覆盖
+        let p_ele = createXhearProxy(new_ele);
+
+        e.sync(p_ele, null, true);
+
+        // Object.keys(e).forEach(k => {
+        //     if (p_ele[CANSETKEYS].has(k)) {
+        //         p_ele[k] = e[k];
+        //     }
+        // });
+
+        // p_ele.sync(e);
+
+        return {
+            new_ele
+        };
+    }
+
     // 渲染shadow dom 的内容
     // syncData 即刻同步数据
     const renderTemp = ({
@@ -3185,14 +3220,17 @@ with(this){
     }) => {
         // 处理用寄存对象
         const processObj = new Map();
-        const getProcessArr = (expr) => {
+        const addProcess = (expr, func) => {
             let arr = processObj.get(expr.trim());
             if (!arr) {
                 arr = [];
                 processObj.set(expr, arr);
             }
-            return arr;
-        };
+
+            arr.push({
+                change: func
+            })
+        }
 
         // 已经遍历过的元素
         let runnedForEle = new Set();
@@ -3227,10 +3265,10 @@ with(this){
             ele.removeAttribute("xv-for");
 
             // 定位元素
-            let textnode = document.createTextNode("");
-            let par = e.parentNode;
-            par.insertBefore(textnode, e);
-            par.removeChild(e);
+            let {
+                textnode,
+                par
+            } = postionNode(e);
 
             let xvforSplit = xvfor.split("in");
             if (!xvforSplit) {
@@ -3250,86 +3288,184 @@ with(this){
                 [item_expr, key_expr] = item_expr.replace(/[\(\))]/g, "").split(",");
             }
 
-            getProcessArr(target_expr).push({
-                change(vals, trends) {
-                    // 确定是重新设置值
-                    let isSetArr = trends.find(e => e.name == "setData" && !trends.keys.length && e.args && e.args[0] === target_expr);
+            addProcess(target_expr, (vals, trends) => {
+                // 确定是重新设置值
+                let isSetArr = trends.find(e => e.name == "setData" && !trends.keys.length && e.args && e.args[0] === target_expr);
 
-                    // 影响顺序
-                    let isSortArr = trends.find(e => e.name !== "setData");
+                // 影响顺序
+                let isSortArr = trends.find(e => e.name !== "setData");
 
-                    if (trends.length === 0 || isSetArr || isSortArr) {
-                        // 清除旧的数据
-                        createXhearEle(par).all(`[for-id="${forId}"]`).forEach(e => {
-                            e.remove();
-                        });
+                if (trends.length === 0 || isSetArr || isSortArr) {
+                    // 清除旧的数据
+                    createXhearEle(par).all(`[for-id="${forId}"]`).forEach(e => {
+                        e.remove();
+                    });
 
-                        // 重新渲染数组元素
-                        let fragment = document.createDocumentFragment();
+                    // 重新渲染数组元素
+                    let fragment = document.createDocumentFragment();
 
-                        vals.forEach((e, i) => {
-                            // 复制元素并重新渲染值
-                            let c_ele = ele.cloneNode(true);
+                    vals.forEach((e, i) => {
+                        // 复制元素并重新渲染值
+                        let c_ele = ele.cloneNode(true);
 
-                            let create_opt = {
-                                [item_expr]: {
-                                    get() {
-                                        return e;
-                                    }
+                        let create_opt = {
+                            [item_expr]: {
+                                get() {
+                                    return e;
+                                }
+                            }
+                        };
+
+                        if (key_expr) {
+                            create_opt[key_expr] = {
+                                get() {
+                                    return i;
                                 }
                             };
+                        }
 
-                            if (key_expr) {
-                                create_opt[key_expr] = {
-                                    get() {
-                                        return i;
-                                    }
-                                };
-                            }
+                        // 制作循环上专用的对象
+                        let p_obj = Object.create(proxyEle, create_opt);
 
-                            // 制作循环上专用的对象
-                            let p_obj = Object.create(proxyEle, create_opt);
+                        c_ele._forObj = p_obj;
 
-                            c_ele._forObj = p_obj;
-
-                            renderTemp({
-                                sroot: c_ele,
-                                proxyEle: p_obj,
-                                syncData: true
-                            });
-
-                            fragment.appendChild(c_ele);
+                        renderTemp({
+                            sroot: c_ele,
+                            proxyEle: p_obj,
+                            syncData: true
                         });
 
-                        par.insertBefore(fragment, textnode);
-                    } else if (isSortArr) {
-                        // diff修正
-                    }
+                        fragment.appendChild(c_ele);
+                    });
+
+                    par.insertBefore(fragment, textnode);
+                } else if (isSortArr) {
+                    // diff修正
                 }
             });
         });
 
-        // xv-sync-for 组件渲染
-        queAllToArray(sroot, '[xv-sync-for]').forEach(e => {
-            let fkey = e.getAttribute("xv-sync-for");
-            debugger
+        // xv-comp-for 组件渲染
+        // comp-for 是防止 xv-for内多重循环垃圾代码的产生，强迫开发者封装多重组件
+        queAllToArray(sroot, '[xv-comp-for]').forEach(ele => {
+            let {
+                textnode,
+                par
+            } = postionNode(ele);
+            ele.removeAttribute("xv-ele");
+
+            // 添加标识
+            const forId = getRandomId();
+            ele.setAttribute("for-id", forId);
+
+            // 前一份数据记录
+            let old_val_ids = [];
+            // for循环上的子元素
+            const forChilds = [];
+            const childsIds = [];
+
+            addProcess(ele.getAttribute("xv-comp-for"), val => {
+                // 获取当前id数组
+                let val_ids = val.map(e => e.xid);
+
+                if (JSON.stringify(val_ids) === JSON.stringify(old_val_ids)) {
+                    // 没有改动
+                    return;
+                }
+
+                // 空状态直接重写数据
+                if (old_val_ids.length === 0) {
+                    val.forEach(e => {
+                        // 直接生成绑定数据的组件
+                        let {
+                            new_ele
+                        } = createForComp(ele, e);
+
+                        // 添加元素
+                        par.insertBefore(new_ele, textnode);
+                        childsIds.push(e.xid);
+                        forChilds.push(new_ele);
+                    });
+                } else {
+                    let removeCount = 0;
+                    old_val_ids.forEach((xid, index) => {
+                        if (!val_ids.includes(xid)) {
+                            // 删除不需要的
+                            let i = index - removeCount;
+                            childsIds.splice(i, 1);
+                            let r_ele = forChilds.splice(i, 1)[0];
+                            par.removeChild(r_ele);
+                            removeCount++;
+                        }
+                    });
+
+                    val_ids.forEach((xid, index) => {
+                        // 确认是否旧的
+                        let o_id = childsIds.indexOf(xid);
+
+                        if (o_id !== index && o_id > -1) {
+                            // 位移修正
+                            let o_xid = childsIds.splice(o_id, 1)[0];
+                            let o_ele = forChilds.splice(o_id, 1)[0];
+
+                            if (o_id > index) {
+                                // 内部位移
+                                o_ele[RUNARRAY] = 1;
+                                par.insertBefore(o_ele, forChilds[index]);
+                                o_ele[RUNARRAY] = 0;
+
+                                // 虚拟位置数据修正
+                                childsIds.splice(index, 0, o_xid);
+                                forChilds.splice(index, 0, o_ele);
+                            } else {
+                                // 不明位移
+                                debugger
+                            }
+
+                        } else if (o_id === -1) {
+                            let e = val[index];
+                            // 添加新元素
+                            let {
+                                new_ele
+                            } = createForComp(ele, e);
+
+                            if (index > forChilds.length - 1) {
+                                // 末尾添加
+                                par.insertBefore(new_ele, textnode);
+                                childsIds.push(e.xid);
+                                forChilds.push(new_ele);
+                            } else {
+                                // 中间插入
+                                par.insertBefore(new_ele, forChilds[index]);
+                                childsIds.splice(index, 0, e.xid);
+                                forChilds.splice(index, 0, new_ele);
+                            }
+                        }
+                    });
+                }
+
+                if (JSON.stringify(childsIds) !== JSON.stringify(val_ids)) {
+                    // 数据出现异常，请及时修正
+                    debugger
+                }
+
+                old_val_ids = val_ids;
+            });
         });
 
         // xv-if判断
-        // 这个属性容易导致前端屎山样式代码，对性能减弱较大，5.2之后不允许使用if，请改用xv-show
+        // 与作者理念不符， 5.2之后不允许使用if，请改用xv-show
         // queAllToArray(sroot, "[xv-if]").forEach(e => {
         //     debugger
         // });
 
         // xv-show
         queAllToArray(sroot, "[xv-show]").forEach(e => {
-            getProcessArr(e.getAttribute("xv-show")).push({
-                change: val => {
-                    if (val) {
-                        e.style.display = "";
-                    } else {
-                        e.style.display = "none";
-                    }
+            addProcess(e.getAttribute("xv-show"), val => {
+                if (val) {
+                    e.style.display = "";
+                } else {
+                    e.style.display = "none";
                 }
             });
         });
@@ -3337,17 +3473,15 @@ with(this){
         // 文本渲染
         queAllToArray(sroot, "xv-span").forEach(e => {
             // 定位元素
-            let textnode = document.createTextNode("");
-            let par = e.parentNode;
-            par.insertBefore(textnode, e);
-            par.removeChild(e);
+            let {
+                textnode,
+                par
+            } = postionNode(e);
 
             let expr = e.getAttribute('xvkey');
 
-            getProcessArr(expr).push({
-                change: val => {
-                    textnode.textContent = val;
-                }
+            addProcess(expr, val => {
+                textnode.textContent = val;
             });
         });
 
@@ -3418,17 +3552,15 @@ with(this){
                     });
                 }
 
-                getProcessArr(expr).push({
-                    change: val => {
-                        if (val instanceof XhearEle) {
-                            val = val.object;
-                        }
+                addProcess(expr, val => {
+                    if (val instanceof XhearEle) {
+                        val = val.object;
+                    }
 
-                        if (ele.xvele) {
-                            createXhearEle(ele).setData(attrName, val);
-                        } else {
-                            ele.setAttribute(attrName, val);
-                        }
+                    if (ele.xvele) {
+                        createXhearEle(ele).setData(attrName, val);
+                    } else {
+                        ele.setAttribute(attrName, val);
                     }
                 });
             });
