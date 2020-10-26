@@ -34,19 +34,24 @@
         :host{display:block;}
         .test_forline{margin:40px 0;}
         </style>
-            <div>{{getBB()}}</div>
-            <div xv-for="item in arr" class="test_forline" :aa="item.val" :d="item.d">
-                <div :bb="item.val">for line </div>
-                <div>{{ha}}</div>
-                <div style="font-weight:bold;">{{item.val}} - {{item.d}}</div>
-                <div xv-show="item.d == 2" style="color:blue;">item.d is 2</div>
-                <!--  <div xv-for="item2 in item.arr">{{item2}}</div> -->
+
+        <template name="t1">
+            <div class="test_forline" :aa="val" :d="d">
+                <div :bb="val">for line </div>
+                <div style="font-weight:bold;">{{val}} - {{d}}</div>
+                <div xv-show="d == 2" style="color:blue;">d is 2</div>
             </div>
-            <div :hattr="ha" @click.stop="conHa" @submit="no" style="cursor:pointer;">
-            {{ha}}
-            </div>
-            <f-test-item xv-comp-for="arr"></f-test-item>
-            <div xv-show="a === 1">xv-show test</div>
+        </template>
+
+        <div>{{getBB()}}</div>
+
+        <template is="t1" xv-for="arr"></template>
+
+        <div :hattr="ha" @click.stop="conHa" @submit="no" style="cursor:pointer;">
+        {{ha}}
+        </div>
+        <f-test-item xv-for="arr"></f-test-item>
+        <div xv-show="a === 1">xv-show test</div>
         `,
         ready() {
             setTimeout(() => {
@@ -95,10 +100,8 @@
                                 tester.ok(this.arr[0].val === 'val 0.1(change2)', "element sync to data succeed");
 
                                 // 查看是否同比二级循环
-                                // this.arr[0].chs[0] = 100;
+                                this.arr[0].chs[0] = 100;
                                 // this.arr[0].chs.push(200);
-
-
                             }, 200);
                         }, 300);
                     }, 100);
@@ -111,14 +114,24 @@
         tag: "f-test-item",
         data: {
             val: "none",
-            chs: [0]
+            chs: [0],
+            item: "error"
+        },
+        proto: {
+            haha(e) {
+                console.log(e);
+            }
         },
         temp: `
+        <template name="cc">
+            <li @click="haha(item)">{{item}}</li>
+        </template>
+
         <style>:host{display:block;}</style>
         <div style="color:green;">f-test-item {{val}}</div>
         <div>{{chs.string}}</div>
         <ul>
-            <li xv-for="item in chs">{{item}}</li>
+            <template is="cc" xv-for="chs"></template>
         </ul>
         `
     });
