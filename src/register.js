@@ -18,7 +18,6 @@ with(this){
     try{
         return ${expr}
     }catch(e){
-        debugger
         let errObj = {
             expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
         }
@@ -211,8 +210,33 @@ const postionNode = (e) => {
     };
 }
 
+// 中转头部函数
+const funcToMain = (self, mainEle, { indexName, item }) => {
+    let tbase = regDatabase.get(mainEle.tag);
+    if (tbase) {
+        let tbase_proto = tbase.proto;
+        if (tbase_proto) {
+            Object.keys(tbase_proto).forEach(key => {
+                let f = tbase_proto[key];
+
+                !isFunction(f) && Object.defineProperty(self, key, {
+                    value: f.bind(mainEle)
+                });
+            });
+        }
+
+        if (indexName) {
+            Object.defineProperty(self, indexName, {
+                get() {
+                    return item.index;
+                }
+            });
+        }
+    }
+}
+
 // 组件for绑定复制并绑定元素
-const createForComp = (ele, e, temps) => {
+const createForComp = (ele, e, temps, proxyEle) => {
     if (ele.tagName.toLowerCase() == "template") {
         // for循环渲染用的元素
         let tempName = ele.getAttribute("is");
@@ -226,6 +250,7 @@ const createForComp = (ele, e, temps) => {
 
         // 获取模板
         let targetTemp = temps.get(tempName);
+
         let c_ele = targetTemp.content.children[0].cloneNode(true);
         let n_proxyEle = createXhearProxy(c_ele);
         n_proxyEle[CANSETKEYS] = new Set(Object.keys(e));
@@ -237,7 +262,12 @@ const createForComp = (ele, e, temps) => {
             temps
         });
 
-        funcToMain(n_proxyEle[XDATASELF]);
+        // 索引属性key获取
+        let indexName = targetTemp.getAttribute("index-name");
+        funcToMain(n_proxyEle[XDATASELF], proxyEle, {
+            indexName,
+            item: e
+        });
 
         e.sync(n_proxyEle, null, true);
 
@@ -257,6 +287,30 @@ const createForComp = (ele, e, temps) => {
     }
 }
 
+// 生成fill用数据
+// const createFillEle = (ele, e, temps, proxyEle) => {
+//     debugger
+// }
+
+// 将元素前置并触发事件的方法
+const xdInsertBefore = (new_ele, textnode) => {
+    let par = textnode.parentNode;
+
+    // 记录旧顺序
+    let old_childs = Array.from(par.children);
+
+    par.insertBefore(new_ele, textnode);
+
+    // 触发 updateIndex 事件
+    Array.from(par.children).forEach((e, i) => {
+        let old_index = old_childs.indexOf(e);
+
+        if (old_index !== -1 && old_index !== i) {
+            emitXDataIndex(createXhearProxy(e), i, old_index);
+        }
+    });
+}
+
 // render函数用元素查找（包含自身元素）
 const getCanRenderEles = (root, expr) => {
     let arr = queAllToArray(root, expr);
@@ -264,11 +318,6 @@ const getCanRenderEles = (root, expr) => {
         arr.unshift(root);
     }
     return arr;
-}
-
-// 中转头部函数
-const funcToMain = (self, mainEle) => {
-    debugger
 }
 
 // 渲染shadow dom 的内容
@@ -381,13 +430,13 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 forChilds.forEach(e => e.parentNode.removeChild(e));
                 forChilds.length = 0;
                 // 非数组类型都是直接渲染
-                val.forEach(e => {
+                val.forEach((e, index) => {
                     // 直接生成绑定数据的组件
-                    let d = $.xdata({ item: e });
-                    let { new_ele } = createForComp(ele, d, temps);
+                    let d = $.xdata({ item: e, index });
+                    let { new_ele } = createForComp(ele, d, temps, proxyEle);
 
                     // 添加元素
-                    par.insertBefore(new_ele, textnode);
+                    xdInsertBefore(new_ele, textnode);
                     forChilds.push(new_ele);
                 });
                 return;
@@ -402,10 +451,10 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             if (old_val_ids.length === 0) {
                 val.forEach(e => {
                     // 直接生成绑定数据的组件
-                    let { new_ele } = createForComp(ele, e, temps);
+                    let { new_ele } = createForComp(ele, e, temps, proxyEle);
 
                     // 添加元素
-                    par.insertBefore(new_ele, textnode);
+                    xdInsertBefore(new_ele, textnode);
                     childsIds.push(e.xid);
                     forChilds.push(new_ele);
                 });
@@ -434,7 +483,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                         if (o_id > index) {
                             // 内部位移
                             o_ele[RUNARRAY] = 1;
-                            par.insertBefore(o_ele, forChilds[index]);
+                            xdInsertBefore(o_ele, forChilds[index]);
                             o_ele[RUNARRAY] = 0;
 
                             // 虚拟位置数据修正
@@ -448,16 +497,16 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                     } else if (o_id === -1) {
                         let e = val[index];
                         // 添加新元素
-                        let { new_ele } = createForComp(ele, e, temps);
+                        let { new_ele } = createForComp(ele, e, temps, proxyEle);
 
                         if (index > forChilds.length - 1) {
                             // 末尾添加
-                            par.insertBefore(new_ele, textnode);
+                            xdInsertBefore(new_ele, textnode);
                             childsIds.push(e.xid);
                             forChilds.push(new_ele);
                         } else {
                             // 中间插入
-                            par.insertBefore(new_ele, forChilds[index]);
+                            xdInsertBefore(new_ele, forChilds[index]);
                             childsIds.splice(index, 0, e.xid);
                             forChilds.splice(index, 0, new_ele);
                         }
@@ -473,6 +522,42 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             old_val_ids = val_ids;
         });
     });
+
+    // xv-fill，对内部进行填充的循环
+    // getCanRenderEles(sroot, "[xv-fill]").forEach(e => {
+    //     let fillAttr = e.getAttribute("xv-fill");
+    //     let fillContent = e.getAttribute("fill-content");
+
+    //     // 判断是否组件
+    //     let isComponent = !/[^a-z\-]/.test(fillContent);
+
+    //     // 旧的数据id
+    //     let old_ids = [];
+
+    //     addProcess(fillAttr, val => {
+    //         if (isComponent) {
+    //             // 组件
+    //             // 先填充一匹内容
+
+    //             if (!old_ids.length) {
+    //                 // 直接填充
+    //                 debugger
+    //             }
+
+    //             debugger
+    //         } else {
+    //             // 模板
+    //             // 获取内容
+    //             let targetTemp = temps.get(fillContent);
+
+    //             if (targetTemp) {
+    //                 let ele = createFillEle();
+
+    //                 debugger
+    //             }
+    //         }
+    //     });
+    // });
 
     // xv-if判断
     // if会重新渲染组件，滥用导致性能差， 5.2之后不允许使用if，请改用xv-show
@@ -559,7 +644,12 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                     };
                 } else if (!canSetKey.has(expr)) {
                     // 不能双向绑定的值
-                    debugger
+                    console.error({
+                        desc: "the key can't sync bind",
+                        key: "attrName",
+                        target: ele,
+                        host: proxyEle
+                    });
                 }
 
                 // 数据反向绑定
@@ -686,6 +776,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     for (let [expr, d] of processObj) {
         let { calls, target } = d;
         target = target || proxyEle;
+
         if (canSetKey.has(expr)) {
             target.watch(expr, (e, val) => {
                 calls.forEach(d => d.change(val, e.trends));
@@ -695,15 +786,18 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             let f = exprToFunc(expr);
             let old_val;
 
-            target.watch(e => {
+            let watchFun;
+            target.watch(watchFun = e => {
                 let val = f.call(target);
 
                 if (val === old_val || (val instanceof XData && val.string === old_val)) {
                     return;
                 }
 
-                let { trends } = e;
-                calls.forEach(d => d.change(val, trends));
+                if (e) {
+                    let { trends } = e;
+                    calls.forEach(d => d.change(val, trends));
+                }
 
                 if (val instanceof XData) {
                     old_val = val.string;
@@ -712,6 +806,8 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 }
             });
 
+            // 同时监听index变动
+            target.on("updateIndex", watchFun)
         }
     }
 }
@@ -797,13 +893,6 @@ const renderEle = (ele, defaults) => {
 
             // 注册元素
             let name = e.getAttribute("name");
-
-            if (!name) {
-                throw {
-                    desc: "the template missing 'name' attribute",
-                    target: e
-                };
-            }
 
             temps.set(name, e);
         });

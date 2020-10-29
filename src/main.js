@@ -9,7 +9,8 @@ const xEleDefaultSetKeys = new Set(["text", "html", "display", "style"]);
 // const xEleDefaultSetKeysCanUpdate = new Set(["text", "html"]);
 
 // 不可设置的key
-const UnSetKeys = new Set(["parent", "index", "slot"]);
+// const UnSetKeys = new Set(["parent", "index", "slot"]);
+const UnSetKeys = new Set(["parent", "slot"]);
 
 const XDataSetData = XData.prototype.setData;
 

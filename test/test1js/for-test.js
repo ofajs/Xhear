@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(9, 'for test');
+    let tester = expect(10, 'for test');
 
     $.register({
         tag: "f-test",
@@ -9,16 +9,20 @@
             arr0: [2, 4, 6],
             arr: [{
                 val: "val 2",
-                d: 2
+                d: 2,
+                childs: [222, 222]
             }, {
                 val: "val 40",
                 d: 40,
+                childs: [444, 444, 444, 444]
             }, {
                 val: "val 10",
                 d: 10,
+                childs: [1010, 1010, 1010]
             }, {
                 val: "val 1",
-                d: 1
+                d: 1,
+                childs: [111]
             }]
         },
         proto: {
@@ -33,14 +37,20 @@
         <style>
         :host{display:block;}
         .test_forline{margin:40px 0;}
+        .t2_line{color:red;}
         </style>
 
-        <template name="t1">
+        <template name="t1" index-name="idName">
             <div class="test_forline" :aa="val" :d="d">
-                <div :bb="val">for line </div>
+                <div :bb="val">index:{{idName}} test xv-for line </div>
                 <div style="font-weight:bold;">{{val}} - {{d}}</div>
                 <div xv-show="d == 2" style="color:blue;">d is 2</div>
+                <template is="t2" xv-for="childs"></template>
             </div>
+        </template>
+
+        <template name="t2">
+            <div class="t2_line">{{item}}</div>
         </template>
 
         <div>{{getBB()}}</div>
@@ -70,11 +80,14 @@
                     this.arr.splice(-1);
                     this.arr.push({
                         d: 4,
-                        val: "val 4"
+                        val: "val 4",
+                        childs: [444, 444, 444, 444]
                     });
+
                     this.arr.splice(2, 0, {
                         d: 3,
-                        val: "val 3"
+                        val: "val 3",
+                        childs: [333, 333, 333]
                     });
 
                     setTimeout(() => {
@@ -93,6 +106,7 @@
                             tester.ok(this.arr[0].d === 0.1, "sort succeed");
                             tester.ok(this.$shadow.$("f-test-item").val === "val 0.1 (change)", "data sync to element succeed");
                             tester.ok(this.$shadow.$("f-test-item").$shadow.all("li").length == 3, "element render succeed");
+                            tester.ok($("f-test").$shadow.all(".test_forline")[4].all(".t2_line").length === this.arr[4].childs.length, "double fill template is ok");
 
                             this.$shadow.$("f-test-item").val = "val 0.1(change2)";
                             setTimeout(() => {
@@ -101,7 +115,6 @@
 
                                 // 查看是否同比二级循环
                                 this.arr[0].chs[0] = 100;
-                                // this.arr[0].chs.push(200);
                             }, 200);
                         }, 300);
                     }, 100);
@@ -118,13 +131,13 @@
             item: "error"
         },
         proto: {
-            haha(e) {
-                console.log(e);
+            haha(e, d) {
+                console.log(d, e, this);
             }
         },
         temp: `
         <template name="cc">
-            <li @click="haha(item)">{{item}}</li>
+            <li @click="haha($event,item)">{{item}}</li>
         </template>
 
         <style>:host{display:block;}</style>

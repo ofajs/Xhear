@@ -11,6 +11,20 @@
 });
 
 /**
+ * 触发子元素的index事件
+ * @param {Object} _this 目标元素
+ * @param {Array} oldArr 旧的子元素数组
+ */
+const emitChildsXDataIndex = (_this, oldArr) => {
+    _this.forEach((e, index) => {
+        let oldIndex = oldArr.findIndex(e2 => e2 === e);
+        if (oldIndex !== -1 && oldIndex !== index) {
+            emitXDataIndex(e, index, oldIndex);
+        }
+    });
+}
+
+/**
  * 模拟array splice方法
  * @param {XhearEle} t 目标对象
  * @param {Number} index splice index
@@ -27,6 +41,8 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
     let { children } = tarele;
 
     let c_howmany = howmany;
+
+    let oldArr = _this.map(e => e);
 
     while (c_howmany > 0) {
         let childEle = children[index];
@@ -57,6 +73,10 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
             tarele.appendChild(fragment);
         }
     }
+
+    // 触发index改动
+    emitChildsXDataIndex(_this, oldArr);
+
     emitUpdate(_this, "splice", [index, howmany, ...items]);
 
     return reArr;
@@ -111,12 +131,18 @@ XhearEleFn.extend({
         return XhearEleProtoSplice(this, this.length - 1, 1);
     },
     reverse() {
+        let oldArr = this.map(e => e);
         let childs = Array.from(this.ele.children);
         let len = childs.length;
         sortByArray(this, childs.map((e, i) => len - 1 - i));
+
+        // 触发index改动
+        emitChildsXDataIndex(this, oldArr);
         emitUpdate(this[XDATASELF], "reverse", []);
     },
     sort(arg) {
+        let oldArr = this.map(e => e);
+
         if (isFunction(arg)) {
             // 新生成数组
             let fake_this = Array.from(this.ele.children).map(e => createXhearProxy(e));
@@ -141,6 +167,9 @@ XhearEleFn.extend({
             // 修正新顺序
             sortByArray(this, arg);
         }
+
+        // 触发index改动
+        emitChildsXDataIndex(this, oldArr);
 
         emitUpdate(this[XDATASELF], "sort", [arg]);
     }
