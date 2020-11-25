@@ -31,7 +31,7 @@
     const ext = (callback) => {
         callback({
             // 渲染shadow的内部方法
-            renderEle
+            renderComponent
         });
     }
 

@@ -45,12 +45,15 @@
                 <div :bb="val">index:{{idName}} test xv-for line </div>
                 <div style="font-weight:bold;">{{val}} - {{d}}</div>
                 <div xv-show="d == 2" style="color:blue;">d is 2</div>
-                <template is="t2" xv-for="childs"></template>
+                <template is="t2" xv-for="childs" :beforeindex="idName" :beforeval="val"></template>
             </div>
         </template>
 
         <template name="t2">
-            <div class="t2_line">{{item}}</div>
+            <div>
+                <div class="t2_line">{{item}} - beforeindex=>{{beforeindex}} - beforeval=> {{beforeval}}</div>
+                <input v-model="beforeval" />
+            </div>
         </template>
 
         <div>{{getBB()}}</div>

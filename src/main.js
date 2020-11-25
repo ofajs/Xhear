@@ -426,9 +426,13 @@ class XhearEle extends XData {
             } = Object.getOwnPropertyDescriptor(proto, k);
 
             if (value) {
-                Object.defineProperty(this, k, {
-                    value
-                });
+                if (this.hasOwnProperty(k)) {
+                    this[k] = value;
+                } else {
+                    Object.defineProperty(this, k, {
+                        value
+                    });
+                }
             } else {
                 Object.defineProperty(this, k, {
                     get,
