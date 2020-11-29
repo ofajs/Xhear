@@ -198,7 +198,7 @@ const postionNode = (e) => {
 }
 
 // render函数用元素查找（包含自身元素）
-const getCanRenderComponents = (root, expr) => {
+const getCanRenderEles = (root, expr) => {
     let arr = queAllToArray(root, expr);
     if (!(root instanceof DocumentFragment) && createXhearEle(root).is(expr)) {
         arr.unshift(root);
@@ -227,7 +227,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     const canSetKey = proxyEle[CANSETKEYS];
 
     // 重新中转内部特殊属性
-    getCanRenderComponents(sroot, "*").forEach(ele => {
+    getCanRenderEles(sroot, "*").forEach(ele => {
         let attrbs = Array.from(ele.attributes);
 
         // 结束后要去除的属性
@@ -288,7 +288,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
 
     // xv-fill 填充数组，概念上相当于数组在html中的slot元素
     // xv-fill 相比 for 更能发挥 stanz 数据结构的优势；更好的理解多重嵌套的数据结构；
-    let xvFills = getCanRenderComponents(sroot, '[xv-fill]');
+    let xvFills = getCanRenderEles(sroot, '[xv-fill]');
     if (xvFills.length) {
         let xvFillObj = {};
         Object.defineProperty(proxyEle, "$fillElements", {
@@ -325,6 +325,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                                     name: contentName,
                                     temps,
                                     parentProxyEle: proxyEle,
+                                    parentElement: targetFillEle,
                                     targetData: e
                                 });
                             }
@@ -362,7 +363,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     // });
 
     // xv-show
-    getCanRenderComponents(sroot, "[xv-show]").forEach(e => {
+    getCanRenderEles(sroot, "[xv-show]").forEach(e => {
         addProcess(e.getAttribute("xv-show"), val => {
             if (val) {
                 e.style.display = "";
@@ -373,7 +374,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     });
 
     // 文本渲染
-    getCanRenderComponents(sroot, "xv-span").forEach(e => {
+    getCanRenderEles(sroot, "xv-span").forEach(e => {
         // 定位元素
         let { textnode, par } = postionNode(e);
 
@@ -385,7 +386,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     });
 
     // 事件修正
-    getCanRenderComponents(sroot, `[xv-on]`).forEach(e => {
+    getCanRenderEles(sroot, `[xv-on]`).forEach(e => {
         let data = JSON.parse(e.getAttribute("xv-on"));
 
         let $ele = createXhearEle(e);
@@ -407,6 +408,15 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 functionName = "one";
             }
 
+            let isFunc = isFunction(func);
+            if (!isFunc) {
+                console.warn({
+                    target: sroot,
+                    eventName,
+                    desc: "no binding functions"
+                });
+            }
+
             $ele[functionName](eventName, (event, data) => {
                 if (opts.includes("prevent")) {
                     event.preventDefault();
@@ -416,13 +426,13 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                     event.bubble = false;
                 }
 
-                func.call(proxyEle, event, data);
+                isFunc && func.call(proxyEle, event, data);
             });
         });
     });
 
     // 属性修正
-    getCanRenderComponents(sroot, `[xv-bind]`).forEach(ele => {
+    getCanRenderEles(sroot, `[xv-bind]`).forEach(ele => {
         let data = JSON.parse(ele.getAttribute("xv-bind"));
 
         Object.keys(data).forEach(attrName => {
@@ -473,7 +483,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     let xvModelJump = new Set();
 
     // 绑定 xv-model
-    getCanRenderComponents(sroot, `[xv-model]`).forEach(ele => {
+    getCanRenderEles(sroot, `[xv-model]`).forEach(ele => {
         if (xvModelJump.has(ele)) {
             return;
         }
@@ -486,7 +496,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 switch (inputType) {
                     case "checkbox":
                         // 判断是不是复数形式的元素
-                        let allChecks = getCanRenderComponents(sroot, `input[type="checkbox"][xv-model="${modelKey}"]`);
+                        let allChecks = getCanRenderEles(sroot, `input[type="checkbox"][xv-model="${modelKey}"]`);
 
                         // 查看是单个数量还是多个数量
                         if (allChecks.length > 1) {
@@ -519,7 +529,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                         }
                         return;
                     case "radio":
-                        let allRadios = getCanRenderComponents(sroot, `input[type="radio"][xv-model="${modelKey}"]`);
+                        let allRadios = getCanRenderEles(sroot, `input[type="radio"][xv-model="${modelKey}"]`);
 
                         let rid = getRandomId();
 
@@ -616,6 +626,8 @@ const createTemplateElement = ({
     temps,
     // 顶层依附对象
     parentProxyEle,
+    // 要渲染数组数据的元素
+    parentElement,
     // 循环上需要的对象
     targetData
 }) => {
@@ -638,53 +650,65 @@ const createTemplateElement = ({
         });
     }
 
+    // 给不是对象的数据造对象
+    // let isFakeData = 0;
+    // if (!(targetData instanceof XData)) {
+    //     isFakeData = 1;
+    // }
+
     // 重造元素
     let n_ele = template.content.children[0].cloneNode(true);
     let n_proxyEle = createXhearProxy(n_ele);
     let n_xhearEle = createXhearEle(n_ele);
     n_proxyEle[CANSETKEYS] = new Set([...Object.keys(targetData)]);
 
+    if (parentElement) {
+        console.log("parentElement => ", parentElement.ele);
+    }
+
     // 绑定数据
-    Object.defineProperty(n_xhearEle, "$data", {
-        get: () => {
-            return targetData;
+    Object.defineProperties(n_xhearEle, {
+        "$data": {
+            get: () => {
+                return targetData;
+            }
+        },
+        "$target": {
+            get: () => n_xhearEle
         }
     });
 
-    // 绑定事件
-    let regData = regDatabase.get(parentProxyEle.tag);
+    // 绑定事件，并且函数的this要指向主体组件上
+    let rootParentProxy = parentProxyEle;
+    while (rootParentProxy._parentProxy) {
+        rootParentProxy = rootParentProxy._parentProxy;
+    }
+    let regData = regDatabase.get(rootParentProxy.tag);
     Object.keys(regData.proto).forEach(funcName => {
         let func = regData.proto[funcName];
         if (isFunction(func)) {
             Object.defineProperty(n_xhearEle, funcName, {
-                value: func.bind(parentProxyEle)
+                value: func.bind(rootParentProxy)
             });
         }
     });
 
-    // 重定向拥有的function
-    // let oldGetData = n_xhearEle.getData;
-    // n_xhearEle.getData = function (key) {
-    //     // 获取自身的值
-    //     let val = oldGetData.call(this, key);
-
-    //     // 不存在的话就是主体函数的东西
-    //     if (val === undefined) {
-    //         if (key == "toJSON") {
-    //             return;
-    //         }
-    //         debugger
-    //         console.log("args => ", args);
-    //     }
-
-    //     return val;
-    // };
+    // 设置父层
+    n_proxyEle._parentProxy = parentProxyEle;
 
     renderTemp({
         sroot: n_ele,
         proxyEle: n_proxyEle,
         temps
     });
+
+    // 不是数据的情况下刷新视图
+    if (!(targetData instanceof XData)) {
+        nextTick(() => {
+            n_proxyEle.emit("reloadView");
+        });
+    }
+
 
     return n_proxyEle;
 }

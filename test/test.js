@@ -36,28 +36,35 @@ $.register({
         a: "aa",
         b: [{
             v: 100,
-            arr: [1, 2, 3]
+            arr: [1, 2, 3],
+            arr2: [{
+                v: "arr2-1"
+            }, {
+                v: "arr2-2"
+            }, {
+                v: "arr2-3"
+            }]
         }, {
             v: 200,
-            arr: [5, 6, 7, 8, 9]
+            arr: [5, 6, 7, 8, 9],
+            arr2: []
         }]
     },
     proto: {
-        clickItem(item, data) {
-            console.log(this, data, item);
-
-            data.v += 100;
+        clickItem(e, data, target) {
+            data.v = parseInt(data.v) + 100;
+            console.log(e, data, target);
         }
     },
     temp: `
     <style>
-        .t1,.t2{
+        .t1,.t2,.t3{
             margin:10px;
             padding:10px;
             border:#aaa solid 1px;
         }
         .t2{
-            border-color:#fff;
+            border-color:#f0f;
         }
         .t1_id{
             color:green;
@@ -66,19 +73,34 @@ $.register({
         .t2_id{
             color:blue;
         }
+
+        .t3{
+            border-color:#0ff;
+        }
     </style>
+
+    <template name="t3">
+        <div class="t3">
+            <div class="t3_id"> {{index}} </div>
+            <div> t3.v => {{v}} , parIndex => {{$data.parent.index}}</div>
+        </div>
+    </template>
 
     <template name="t2">
         <div class="t2">
             <div class="t2_id"> {{index}} </div>
-            <div> value => {{item}}</div>
+            <div> value => {{$data}}</div>
         </div>
     </template>
 
     <template name="t1">
-        <div class="t1" :vv="v" @click="clickItem(111,$data)">
+        <div class="t1" :vv="v" @click="clickItem($event,$data,$target)">
             <div class="t1_id"> {{index}} </div>
             <div>v => {{v}}</div>
+            <div> <input type="number" xv-model="v" @click.stop /> </div>
+            <div>{{arr.string}}</div>
+            <div xv-fill="arr" fill-content="t2"></div>
+            <div xv-fill="arr2" fill-content="t3" :par-index="index"></div>
         </div>
     </template>
 
