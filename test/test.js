@@ -5,9 +5,6 @@ $.register({
         arr: []
     },
     proto: {
-        get arrStr() {
-            return JSON.stringify(this.arr);
-        },
         clickName() {
             this.v++;
         }
@@ -18,13 +15,13 @@ $.register({
             display:block;
             padding:10px;
             margin:10px;
-            border:#0ee solid 1px;
+            border:#00e solid 1px;
         }
         .name{
             color:red;
         }
     </style>
-    <div class="name" style="cursor:pointer;user-select:none;" @click="clickName">tw-item</div>
+    <div class="name" style="cursor:pointer;user-select:none;" @click.stop="clickName">tw-item</div>
     <div>v => {{v}}</div>
     <div>arr => {{arr.string}}</div>
     `
@@ -38,11 +35,11 @@ $.register({
             v: 100,
             arr: [1, 2, 3],
             arr2: [{
-                v: "arr2-1"
+                v: 10000
             }, {
-                v: "arr2-2"
+                v: 20000
             }, {
-                v: "arr2-3"
+                v: 30000
             }]
         }, {
             v: 200,
@@ -82,7 +79,9 @@ $.register({
     <template name="t3">
         <div class="t3">
             <div class="t3_id"> {{index}} </div>
-            <div> t3.v => {{v}} , parIndex => {{$data.parent.index}}</div>
+            <div> t3.v => {{v}} , $data parent index => {{$data.parent.index}}</div>
+            <!-- <input type="number" xv-model="v" /> -->
+            <tw-item :#v="v"></tw-item>
         </div>
     </template>
 
@@ -94,13 +93,15 @@ $.register({
     </template>
 
     <template name="t1">
-        <div class="t1" :vv="v" @click="clickItem($event,$data,$target)">
+        <div class="t1" :vv="v" @click="clickItem($event,$data,$target);">
             <div class="t1_id"> {{index}} </div>
             <div>v => {{v}}</div>
             <div> <input type="number" xv-model="v" @click.stop /> </div>
             <div>{{arr.string}}</div>
             <div xv-fill="arr" fill-content="t2"></div>
-            <div xv-fill="arr2" fill-content="t3" :par-index="index"></div>
+            <div xv-fill="arr2" fill-content="t3"></div>
+            <!-- <div xv-fill="arr2" fill-content="tw-item"></div> -->
+            <div>不存在的字段 => {{hahahaha}}</div>
         </div>
     </template>
 
@@ -108,6 +109,7 @@ $.register({
     <h3>tw-ele</h3>
     <div>{{a}}</div>
     <!--  <div xv-fill="b" fill-content="tw-item"></div> -->
+    <button @click="b[0].arr.reverse()">b[0].arr倒序</button>
     <div xv-fill="b" fill-content="t1"></div>
     `
 });

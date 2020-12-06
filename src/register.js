@@ -9,23 +9,74 @@ const RENDEREND = Symbol("renderend"), RENDEREND_RESOLVE = Symbol("renderend_res
 const ATTRBINDINGKEY = "attr" + getRandomId();
 
 // 是否表达式
-const isFunctionExpr = (str) => /[ \|\&\(\)\?\:\!;]/.test(str.trim());
+const isFunctionExpr = (str) => argsWReg.test(str.trim());
+
+// 转化为指向this的函数表达式
+const argsWReg = /(\|\||\&\&|\(|\)|\?|\!|\:| |\,|".+?"|'.+?')/g;
+const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.)/;
+const argsWithThis = (expr) => {
+    // 针对性的进行拆分
+    let argsSpArr = expr.split(argsWReg).map(e => {
+        if (argsWReg.test(e) || !e.trim() || /^[\d]/.test(e) || ignoreArgKeysReg.test(e)) {
+            return e;
+        }
+        return `this.${e}`;
+    });
+
+    return argsSpArr.join("");
+}
+
+// 使用with性能不好，所以将内部函数变量转为指向this的函数
+const funcExprWithThis = (expr) => {
+    let new_expr = "";
+
+    let w_arr = expr.split(";").filter(e => !!e);
+
+    if (w_arr.length > 1) {
+        w_arr.forEach(e => {
+            new_expr += "\n" + argsWithThis(e) + ";";
+        });
+    } else {
+        new_expr = `return ${argsWithThis(w_arr[0])}`;
+    }
+
+    return new_expr;
+}
 
 // 获取函数
 const exprToFunc = (expr) => {
-    return new Function("$event", `
-with(this){
+    return new Function("...args", `
+    const $event = args[0];
+    const $args = args;
+    args = undefined;
+
     try{
-        return ${expr}
+        ${funcExprWithThis(expr)}
     }catch(e){
-        let errObj = {
-            expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
-        }
-        ele.__xInfo && Object.assign(errObj,ele.__xInfo);
-        console.error(errObj,e);
+    let errObj = {
+        expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
     }
-}
-    `);
+    this.ele.__xInfo && Object.assign(errObj,this.ele.__xInfo);
+    console.error(errObj,e);
+    }
+            `);
+
+    // return new Function("...args", `
+    // const $event = args[0];
+    // const $args = args;
+    // args = undefined;
+    // with(this){
+    //     try{
+    //         return ${expr}
+    //     }catch(e){
+    //         let errObj = {
+    //             expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+    //         }
+    //         ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+    //         console.error(errObj,e);
+    //     }
+    // }
+    //     `);
 }
 
 const register = (opts) => {
@@ -299,6 +350,9 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             let contentName = ele.getAttribute("fill-content");
             let attrName = ele.getAttribute('xv-fill');
 
+            // 禁止fill元素的update事件，影响主体组件数据
+            createXhearEle(ele).on("update", e => e.bubble = false);
+
             // 设置fill元素
             let targetFillEle = xvFillObj[contentName] = createXhearProxy(ele);
             ele.__fill_target = {
@@ -359,7 +413,6 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     // xv-if判断
     // if会重新渲染组件，滥用导致性能差， 5.2之后不允许使用if，请改用xv-show
     // queAllToArray(sroot, "[xv-if]").forEach(e => {
-    //     debugger
     // });
 
     // xv-show
@@ -381,6 +434,11 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
         let expr = e.getAttribute('xvkey');
 
         addProcess(expr, val => {
+            if (val instanceof XData) {
+                val = val.string;
+            } else {
+                val = String(val);
+            }
             textnode.textContent = val;
         });
     });
@@ -593,10 +651,14 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             let old_val;
 
             let watchFun;
+            // 是否首次运行
+            let isFirst = 1;
             target.watch(watchFun = e => {
                 let val = f.call(target);
 
-                if (val === old_val || (val instanceof XData && val.string === old_val)) {
+                if (isFirst) {
+                    isFirst = 0;
+                } else if (val === old_val || (val instanceof XData && val.string === old_val)) {
                     return;
                 }
 
@@ -604,6 +666,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 calls.forEach(d => d.change(val, trends));
 
                 if (val instanceof XData) {
+                    debugger
                     old_val = val.string;
                 } else {
                     old_val = val;
@@ -623,7 +686,7 @@ const createTemplateElement = ({
     // 模板名
     name,
     // 所有的模板数据
-    temps,
+    temps = new Map(),
     // 顶层依附对象
     parentProxyEle,
     // 要渲染数组数据的元素
@@ -657,14 +720,23 @@ const createTemplateElement = ({
     // }
 
     // 重造元素
-    let n_ele = template.content.children[0].cloneNode(true);
+    // 直接从template内复制元素，自定的component 并不会被渲染
+    // let n_ele = template.content.children[0].cloneNode(true);
+
+    // let tempDiv = document.createElement("div");
+    // tempDiv.innerHTML = template.content.children[0].outerHTML;
+    // let n_ele = tempDiv.children[0];
+    // tempDiv.removeChild(n_ele);
+
+    let n_ele = parseStringToDom(template.content.children[0].outerHTML)[0];
+
     let n_proxyEle = createXhearProxy(n_ele);
     let n_xhearEle = createXhearEle(n_ele);
     n_proxyEle[CANSETKEYS] = new Set([...Object.keys(targetData)]);
 
-    if (parentElement) {
-        console.log("parentElement => ", parentElement.ele);
-    }
+    // if (parentElement) {
+    //     console.log("parentElement => ", parentElement.ele);
+    // }
 
     // 绑定数据
     Object.defineProperties(n_xhearEle, {
@@ -677,6 +749,16 @@ const createTemplateElement = ({
             get: () => n_xhearEle
         }
     });
+
+    // 查看绑定的属性
+    // Array.from(parentElement.ele.attributes).forEach(e => {
+    //     let { name, value } = e;
+
+    //     let nameStr = /^:(.+)/.exec(name);
+    //     if (!!nameStr) {
+    //         nameStr = attrToProp(nameStr[1]);
+    //     }
+    // });
 
     // 绑定事件，并且函数的this要指向主体组件上
     let rootParentProxy = parentProxyEle;
