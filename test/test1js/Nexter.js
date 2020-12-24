@@ -30,7 +30,7 @@
             return root;
         }
 
-        nexter(func, time = 1000) {
+        nexter(func, time = 100) {
             this.root.eves.push({
                 func, time
             });

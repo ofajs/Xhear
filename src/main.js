@@ -293,7 +293,7 @@ class XhearEle extends XData {
             }
         }
 
-        return false;
+        return true;
     }
 
     getData(key) {

@@ -2449,7 +2449,7 @@
                 }
             }
 
-            return false;
+            return true;
         }
 
         getData(key) {
@@ -3046,11 +3046,11 @@
 
     // 转化为指向this的函数表达式
     const argsWReg = /(\|\||\&\&|\(|\)|\?|\!|\:| |\,|".+?"|'.+?')/g;
-    const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.)/;
+    const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.|^Number$|^String$|^parseInt$|^parseFloat$|^undefined$|^null$|^true$|^false$|^[\d])/;
     const argsWithThis = (expr) => {
         // 针对性的进行拆分
         let argsSpArr = expr.split(argsWReg).map(e => {
-            if (argsWReg.test(e) || !e.trim() || /^[\d]/.test(e) || ignoreArgKeysReg.test(e)) {
+            if (argsWReg.test(e) || !e.trim() || ignoreArgKeysReg.test(e)) {
                 return e;
             }
             return `this.${e}`;
