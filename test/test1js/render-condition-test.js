@@ -29,6 +29,7 @@
                 <div class="s2" xv-if="!showS1">s2</div>
                 <div $="h1" xv-show="showS2">h1</div>
                 <div $="h2" xv-show="!showS2">h2</div>
+                <button @click="showLog({aaa:'aaaa',b :{val:'bbb'},ccc:isClick1 + (isClick2 ? isClick2: 3),ddd:{val:['dddd',isClick1]}},{e:'eeee'})">testbtn</button>
             </div>
         `,
         proto: {
@@ -40,6 +41,9 @@
             },
             clickFun2(e) {
                 this.isClick2 = 1;
+            },
+            showLog(d) {
+                console.log('showlog => ', d);
             }
         }
     });

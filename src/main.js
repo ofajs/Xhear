@@ -308,7 +308,20 @@ class XhearEle extends XData {
             target = _this.ele.children[key];
             target && (target = createXhearProxy(target));
         } else {
-            target = _this[key];
+            let descriptor = getOwnPropertyDescriptor(_this, key);
+
+            if (!descriptor) {
+                target = _this[key];
+            } else if (descriptor) {
+                let { get, value } = descriptor;
+                if (!isUndefined(value)) {
+                    target = value;
+                } else if (get) {
+                    target = get.call(this[PROXYTHIS], key);
+                }
+            }
+
+            // target = _this[key];
         }
 
         if (target instanceof XData) {
@@ -354,7 +367,7 @@ class XhearEle extends XData {
             }
         } else {
             if (getType(expr) == "string") {
-                while (tempTar) {
+                while (tempTar && tempTar) {
                     if (meetsEle(tempTar.ele, expr)) {
                         pars.push(tempTar);
                     }
@@ -423,7 +436,7 @@ class XhearEle extends XData {
                 get,
                 set,
                 value
-            } = Object.getOwnPropertyDescriptor(proto, k);
+            } = getOwnPropertyDescriptor(proto, k);
 
             if (value) {
                 if (this.hasOwnProperty(k)) {
@@ -434,6 +447,9 @@ class XhearEle extends XData {
                     });
                 }
             } else {
+                // debugger
+                // get && (get = get.bind(this))
+
                 Object.defineProperty(this, k, {
                     get,
                     set

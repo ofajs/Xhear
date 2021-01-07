@@ -61,6 +61,7 @@
     </div>
 </body>
 <script>
+    console.time("all time");
     $.register({
         tag: "test-ele",
         temp: `
@@ -98,5 +99,8 @@
 <script src="test1js/render-condition-test.js"></script>
 <script src="test1js/fill-test.js"></script>
 <!-- <script src="test1js/dynamic-style-test.js"></script> -->
+<script>
+    console.timeEnd("all time");
+</script>
 
 </html>

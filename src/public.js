@@ -1,8 +1,11 @@
 // business function
 // 判断元素是否符合条件
 const meetsEle = (ele, expr) => {
+    if (!ele.tagName) {
+        return false;
+    }
     if (ele === expr) {
-        return !0;
+        return true;
     }
     if (ele === document) {
         return false;
@@ -70,6 +73,8 @@ const parseDataToDom = (objData) => {
 
     return ele;
 }
+
+const getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
 
 const parseToDom = (expr) => {
     let ele;

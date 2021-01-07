@@ -27,6 +27,7 @@
         <div class="name" style="cursor:pointer;user-select:none;" @click.stop="clickName">tw-item</div>
         <div>v => {{v}}</div>
         <div>arr => {{arr.string}}</div>
+        <div>{{arr;}}</div>
         `
     });
 
@@ -121,7 +122,7 @@
         tag: "tw-ele"
     });
 
-    targetEle.display = "none";
+    // targetEle.display = "none";
 
     $("body").push(targetEle);
 
