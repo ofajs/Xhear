@@ -58,95 +58,6 @@ const argsWithThis = (expr) => {
     return argsSpArr.join("");
 }
 
-// 类json翻译方式进行转换
-// const correspObj = [["{", "}"], ["[", "]"], ["(", ")"]];
-// const argsWithThis = (expr) => {
-//     // 针对性的进行拆分
-//     let stree_arr = expr.split(argsWReg);
-
-//     // 进入区域的符号
-//     let area_arr = [];
-//     let argsSpArr = [];
-
-//     let inJSONhaspoint = false;
-
-//     stree_arr.some(e => {
-//         let val = e.trim();
-
-//         if (!val || ignoreArgKeysReg.test(val)) {
-//             argsSpArr.push(e);
-//             return;
-//         }
-
-//         let last_area_desc = area_arr.slice(-1)[0];
-
-//         // 进入区域的话增加一个区域符
-//         if (/[\(\{\[]/.test(val)) {
-//             area_arr.push(val);
-//             argsSpArr.push(e);
-//             return;
-//         } else if (/[\)\}\]]/.test(val)) {
-//             if (!last_area_desc) {
-//                 console.error({
-//                     expr,
-//                     desc: `the expression is missing ${correspObj.find(e => e[1] == val)[0]}`
-//                 });
-//                 return true;
-//             }
-
-//             let isBreak = true;
-//             correspObj.forEach(corObj => {
-//                 if (last_area_desc == corObj[0]) {
-//                     if (val == corObj[1]) {
-//                         area_arr.splice(-1);
-//                         argsSpArr.push(e);
-//                         isBreak = false;
-
-//                         if (val == "}") {
-//                             // 清空Json解析数据
-//                             inJSONhaspoint = false;
-//                             debugger;
-//                         }
-//                     } else {
-//                         console.error({
-//                             expr,
-//                             desc: `the expression is missing ${correspObj.find(e => e[0] == last_area_desc)[1]}`
-//                         });
-//                     }
-//                 }
-//             });
-//             return isBreak;
-//         }
-
-//         if (argsWReg.test(e) || /('.*?'|".*?")/.test(e)) {
-//             switch (val) {
-//                 case ":":
-//                     inJSONhaspoint = true;
-//                     break;
-//                 case ",":
-//                     inJSONhaspoint = false;
-//                     break;
-//             }
-//             argsSpArr.push(e);
-//             return;
-//         }
-
-//         // 判断是否在json内
-//         if (last_area_desc == "{") {
-//             if (inJSONhaspoint) {
-//                 // debugger
-//             } else {
-//                 argsSpArr.push(e);
-//                 return;
-//             }
-//         }
-
-//         argsSpArr.push(`this.${e}`);
-//     });
-
-//     return argsSpArr.join("");
-// }
-
 // 使用with性能不好，所以将内部函数变量转为指向this的函数
 const funcExprWithThis = (expr) => {
     let new_expr = "";
@@ -379,6 +290,9 @@ const getCanRenderEles = (root, expr) => {
 }
 
 // 渲染shadow dom 的内容
+// sroot 查找元素用
+// proxyEle 获取挂载数据用
+// temps 模板元素
 const renderTemp = ({ sroot, proxyEle, temps }) => {
     // 处理用寄存对象
     const processObj = new Map();
@@ -508,6 +422,9 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                                     assignData: e.object
                                 });
                             }
+
+                            // 组件初次数据设定
+                            Object.assign(fillChildComp, e.object);
 
                             targetFillEle.ele.appendChild(fillChildComp.ele);
                         });
@@ -806,6 +723,11 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     }
 }
 
+// // 生成专用的虚包围元素
+// const createFakeWrap = (n_ele) => { 
+
+// }
+
 // 渲染组件内的模板元素
 const createTemplateElement = ({
     // 模板名
@@ -818,7 +740,7 @@ const createTemplateElement = ({
     parentElement,
     // 循环上需要的对象
     targetData,
-    // 需要合并的数据
+    // 需要合并进来的数据
     assignData
 }) => {
     let template = temps.get(name);
@@ -842,10 +764,20 @@ const createTemplateElement = ({
 
     let n_ele = parseStringToDom(template.content.children[0].outerHTML)[0];
 
-    // let fakeWrapEle = document.createElement("template");
+    // if (n_ele.xvele) {
+    //     // 组件的情况下修正数据
+    //     debugger
+    // }
+
+    // 生成虚拟包围元素
+    // let fakeWrapEle = document.createElement("div");
     // fakeWrapEle.appendChild(n_ele);
 
+    // let n_proxyEle = createXhearProxy(fakeWrapEle);
+    // let targetProxy = createXhearProxy(n_ele);
+
     let n_proxyEle = createXhearProxy(n_ele);
+
     n_proxyEle[CANSETKEYS] = new Set([...Object.keys(targetData)]);
 
     // 绑定数据
@@ -857,16 +789,20 @@ const createTemplateElement = ({
         },
         "$target": {
             get: () => n_proxyEle
-        }
+        },
+        // "index": {
+        //     get: () => targetProxy.index
+        // }
     });
 
+    // 多层嵌套的模板获取最顶层挂载元素组件
     // 绑定事件，并且函数的this要指向主体组件上
     let rootParentProxy = parentProxyEle;
     while (rootParentProxy._parentProxy) {
         rootParentProxy = rootParentProxy._parentProxy;
     }
     let regData = regDatabase.get(rootParentProxy.tag);
-    Object.keys(regData.proto).forEach(funcName => {
+    regData.proto && Object.keys(regData.proto).forEach(funcName => {
         let func = regData.proto[funcName];
         if (isFunction(func)) {
             Object.defineProperty(n_proxyEle, funcName, {
@@ -879,7 +815,8 @@ const createTemplateElement = ({
     n_proxyEle._parentProxy = parentProxyEle;
 
     renderTemp({
-        sroot: n_ele,
+        // sroot: n_ele,
+        sroot: n_proxyEle.ele,
         proxyEle: n_proxyEle,
         temps
     });
@@ -895,7 +832,7 @@ const createTemplateElement = ({
         Object.assign(n_proxyEle, assignData);
     }
 
-    return n_proxyEle;
+    return createXhearProxy(n_ele);
 }
 
 // 渲染组件元素

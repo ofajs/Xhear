@@ -3559,6 +3559,9 @@
                                     fillChildComp = $({
                                         tag: contentName
                                     });
+
+                                    // 组件初次数据设定
+                                    Object.assign(fillChildComp, e.object);
                                 } else {
                                     // 模板绑定
                                     fillChildComp = createTemplateElement({
@@ -3566,12 +3569,10 @@
                                         temps,
                                         parentProxyEle: proxyEle,
                                         parentElement: targetFillEle,
-                                        targetData: e
+                                        targetData: e,
+                                        assignData: e.object
                                     });
                                 }
-
-                                // 组件初次数据设定
-                                Object.assign(fillChildComp, e.object);
 
                                 targetFillEle.ele.appendChild(fillChildComp.ele);
                             });
@@ -3892,7 +3893,9 @@
         // 要渲染数组数据的元素
         parentElement,
         // 循环上需要的对象
-        targetData
+        targetData,
+        // 需要合并的数据
+        assignData
     }) => {
         let template = temps.get(name);
 
@@ -3913,52 +3916,25 @@
             });
         }
 
-        // 给不是对象的数据造对象
-        // let isFakeData = 0;
-        // if (!(targetData instanceof XData)) {
-        //     isFakeData = 1;
-        // }
-
-        // 重造元素
-        // 直接从template内复制元素，自定的component 并不会被渲染
-        // let n_ele = template.content.children[0].cloneNode(true);
-
-        // let tempDiv = document.createElement("div");
-        // tempDiv.innerHTML = template.content.children[0].outerHTML;
-        // let n_ele = tempDiv.children[0];
-        // tempDiv.removeChild(n_ele);
-
         let n_ele = parseStringToDom(template.content.children[0].outerHTML)[0];
 
+        // let fakeWrapEle = document.createElement("template");
+        // fakeWrapEle.appendChild(n_ele);
+
         let n_proxyEle = createXhearProxy(n_ele);
-        let n_xhearEle = createXhearEle(n_ele);
         n_proxyEle[CANSETKEYS] = new Set([...Object.keys(targetData)]);
 
-        // if (parentElement) {
-        //     console.log("parentElement => ", parentElement.ele);
-        // }
-
         // 绑定数据
-        Object.defineProperties(n_xhearEle, {
+        Object.defineProperties(n_proxyEle, {
             "$data": {
                 get: () => {
                     return targetData;
                 }
             },
             "$target": {
-                get: () => n_xhearEle
+                get: () => n_proxyEle
             }
         });
-
-        // 查看绑定的属性
-        // Array.from(parentElement.ele.attributes).forEach(e => {
-        //     let { name, value } = e;
-
-        //     let nameStr = /^:(.+)/.exec(name);
-        //     if (!!nameStr) {
-        //         nameStr = attrToProp(nameStr[1]);
-        //     }
-        // });
 
         // 绑定事件，并且函数的this要指向主体组件上
         let rootParentProxy = parentProxyEle;
@@ -3969,7 +3945,7 @@
         Object.keys(regData.proto).forEach(funcName => {
             let func = regData.proto[funcName];
             if (isFunction(func)) {
-                Object.defineProperty(n_xhearEle, funcName, {
+                Object.defineProperty(n_proxyEle, funcName, {
                     value: func.bind(rootParentProxy)
                 });
             }
@@ -3991,6 +3967,9 @@
             });
         }
 
+        if (assignData) {
+            Object.assign(n_proxyEle, assignData);
+        }
 
         return n_proxyEle;
     }

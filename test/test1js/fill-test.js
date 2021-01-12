@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(4, 'fill test');
+    let tester = expect(6, 'fill test');
 
     $.register({
         tag: "tw-item",
@@ -28,6 +28,10 @@
         <div>v => {{v}}</div>
         <div>arr => {{arr.string}}</div>
         <div>{{arr;}}</div>
+        <div>
+            <div>slot↓</div>
+            <slot></slot>
+        </div>
         `
     });
 
@@ -49,7 +53,8 @@
                 v: 200,
                 arr: [5, 6, 7, 8, 9],
                 arr2: []
-            }]
+            }],
+            c: [{ v2: "v2-1" }, { v2: "v2-2" }]
         },
         proto: {
             clickItem(e, data, target) {
@@ -79,6 +84,10 @@
                 border-color:#0ff;
             }
         </style>
+
+        <template name="t4">
+            <tw-item :v="v2">v2 val => {{v2}</tw-item>
+        </template>
     
         <template name="t3">
             <div class="t3">
@@ -101,10 +110,10 @@
                 <div class="t1_id"> {{index}} </div>
                 <div>v => {{v}}</div>
                 <div> <input type="number" xv-model="v" @click.stop /> </div>
-                <div>{{arr.string}}</div>
+                <div class="string_con">{{arr.string}}</div>
                 <div xv-fill="arr" fill-content="t2"></div>
                 <div xv-fill="arr2" fill-content="t3"></div>
-                <div xv-fill="arr2" class="twItemContainer" fill-content="tw-item"></div>
+                <div xv-fill="arr2" fill-content="tw-item" class="twItemContainer"></div>
                 <div>不存在的字段 => {{hahahaha}}</div>
             </div>
         </template>
@@ -112,9 +121,13 @@
     
         <h3>tw-ele</h3>
         <div>{{a}}</div>
-        <div xv-fill="b" fill-content="tw-item" $="firstFillCon"></div>
+        <div xv-fill="b" fill-content="tw-item" $="fillCon1"></div>
+        
+        <br><br><br>
         <button @click="b[0].arr.reverse()" id="inBtn">b[0].arr倒序</button>
-        <div xv-fill="b" fill-content="t1"></div>
+        <div xv-fill="b" fill-content="t1" $="fillCon2"></div>
+
+        <!-- <div xv-fill="c" fill-content="t4"></div> -->
         `
     });
 
@@ -129,10 +142,12 @@
     nexter(() => {
         tester.ok(targetEle.$shadow.all(".twItemContainer").length == 2, 'length ok 1');
         tester.ok(targetEle.$shadow.all("tw-item").length == 8, 'length ok 2');
-        tester.ok(targetEle.$firstFillCon[0].$shadow[3].text == "arr => [1,2,3]", "text ok");
+        tester.ok(targetEle.$fillCon1[0].$shadow[3].text == "arr => [1,2,3]", "text ok1");
+        tester.ok(targetEle.$fillCon2[0].$(".string_con").text == '[1,2,3]', "text ok2");
 
         targetEle.$shadow.$("#inBtn").ele.click();
     }).nexter(() => {
-        tester.ok(targetEle.$firstFillCon[0].$shadow[3].text == "arr => [3,2,1]", "text ok2");
+        tester.ok(targetEle.$fillCon1[0].$shadow[3].text == "arr => [3,2,1]", "text ok3");
+        tester.ok(targetEle.$fillCon2[0].$(".string_con").text == '[3,2,1]', "text ok4");
     });
 })();
