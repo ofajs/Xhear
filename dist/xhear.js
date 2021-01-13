@@ -1,5 +1,5 @@
 /*!
- * xhear v5.2.1
+ * xhear v5.2.3
  * https://github.com/kirakiray/Xhear#readme
  * 
  * (c) 2018-2021 YAO
@@ -78,7 +78,7 @@
     })();
 
     // 触发update事件
-    const emitUpdate = (target, name, args, assingData) => {
+    const emitUpdate = (target, name, args, assingData, beforeCall) => {
         let mid;
 
         if (target._modifyId) {
@@ -119,6 +119,8 @@
             }),
             mid
         };
+
+        beforeCall && (beforeCall(event));
 
         // 冒泡update
         target.emit(event);
@@ -2627,6 +2629,25 @@
             });
             return this;
         }
+
+        getTarget(keys) {
+            let target = this;
+            if (keys.length) {
+                keys.some(k => {
+                    if (!target) {
+                        console.warn("getTarget failure");
+                        return true;
+                    }
+                    target = target[k];
+
+                    if (target._fakeWrapper) {
+                        target = target._fakeWrapper;
+                        // debugger
+                    }
+                });
+            }
+            return target;
+        }
     }
 
     const XhearEleFn = XhearEle.prototype;
@@ -3115,95 +3136,6 @@
         return argsSpArr.join("");
     }
 
-    // 类json翻译方式进行转换
-    // const correspObj = [["{", "}"], ["[", "]"], ["(", ")"]];
-    // const argsWithThis = (expr) => {
-    //     // 针对性的进行拆分
-    //     let stree_arr = expr.split(argsWReg);
-
-    //     // 进入区域的符号
-    //     let area_arr = [];
-    //     let argsSpArr = [];
-
-    //     let inJSONhaspoint = false;
-
-    //     stree_arr.some(e => {
-    //         let val = e.trim();
-
-    //         if (!val || ignoreArgKeysReg.test(val)) {
-    //             argsSpArr.push(e);
-    //             return;
-    //         }
-
-    //         let last_area_desc = area_arr.slice(-1)[0];
-
-    //         // 进入区域的话增加一个区域符
-    //         if (/[\(\{\[]/.test(val)) {
-    //             area_arr.push(val);
-    //             argsSpArr.push(e);
-    //             return;
-    //         } else if (/[\)\}\]]/.test(val)) {
-    //             if (!last_area_desc) {
-    //                 console.error({
-    //                     expr,
-    //                     desc: `the expression is missing ${correspObj.find(e => e[1] == val)[0]}`
-    //                 });
-    //                 return true;
-    //             }
-
-    //             let isBreak = true;
-    //             correspObj.forEach(corObj => {
-    //                 if (last_area_desc == corObj[0]) {
-    //                     if (val == corObj[1]) {
-    //                         area_arr.splice(-1);
-    //                         argsSpArr.push(e);
-    //                         isBreak = false;
-
-    //                         if (val == "}") {
-    //                             // 清空Json解析数据
-    //                             inJSONhaspoint = false;
-    //                             debugger;
-    //                         }
-    //                     } else {
-    //                         console.error({
-    //                             expr,
-    //                             desc: `the expression is missing ${correspObj.find(e => e[0] == last_area_desc)[1]}`
-    //                         });
-    //                     }
-    //                 }
-    //             });
-    //             return isBreak;
-    //         }
-
-    //         if (argsWReg.test(e) || /('.*?'|".*?")/.test(e)) {
-    //             switch (val) {
-    //                 case ":":
-    //                     inJSONhaspoint = true;
-    //                     break;
-    //                 case ",":
-    //                     inJSONhaspoint = false;
-    //                     break;
-    //             }
-    //             argsSpArr.push(e);
-    //             return;
-    //         }
-
-    //         // 判断是否在json内
-    //         if (last_area_desc == "{") {
-    //             if (inJSONhaspoint) {
-    //                 // debugger
-    //             } else {
-    //                 argsSpArr.push(e);
-    //                 return;
-    //             }
-    //         }
-
-    //         argsSpArr.push(`this.${e}`);
-    //     });
-
-    //     return argsSpArr.join("");
-    // }
-
     // 使用with性能不好，所以将内部函数变量转为指向this的函数
     const funcExprWithThis = (expr) => {
         let new_expr = "";
@@ -3569,9 +3501,10 @@
                                         temps,
                                         parentProxyEle: proxyEle,
                                         parentElement: targetFillEle,
-                                        targetData: e,
-                                        assignData: e.object
+                                        targetData: e
                                     });
+
+                                    Object.assign(fillChildComp._fakeWrapper, e.object);
                                 }
 
                                 targetFillEle.ele.appendChild(fillChildComp.ele);
@@ -3882,6 +3815,63 @@
         }
     }
 
+    // 制作虚假包围元素
+    const createFakeWrapper = (targetProxyEle, targetData) => {
+        let fakeWrapEle = document.createElement("template");
+        fakeWrapEle.appendChild(targetProxyEle.ele);
+
+        let proxyWrapper = createXhearProxy(fakeWrapEle);
+
+        proxyWrapper[CANSETKEYS] = new Set([...Object.keys(targetData)]);
+        targetProxyEle._fakeWrapper = proxyWrapper;
+
+        // 绑定数据
+        Object.defineProperties(proxyWrapper, {
+            "$data": {
+                get: () => targetData
+            },
+            "$target": {
+                // get: () => proxyWrapper
+                get: () => targetProxyEle
+            },
+            "index": {
+                get: () => targetProxyEle.index
+            }
+        });
+
+        let oldSetData = proxyWrapper.setData;
+        let oldGetData = proxyWrapper.getData;
+        Object.defineProperties(proxyWrapper, {
+            getData: {
+                value(key) {
+                    if (!/\D/.test(key) && key !== '') {
+                        return targetProxyEle[key];
+                    }
+                    return oldGetData.call(this, key);
+                }
+            },
+            setData: {
+                value(key, val) {
+                    if (!/\D/.test(key) && key !== '') {
+                        targetProxyEle[key] = val;
+                        return true;
+                    }
+                    return oldSetData.call(this, key, val);
+                }
+            }
+        });
+
+        // 转发update事件
+        proxyWrapper.on("update", e => {
+            emitUpdate(targetProxyEle, "", [], undefined, function(event) {
+                event.modify = e.modify
+                event.keys.push(...e.keys);
+            });
+        });
+
+        return proxyWrapper;
+    }
+
     // 渲染组件内的模板元素
     const createTemplateElement = ({
         // 模板名
@@ -3893,9 +3883,7 @@
         // 要渲染数组数据的元素
         parentElement,
         // 循环上需要的对象
-        targetData,
-        // 需要合并的数据
-        assignData
+        targetData
     }) => {
         let template = temps.get(name);
 
@@ -3918,23 +3906,8 @@
 
         let n_ele = parseStringToDom(template.content.children[0].outerHTML)[0];
 
-        // let fakeWrapEle = document.createElement("template");
-        // fakeWrapEle.appendChild(n_ele);
-
-        let n_proxyEle = createXhearProxy(n_ele);
-        n_proxyEle[CANSETKEYS] = new Set([...Object.keys(targetData)]);
-
-        // 绑定数据
-        Object.defineProperties(n_proxyEle, {
-            "$data": {
-                get: () => {
-                    return targetData;
-                }
-            },
-            "$target": {
-                get: () => n_proxyEle
-            }
-        });
+        let targetProxyEle = createXhearProxy(n_ele);
+        let wrapProxyEle = createFakeWrapper(targetProxyEle, targetData);
 
         // 绑定事件，并且函数的this要指向主体组件上
         let rootParentProxy = parentProxyEle;
@@ -3945,33 +3918,32 @@
         Object.keys(regData.proto).forEach(funcName => {
             let func = regData.proto[funcName];
             if (isFunction(func)) {
-                Object.defineProperty(n_proxyEle, funcName, {
+                Object.defineProperty(wrapProxyEle, funcName, {
                     value: func.bind(rootParentProxy)
                 });
             }
         });
 
         // 设置父层
-        n_proxyEle._parentProxy = parentProxyEle;
+        wrapProxyEle._parentProxy = parentProxyEle;
 
         renderTemp({
-            sroot: n_ele,
-            proxyEle: n_proxyEle,
+            sroot: wrapProxyEle.ele,
+            proxyEle: wrapProxyEle,
             temps
         });
 
         // 不是数据的情况下刷新视图
         if (!(targetData instanceof XData)) {
             nextTick(() => {
-                n_proxyEle.emit("reloadView");
+                wrapProxyEle.emit("reloadView");
             });
         }
 
-        if (assignData) {
-            Object.assign(n_proxyEle, assignData);
-        }
+        // 从fakeWrapper内删除，不然的话后续
+        targetProxyEle.remove();
 
-        return n_proxyEle;
+        return targetProxyEle;
     }
 
     // 渲染组件元素
@@ -4168,8 +4140,8 @@
         register,
         nextTick,
         xdata: obj => createXData(obj)[PROXYTHIS],
-        v: 5002001,
-        version: "5.2.1",
+        v: 5002003,
+        version: "5.2.3",
         fn: XhearEleFn,
         isXhear,
         ext,

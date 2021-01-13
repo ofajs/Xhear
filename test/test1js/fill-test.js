@@ -58,7 +58,9 @@
         },
         proto: {
             clickItem(e, data, target) {
-                data.v = parseInt(data.v) + 100;
+                if ("v" in data) {
+                    data.v = parseInt(data.v) + 100;
+                }
                 console.log(e, data, target);
             }
         },
@@ -86,13 +88,13 @@
         </style>
 
         <template name="t4">
-            <tw-item :v="v2">v2 val => {{v2}</tw-item>
+            <tw-item :v="v2">v2 val => {{v2}}</tw-item>
         </template>
     
         <template name="t3">
             <div class="t3">
                 <div class="t3_id"> {{index}} </div>
-                <div> t3.v => {{v}} , $data parent index => {{$data.parent.index}}</div>
+                <div @click="clickItem($event,$data,$target)"> t3.v => {{v}} , $data parent index => {{$data.parent.index}}</div>
                 <!-- <input type="number" xv-model="v" /> -->
                 <tw-item :#v="v"></tw-item>
             </div>
@@ -106,9 +108,9 @@
         </template>
     
         <template name="t1">
-            <div class="t1" :vv="v" @click="clickItem($event,$data,$target);">
+            <div class="t1">
                 <div class="t1_id"> {{index}} </div>
-                <div>v => {{v}}</div>
+                <div @click="clickItem($event,$data,$target);">v => {{v}}</div>
                 <div> <input type="number" xv-model="v" @click.stop /> </div>
                 <div class="string_con">{{arr.string}}</div>
                 <div xv-fill="arr" fill-content="t2"></div>
@@ -127,7 +129,7 @@
         <button @click="b[0].arr.reverse()" id="inBtn">b[0].arr倒序</button>
         <div xv-fill="b" fill-content="t1" $="fillCon2"></div>
 
-        <!-- <div xv-fill="c" fill-content="t4"></div> -->
+         <div xv-fill="c" fill-content="t4"></div> 
         `
     });
 
@@ -135,13 +137,15 @@
         tag: "tw-ele"
     });
 
-    // targetEle.display = "none";
+    targetEle.display = "none";
 
     $("body").push(targetEle);
 
+    window.aaa = targetEle;
+
     nexter(() => {
         tester.ok(targetEle.$shadow.all(".twItemContainer").length == 2, 'length ok 1');
-        tester.ok(targetEle.$shadow.all("tw-item").length == 8, 'length ok 2');
+        tester.ok(targetEle.$shadow.all("tw-item").length == 10, 'length ok 2');
         tester.ok(targetEle.$fillCon1[0].$shadow[3].text == "arr => [1,2,3]", "text ok1");
         tester.ok(targetEle.$fillCon2[0].$(".string_con").text == '[1,2,3]', "text ok2");
 
