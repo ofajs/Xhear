@@ -113,9 +113,9 @@
                 <div @click="clickItem($event,$data,$target);">v => {{v}}</div>
                 <div> <input type="number" xv-model="v" @click.stop /> </div>
                 <div class="string_con">{{arr.string}}</div>
-                <div xv-fill="arr" fill-content="t2"></div>
-                <div xv-fill="arr2" fill-content="t3"></div>
-                <div xv-fill="arr2" fill-content="tw-item" class="twItemContainer"></div>
+                <div xv-fill="arr use t2"></div>
+                <div xv-fill="arr2 use t3"></div>
+                <div xv-fill="arr2 use tw-item" class="twItemContainer"></div>
                 <div>不存在的字段 => {{hahahaha}}</div>
             </div>
         </template>
@@ -123,13 +123,13 @@
     
         <h3>tw-ele</h3>
         <div>{{a}}</div>
-        <div xv-fill="b" fill-content="tw-item" $="fillCon1"></div>
+        <div xv-fill="b use tw-item" $="fillCon1"></div>
         
         <br><br><br>
         <button @click="b[0].arr.reverse()" id="inBtn">b[0].arr倒序</button>
-        <div xv-fill="b" fill-content="t1" $="fillCon2"></div>
+        <div xv-fill="b use t1" $="fillCon2"></div>
 
-         <div xv-fill="c" fill-content="t4"></div> 
+         <div xv-fill="c use t4"></div> 
         `
     });
 
@@ -140,8 +140,6 @@
     targetEle.display = "none";
 
     $("body").push(targetEle);
-
-    window.aaa = targetEle;
 
     nexter(() => {
         tester.ok(targetEle.$shadow.all(".twItemContainer").length == 2, 'length ok 1');

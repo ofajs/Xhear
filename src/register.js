@@ -383,6 +383,21 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             let contentName = ele.getAttribute("fill-content");
             let attrName = ele.getAttribute('xv-fill');
 
+            let matchAttr = attrName.match(/(.+?) +use +(.+)/);
+            if (matchAttr) {
+                contentName = matchAttr[2]
+                attrName = matchAttr[1];
+            }
+
+            if (!contentName || !attrName) {
+                throw {
+                    desc: "No fill attribute",
+                    target: ele,
+                    attr: attrName,
+                    content: contentName
+                };
+            }
+
             // 禁止fill元素的update事件，影响主体组件数据
             createXhearEle(ele).on("update", e => e.bubble = false);
 

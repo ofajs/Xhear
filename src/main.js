@@ -253,10 +253,15 @@ class XhearEle extends XData {
         // 只有在允许列表里才能进行set操作
         let canSetKey = this[CANSETKEYS];
         if (xEleDefaultSetKeys.has(key)) {
-            let oldVal = _this[key];
 
-            // 直接设置
-            _this[key] = value;
+            let descriptor = getOwnPropertyDescriptor(_this, key);
+
+            if (!descriptor || !descriptor.set) {
+                // 直接设置
+                _this[key] = value;
+            } else {
+                descriptor.set.call(this[PROXYTHIS], value);
+            }
 
             // if (xEleDefaultSetKeysCanUpdate.has(key)) {
             //     emitUpdate(_this, "setData", [key, value], {
@@ -312,7 +317,7 @@ class XhearEle extends XData {
 
             if (!descriptor) {
                 target = _this[key];
-            } else if (descriptor) {
+            } else {
                 let { get, value } = descriptor;
                 if (!isUndefined(value)) {
                     target = value;
