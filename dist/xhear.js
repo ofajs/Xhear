@@ -3935,14 +3935,25 @@
             rootParentProxy = rootParentProxy._parentProxy;
         }
         let regData = regDatabase.get(rootParentProxy.tag);
-        Object.keys(regData.proto).forEach(funcName => {
-            let func = regData.proto[funcName];
+        let protoDescs = Object.getOwnPropertyDescriptors(regData.proto);
+        Object.keys(protoDescs).forEach(funcName => {
+            let descData = protoDescs[funcName];
+            let func = descData.value;
             if (isFunction(func)) {
                 Object.defineProperty(wrapProxyEle, funcName, {
                     value: func.bind(rootParentProxy)
                 });
             }
+
         });
+        // Object.keys(regData.proto).forEach(funcName => {
+        //     let func = regData.proto[funcName];
+        //     if (isFunction(func)) {
+        //         Object.defineProperty(wrapProxyEle, funcName, {
+        //             value: func.bind(rootParentProxy)
+        //         });
+        //     }
+        // });
 
         // 设置父层
         wrapProxyEle._parentProxy = parentProxyEle;

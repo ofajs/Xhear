@@ -58,7 +58,6 @@ const argsWithThis = (expr) => {
     return argsSpArr.join("");
 }
 
-// 类json翻译方式进行转换
 // 使用with性能不好，所以将内部函数变量转为指向this的函数
 const funcExprWithThis = (expr) => {
     let new_expr = "";
@@ -834,14 +833,25 @@ const createTemplateElement = ({
         rootParentProxy = rootParentProxy._parentProxy;
     }
     let regData = regDatabase.get(rootParentProxy.tag);
-    Object.keys(regData.proto).forEach(funcName => {
-        let func = regData.proto[funcName];
+    let protoDescs = Object.getOwnPropertyDescriptors(regData.proto);
+    Object.keys(protoDescs).forEach(funcName => {
+        let descData = protoDescs[funcName];
+        let func = descData.value;
         if (isFunction(func)) {
             Object.defineProperty(wrapProxyEle, funcName, {
                 value: func.bind(rootParentProxy)
             });
         }
+
     });
+    // Object.keys(regData.proto).forEach(funcName => {
+    //     let func = regData.proto[funcName];
+    //     if (isFunction(func)) {
+    //         Object.defineProperty(wrapProxyEle, funcName, {
+    //             value: func.bind(rootParentProxy)
+    //         });
+    //     }
+    // });
 
     // 设置父层
     wrapProxyEle._parentProxy = parentProxyEle;
