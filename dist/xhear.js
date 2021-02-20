@@ -3092,7 +3092,10 @@
     const ATTRBINDINGKEY = "attr" + getRandomId();
 
     // 是否表达式
-    const isFunctionExpr = (str) => argsWReg.test(str.trim());
+    const isFunctionExpr = (str) => {
+        argsWReg.lastIndex = 0;
+        return argsWReg.test(str.trim())
+    };
 
     // 转化为指向this的函数表达式
     const argsWReg = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|\<|\>)/g;
