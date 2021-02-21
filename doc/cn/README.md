@@ -139,7 +139,7 @@ $('tbody').push({
             temp: `
                 <div style="background-color:#aaa;">
                     <h2>test-tag</h2>
-                    <div xv-content style="font-size:18px;color:red;"></div>
+                    <div x-content style="font-size:18px;color:red;"></div>
                 </div>
             `
         });
@@ -147,7 +147,7 @@ $('tbody').push({
 </head>
 
 <body>
-    <test-tag xv-ele>测试文本</test-tag>
+    <test-tag x-ele>测试文本</test-tag>
 </body>
 
 </html>

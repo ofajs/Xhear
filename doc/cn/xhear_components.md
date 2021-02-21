@@ -19,9 +19,9 @@
 模板语法：
 
 * `{{keyName}}` 文本渲染模板语法；
-* `xv-content` 和 `xv-slot` 插槽元素；
-* `xv-tar` 暴露影子元素；
-* `xv-module` 绑定value数据；
+* `x-content` 和 `x-slot` 插槽元素；
+* `x-tar` 暴露影子元素；
+* `x-module` 绑定value数据；
 
 下面以谷歌 Material Design 的 输入线 为案例做个控件；(案例中没有使用模块化和模板引用，后面的XDFrame会补充解决这两个问题；只是简单的 `script`标签引用方便理解)
 
@@ -59,7 +59,7 @@ $.register({
     <input type="text" class="main_input">
     <div class="bottom_line"></div>
     <div class="tips_text">Label</div>
-    <div xv-content></div>
+    <div x-content></div>
     `
 });
 ```
@@ -68,7 +68,7 @@ $.register({
 
 **temp** 存放自定义组件的模板元素；
 
-`temp` 里加了个 `<div xv-content></div>` 是用于存放 content元素；**所有的组件都必须带有 `xv-content` 的元素**；至于有什么用后面会讲；
+`temp` 里加了个 `<div x-content></div>` 是用于存放 content元素；**所有的组件都必须带有 `x-content` 的元素**；至于有什么用后面会讲；
 
 [点击查看 input-line 组件](https://kirakiray.github.io/Xhear/readmeSource/input_line/inputLineTest.html)；
 
@@ -78,10 +78,10 @@ $.register({
 $.register({
     tag: "input-line",
     temp: `
-    <input type="text" class="main_input" xv-tar="mainInput">
+    <input type="text" class="main_input" x-tar="mainInput">
     <div class="bottom_line"></div>
     <div class="tips_text">Label</div>
-    <div xv-content></div>
+    <div x-content></div>
     `,
     data: {
         // 默认istat为空
@@ -107,9 +107,9 @@ $.register({
 
 **attrs** 定义自身数据的 `key`值 是否映射到元素属性上；案例中通过css定义了 `istat` 属性修改组件的界面变化；
 
-组件的 `xv-tar` 定义了影子元素在组件上的key；而要使用该元素只需要前置 `$` 符即可；方便实例函数快速调用影子元素；
+组件的 `x-tar` 定义了影子元素在组件上的key；而要使用该元素只需要前置 `$` 符即可；方便实例函数快速调用影子元素；
 
-temp模板内，给 `.main_input` 添加了 `[xv-tar="mainInput"]` 属性；使用元素只需要 `$mainInput` 获取；
+temp模板内，给 `.main_input` 添加了 `[x-tar="mainInput"]` 属性；使用元素只需要 `$mainInput` 获取；
 
 内元素渲染完成后`(inited后)`，给内部的的 `input` 元素注册 聚焦和失焦 (focus blur)事件，修改元素的 `istat` 值；
 
@@ -131,14 +131,14 @@ input-line[istat="infocus"]>.tips_text {
 效果查看
 
 ```html
-<input-line xv-ele></input-line>
+<input-line x-ele></input-line>
 ```
 
 <img src="../img/input-line1.gif" width="416" alt="初始交互" />
 
 ### 特性说明
 
-`temp` 填充到元素内的模板元素被称为 `影子元素`；通过debug工具可以查看到，模板元素上都会带 `xv-shadow` 属性，外部是无法通过`que`获取影子元素；但通过提供的 `queShadow` 可以查找组件自身的影子元素；
+`temp` 填充到元素内的模板元素被称为 `影子元素`；通过debug工具可以查看到，模板元素上都会带 `x-shadow` 属性，外部是无法通过`que`获取影子元素；但通过提供的 `queShadow` 可以查找组件自身的影子元素；
 
 ```javascript
 $('input-line').que('.main_input'); // => null
@@ -157,10 +157,10 @@ $("input-line").$mainInput // => {tag:"input",...}
 $.register({
     tag: "input-line",
     temp: `
-    <input type="text" class="main_input" xv-tar="mainInput">
+    <input type="text" class="main_input" x-tar="mainInput">
     <div class="bottom_line"></div>
     <div class="tips_text">{{placeholder}}</div>
-    <div xv-content></div>
+    <div x-content></div>
     `,
     data: {
         // 默认istat为空
@@ -187,7 +187,7 @@ $.register({
 效果查看
 
 ```html
-<input-line placeholder="UserName" xv-ele></input-line>
+<input-line placeholder="UserName" x-ele></input-line>
 ```
 
 <img src="../img/input-line2.gif" width="416" alt="初始交互" />
@@ -202,10 +202,10 @@ $.register({
 $.register({
     tag: "input-line",
     temp: `
-    <input type="text" class="main_input" xv-tar="mainInput" xv-module="iVal">
+    <input type="text" class="main_input" x-tar="mainInput" x-module="iVal">
     <div class="bottom_line"></div>
     <div class="tips_text">{{placeholder}}</div>
-    <div xv-content></div>
+    <div x-content></div>
     `,
     data: {
         // 默认istat为空
@@ -231,7 +231,7 @@ $.register({
 });
 ```
 
-组件 `temp` 内的 **[xv-module]** 元素的 `value` 值会跟组件相应的 `key`值绑定；
+组件 `temp` 内的 **[x-module]** 元素的 `value` 值会跟组件相应的 `key`值绑定；
 
 在失去焦点事件（blur）添加判断，当不为空值，就不用切换回 placeholder 居中的状态；
 
@@ -249,10 +249,10 @@ $('input-line').iVal // => Jack
 $.register({
     tag: "input-line",
     temp: `
-    <input type="text" class="main_input" xv-tar="mainInput" xv-module="value">
+    <input type="text" class="main_input" x-tar="mainInput" x-module="value">
     <div class="bottom_line"></div>
     <div class="tips_text">{{placeholder}}</div>
-    <div xv-content></div>
+    <div x-content></div>
     `,
     data: {
         // 默认istat为空
@@ -285,7 +285,7 @@ $('input-line').value // => Jack
 将 `value` 加入到 `attrs` ，value值也能设置到组件上；
 
 ```html
-<input-line placeholder="UserName" value="Jack" xv-ele></input-line>
+<input-line placeholder="UserName" value="Jack" x-ele></input-line>
 ```
 
 到这里 `input-line` 基础使用没问题，添加限制文本长度的属性；
@@ -294,10 +294,10 @@ $('input-line').value // => Jack
 $.register({
     tag: "input-line",
     temp: `
-    <input type="text" class="main_input" xv-tar="mainInput" xv-module="value">
+    <input type="text" class="main_input" x-tar="mainInput" x-module="value">
     <div class="bottom_line"></div>
     <div class="tips_text">{{placeholder}}</div>
-    <div xv-content></div>
+    <div x-content></div>
     `,
     data: {
         // 默认istat为空
@@ -337,7 +337,7 @@ $.register({
 组件注册 **watch** 参数，设置属性的监听函数，当组件的值发生改变时，会触发 watch 内的函数，第二个参数是当前key的值；
 
 ```html
-<input-line placeholder="UserName" maxlength="8" xv-ele></input-line>
+<input-line placeholder="UserName" maxlength="8" x-ele></input-line>
 ```
 
 **特性说明**
@@ -369,11 +369,11 @@ $("input-line").maxlength = 7;
 $.register({
     tag: "input-line",
     temp: `
-    <input type="text" class="main_input" xv-tar="mainInput" xv-module="value">
+    <input type="text" class="main_input" x-tar="mainInput" x-module="value">
     <div class="bottom_line"></div>
     <div class="tips_text">{{placeholder}}</div>
     <div class="right_selector">
-        <select xv-content xv-module="value"></select>
+        <select x-content x-module="value"></select>
     </div>
     `,
     data: {
@@ -414,7 +414,7 @@ $.register({
 使用代码
 
 ```html
-<input-line placeholder="UserName" show-selector xv-ele>
+<input-line placeholder="UserName" show-selector x-ele>
     <option>Jack</option>
     <option>Penny</option>
     <option>Hawod</option>
@@ -427,13 +427,13 @@ $.register({
 
 [点击查看案例](https://kirakiray.github.io/Xhear/readmeSource/input_line/inputLineTest.html)
 
-`temp` 内的 **[xv-content]** 就是组件的主容器；组件元素内的子元素，都会被转移到 `[xv-content]` 属性的元素里；
+`temp` 内的 **[x-content]** 就是组件的主容器；组件元素内的子元素，都会被转移到 `[x-content]` 属性的元素里；
 
-案例中，原先在 `input-line` 的子元素，都被转移到 `select[xv-content]` 的影子元素内，并且该 `select` 和 `value` 是绑定的(xv-module="value")；
+案例中，原先在 `input-line` 的子元素，都被转移到 `select[x-content]` 的影子元素内，并且该 `select` 和 `value` 是绑定的(x-module="value")；
 
 **特性说明**
 
-虽然组件渲染后会带有很多影子元素(xv-shadow)，但组件的真正子元素，是从影子元素(xv-content)里获取的；
+虽然组件渲染后会带有很多影子元素(x-shadow)，但组件的真正子元素，是从影子元素(x-content)里获取的；
 
 ```javascript
 $('input-line').length // => 3
@@ -502,11 +502,11 @@ $('input-line')[2] // => {tag:"option",text:"Hawod",...}
 
 跟组件相应 `key` 的值保持一致；
 
-### `xv-content`
+### `x-content`
 
-自定义组件内的子元素，将会塞进 `xv-content` 的容器影子元素内；是 `xv-slot="content"` 的缩写版；
+自定义组件内的子元素，将会塞进 `x-content` 的容器影子元素内；是 `x-slot="content"` 的缩写版；
 
-### `xv-slot`
+### `x-slot`
 
 组件元素的插槽元素；
 
@@ -517,9 +517,9 @@ $.register({
     tag:`test-tag`,
     temp:`
         ...
-        <div xv-slot="acon"></div>
+        <div x-slot="acon"></div>
         ...
-        <div xv-slot="content"></div>
+        <div x-slot="content"></div>
         ...
     `,
     ...
@@ -527,7 +527,7 @@ $.register({
 ```
 
 ```html
-<test-tag xv-ele>
+<test-tag x-ele>
     <test-tag-acon>
         <div class="a">A</div>
     </test-tag-acon>    
@@ -539,11 +539,11 @@ $.register({
 
 `.a` 将会变成 `test-tag` 的影子元素；而 `.b` 会成为 `test-tag` 的子元素；
 
-### xv-tar
+### x-tar
 
 组件元素的影子元素的快速映射；
 
-### xv-module
+### x-module
 
 组件内的影子元素的 value 同步到组件相应的属性值上；
 

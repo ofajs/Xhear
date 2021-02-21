@@ -95,7 +95,7 @@
             <div class="t3">
                 <div class="t3_id"> {{index}} </div>
                 <div @click="clickItem($event,$data,$target)"> t3.v => {{v}} , $data parent index => {{$data.parent.index}}</div>
-                <!-- <input type="number" xv-model="v" /> -->
+                <!-- <input type="number" x-model="v" /> -->
                 <tw-item :#v="v"></tw-item>
             </div>
         </template>
@@ -111,11 +111,11 @@
             <div class="t1">
                 <div class="t1_id"> {{index}} </div>
                 <div @click="clickItem($event,$data,$target);">v => {{v}}</div>
-                <div> <input type="number" xv-model="v" @click.stop /> </div>
+                <div> <input type="number" x-model="v" @click.stop /> </div>
                 <div class="string_con">{{arr.string}}</div>
-                <div xv-fill="arr use t2"></div>
-                <div xv-fill="arr2 use t3"></div>
-                <div xv-fill="arr2 use tw-item" class="twItemContainer"></div>
+                <div x-fill="arr use t2"></div>
+                <div x-fill="arr2 use t3"></div>
+                <div x-fill="arr2 use tw-item" class="twItemContainer"></div>
                 <div>不存在的字段 => {{hahahaha}}</div>
             </div>
         </template>
@@ -123,13 +123,13 @@
     
         <h3>tw-ele</h3>
         <div>{{a}}</div>
-        <div xv-fill="b use tw-item" $="fillCon1"></div>
+        <div x-fill="b use tw-item" $="fillCon1"></div>
         
         <br><br><br>
         <button @click="b[0].arr.reverse()" id="inBtn">b[0].arr倒序</button>
-        <div xv-fill="b use t1" $="fillCon2"></div>
+        <div x-fill="b use t1" $="fillCon2"></div>
 
-         <div xv-fill="c use t4"></div> 
+         <div x-fill="c use t4"></div> 
         `
     });
 

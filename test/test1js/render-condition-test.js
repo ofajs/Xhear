@@ -25,10 +25,10 @@
                 <div $="c2" @click="canClick && clickFun2($event)"></div>
                 <div $="a1" :a="a">{{a}}</div>
                 <div $="a2" :a="canClick ? 2 : 1">{{canClick ? 2 : 1}}</div>
-                <div class="s1" xv-if="showS1">s1</div>
-                <div class="s2" xv-if="!showS1">s2</div>
-                <div $="h1" xv-show="showS2">h1</div>
-                <div $="h2" xv-show="!showS2">h2</div>
+                <div class="s1" x-if="showS1">s1</div>
+                <div class="s2" x-if="!showS1">s2</div>
+                <div $="h1" x-show="showS2">h1</div>
+                <div $="h2" x-show="!showS2">h2</div>
                 <button @click="showLog({aaa:'aaaa',b :{val:'bbb'},ccc:isClick1 + (isClick2 ? isClick2: 3),ddd:{val:['dddd',isClick1]}},{e:'eeee'})">testbtn</button>
             </div>
         `,
@@ -62,8 +62,8 @@
             tester.ok($("condition-test").$a2.text == 2, "text condition ok");
             // tester.ok(!$("condition-test").$shadow.$(".s1"), "v-if bind ok");
             // tester.ok($("condition-test").$shadow.$(".s2"), "v-if condition ok");
-            tester.ok($("condition-test").$h1.display, "v-show bind ok");
-            tester.ok($("condition-test").$h2.display === "none", "v-show condition ok");
+            tester.ok($("condition-test").$h1.display, "show bind ok");
+            tester.ok($("condition-test").$h2.display === "none", "show condition ok");
 
             // 更换数据，查看状态修正
             $("condition-test").showS1 = true;
@@ -72,8 +72,8 @@
             setTimeout(() => {
                 // tester.ok($("condition-test").$shadow.$(".s1"), "v-if bind ok2");
                 // tester.ok(!$("condition-test").$shadow.$(".s2"), "v-if condition ok2");
-                tester.ok($("condition-test").$h1.display === "none", "v-show bind ok2");
-                tester.ok($("condition-test").$h2.display, "v-show condition ok2");
+                tester.ok($("condition-test").$h1.display === "none", "show bind ok2");
+                tester.ok($("condition-test").$h2.display, "show condition ok2");
             }, 100);
         }, 100);
 

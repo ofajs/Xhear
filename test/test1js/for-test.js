@@ -42,10 +42,10 @@
 
         <template name="t1" index-name="idName">
             <div class="test_forline" :aa="val" :d="d">
-                <div :bb="val">index:{{idName}} test xv-for line </div>
+                <div :bb="val">index:{{idName}} test x-for line </div>
                 <div style="font-weight:bold;">{{val}} - {{d}}</div>
-                <div xv-show="d == 2" style="color:blue;">d is 2</div>
-                <template is="t2" xv-for="childs" :beforeindex="idName" :beforeval="val"></template>
+                <div x-show="d == 2" style="color:blue;">d is 2</div>
+                <template is="t2" x-for="childs" :beforeindex="idName" :beforeval="val"></template>
             </div>
         </template>
 
@@ -58,13 +58,13 @@
 
         <div>{{getBB()}}</div>
 
-        <template is="t1" xv-for="arr"></template>
+        <template is="t1" x-for="arr"></template>
 
         <div :hattr="ha" @click.stop="conHa" @submit="no" style="cursor:pointer;">
         {{ha}}
         </div>
-        <f-test-item xv-for="arr"></f-test-item>
-        <div xv-show="a === 1">xv-show test</div>
+        <f-test-item x-for="arr"></f-test-item>
+        <div x-show="a === 1">x-show test</div>
         `,
         ready() {
             setTimeout(() => {
@@ -147,7 +147,7 @@
         <div style="color:green;">f-test-item {{val}}</div>
         <div>{{chs.string}}</div>
         <ul>
-            <template is="cc" xv-for="chs"></template>
+            <template is="cc" x-for="chs"></template>
         </ul>
         `
     });
