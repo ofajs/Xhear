@@ -1031,6 +1031,10 @@
             return JSON.stringify(this.object);
         }
 
+        toJSON() {
+            return JSON.stringify(this.object);
+        }
+
         /**
          * 获取根节点
          * @property {XData} root
