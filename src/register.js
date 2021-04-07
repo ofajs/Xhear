@@ -174,7 +174,7 @@ const register = (opts) => {
         }
     }
 
-    defaults.proto && CustomXhearEle.prototype.extend(defaults.proto);
+    defaults.proto && extend(CustomXhearEle.prototype, defaults.proto);
 
     // 注册组件的地址
     let scriptSrc = document.currentScript && document.currentScript.src;
@@ -884,7 +884,7 @@ const renderComponent = (ele, defaults) => {
     let renderTasks = [];
 
     // 合并 proto
-    defaults.proto && xhearEle.extend(defaults.proto);
+    defaults.proto && extend(xhearEle, defaults.proto);
 
     let { temp } = defaults;
     let sroot;

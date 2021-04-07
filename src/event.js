@@ -169,7 +169,7 @@ function onEve(args, onOpts = {
     }
 }
 
-XhearEleFn.extend({
+extend(XhearEleFn, {
     on(...args) {
         onEve.call(this, args);
         return this;

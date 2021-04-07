@@ -170,3 +170,37 @@ const createProxyAttrs = (ele) => {
 
     return proxyAttrs;
 }
+
+const extend = (_this, proto) => {
+    Object.keys(proto).forEach(k => {
+        // 获取描述
+        let {
+            get,
+            set,
+            value
+        } = getOwnPropertyDescriptor(proto, k);
+
+        if (value) {
+            if (_this.hasOwnProperty(k)) {
+                _this[k] = value;
+            } else {
+                Object.defineProperty(_this, k, {
+                    value
+                });
+            }
+        } else {
+            // debugger
+            // get && (get = get.bind(_this))
+
+            Object.defineProperty(_this, k, {
+                get,
+                set
+            });
+
+            if (set) {
+                // 添加到可设置key权限内
+                xEleDefaultSetKeys.add(k);
+            }
+        }
+    });
+}

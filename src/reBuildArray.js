@@ -105,7 +105,7 @@ const sortByArray = (t, arr) => {
 }
 
 // 重置所有数组方法
-XhearEleFn.extend({
+extend(XhearEleFn, {
     // push就是最原始的appendChild，干脆直接appencChild
     push(...items) {
         let fragment = document.createDocumentFragment();

@@ -338,7 +338,7 @@ class XhearEle extends XData {
 
     siblings(expr) {
         // 获取相邻元素
-        let parChilds = Array.from(this.ele.parentElement.children);
+        let parChilds = Array.from(this.parent.ele.children);
 
         // 删除自身
         let tarId = parChilds.indexOf(this.ele);
@@ -434,40 +434,40 @@ class XhearEle extends XData {
         return cloneEle;
     }
 
-    extend(proto) {
-        Object.keys(proto).forEach(k => {
-            // 获取描述
-            let {
-                get,
-                set,
-                value
-            } = getOwnPropertyDescriptor(proto, k);
+    // extend(proto) {
+    //     Object.keys(proto).forEach(k => {
+    //         // 获取描述
+    //         let {
+    //             get,
+    //             set,
+    //             value
+    //         } = getOwnPropertyDescriptor(proto, k);
 
-            if (value) {
-                if (this.hasOwnProperty(k)) {
-                    this[k] = value;
-                } else {
-                    Object.defineProperty(this, k, {
-                        value
-                    });
-                }
-            } else {
-                // debugger
-                // get && (get = get.bind(this))
+    //         if (value) {
+    //             if (this.hasOwnProperty(k)) {
+    //                 this[k] = value;
+    //             } else {
+    //                 Object.defineProperty(this, k, {
+    //                     value
+    //                 });
+    //             }
+    //         } else {
+    //             // debugger
+    //             // get && (get = get.bind(this))
 
-                Object.defineProperty(this, k, {
-                    get,
-                    set
-                });
+    //             Object.defineProperty(this, k, {
+    //                 get,
+    //                 set
+    //             });
 
-                if (set) {
-                    // 添加到可设置key权限内
-                    xEleDefaultSetKeys.add(k);
-                }
-            }
-        });
-        return this;
-    }
+    //             if (set) {
+    //                 // 添加到可设置key权限内
+    //                 xEleDefaultSetKeys.add(k);
+    //             }
+    //         }
+    //     });
+    //     return this;
+    // }
 
     getTarget(keys) {
         let target = this;
