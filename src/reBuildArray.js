@@ -37,10 +37,15 @@ const XhearEleProtoSplice = (t, index, howmany, items = []) => {
     // 返回的数组
     let reArr = [];
 
+    // 小于0的index转换
+    if (index < 0) {
+        index += _this.length;
+    }
+
     let tarele = _this.ele;
     let { children } = tarele;
 
-    let c_howmany = howmany;
+    let c_howmany = !/\D/.test(howmany) ? howmany : _this.length;
 
     let oldArr = _this.map(e => e);
 

@@ -1,0 +1,69 @@
+<style>
+    .t1,
+    .t2,
+    .t3 {
+        margin: 10px;
+        padding: 10px;
+        border: #aaa solid 1px;
+    }
+
+    .t2 {
+        border-color: #f0f;
+    }
+
+    .t1_id {
+        color: green;
+    }
+
+    .t2_id {
+        color: blue;
+    }
+
+    .t3 {
+        border-color: #0ff;
+    }
+</style>
+
+<template name="t4">
+    <tw-item :v="v2">v2 val => {{v2}}</tw-item>
+</template>
+
+<template name="t3">
+    <div class="t3">
+        <div class="t3_id">t3 index=> {{index}} </div>
+        <div @click="clickItem($event,$data,$target)"> t3.v => {{v}} , $data parent index => {{$data.parent.index}}
+        </div>
+        <!-- <input type="number" x-model="v" /> -->
+        <tw-item :#v="v"></tw-item>
+    </div>
+</template>
+
+<template name="t2">
+    <div class="t2">
+        <div class="t2_id">t2 index=> {{index}} </div>
+        <div> value => {{$data}}</div>
+    </div>
+</template>
+
+<template name="t1">
+    <div class="t1">
+        <div class="t1_id">t1 index=> {{index}} </div>
+        <div @click="clickItem($event,$data,$target);">v => {{v}}</div>
+        <div> <input type="number" x-model="v" @click.stop /> </div>
+        <div class="string_con">{{arr.string}}</div>
+        <div x-fill="arr use t2"></div>
+        <div x-fill="arr2 use t3"></div>
+        <div x-fill="arr2 use tw-item" class="twItemContainer"></div>
+        <div>不存在的字段 => {{hahahaha}}</div>
+    </div>
+</template>
+
+
+<h3>tw-ele</h3>
+<div>{{a}}</div>
+<!-- <div x-fill="b use tw-item" $="fillCon1"></div> -->
+
+<br><br><br>
+<button @click="b[0].arr.reverse()" id="inBtn">b[0].arr倒序</button>
+<div x-fill="b use t1" $="fillCon2"></div>
+<!-- <div x-fill="c use t4"></div> -->

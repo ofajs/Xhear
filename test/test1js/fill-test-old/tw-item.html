@@ -1,0 +1,19 @@
+<style>
+    :host {
+        display: block;
+        padding: 10px;
+        margin: 10px;
+        border: #00e solid 1px;
+    }
+
+    .name {
+        color: red;
+    }
+</style>
+<div class="name" style="cursor:pointer;user-select:none;" @click.stop="clickName">tw-item</div>
+<div>v => {{v}}</div>
+<div>arr => {{arr.string}}</div>
+<div>
+    <div>slot↓</div>
+    <slot></slot>
+</div>

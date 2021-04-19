@@ -1,0 +1,19 @@
+<div>
+    {{val}}
+</div>
+<div>1</div>
+<div x-if="isshow">
+    <div class="iftest_target" x-fill="childs use t1"></div>
+</div>
+<br><br>
+<div>2</div>
+<div class="iftest_target" x-fill="childs use t1"></div>
+
+<template name="t1">
+    <div style="color:green;">
+        {{name}}
+    </div>
+</template>
+<!-- <br><br>
+<div>3</div>
+<div x-if="isshow">I am isshow</div> -->

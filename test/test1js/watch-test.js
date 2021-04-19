@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(10, 'watch test');
+    let tester = expect(8, 'watch test');
 
     $.register({
         tag: "w-test",
@@ -57,16 +57,6 @@
             tag: "w-test",
             text: "t2-3"
         });
-
-        // 监听 selected=1 的
-        let cid = 0;
-        d.watch('[selected=1]', (e) => {
-            if (cid > 0) {
-                tester.ok(e.val.length == 1, "[selected=1] ok 1");
-                tester.ok(e.val[0].ele === d[1].ele, "[selected=1] ok 2");
-            }
-            cid++;
-        }, true);
 
         // 判断是否push成功
         tester.ok(d.length == 3, 'length ok');
