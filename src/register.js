@@ -328,8 +328,8 @@ class XDataProcessAgent {
                 let watchFun;
                 target.watch(expr, watchFun = (e, val) => {
                     calls.forEach(d => d.change(val, e.trends));
-                }, true);
-                // nextTick(() => watchFun({}, target[expr]));
+                });
+                nextTick(() => watchFun({}, target[expr]));
 
                 // 清除的话事假监听
                 proxyEle.on("clearxdata", e => {
@@ -361,8 +361,8 @@ class XDataProcessAgent {
                     } else {
                         old_val = val;
                     }
-                }, true);
-                // nextTick(() => watchFun({}));
+                });
+                nextTick(() => watchFun({}));
 
                 // 清除的话事假监听
                 proxyEle.on("clearxdata", e => {
@@ -391,6 +391,17 @@ class XDataProcessAgent {
         calls.push({
             change: func
         })
+    }
+
+    // 清除监听
+    remove(expr, func) {
+        let processObj = this.processObj;
+        let calls = processObj.get(expr.trim());
+        if (calls) {
+            calls = calls.calls;
+            let tarIndex = calls.findIndex(e => e.change === func);
+            calls.splice(tarIndex, 1);
+        }
     }
 }
 
@@ -484,16 +495,18 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
         // 定位元素
         let { textnode, par } = postionNode(ele);
 
+        let iTempEle = e.ele;
+
         let targetEle;
 
         xpAgent.add(attrVal, val => {
             if (!val && targetEle) {
                 par.removeChild(targetEle);
-            } else if (val) {
-                debugger
-                targetEle = ele.cloneNode(true);
-                par.insertBefore(targetEle, textnode);
-                // renderTemp({ sroot, proxyEle, temps });
+                targetEle = null;
+            } else if (val && !targetEle) {
+                targetEle = $(iTempEle.innerHTML);
+                par.insertBefore(targetEle.ele, textnode);
+                renderTemp({ sroot, proxyEle, temps });
             }
         });
     });
@@ -525,14 +538,10 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             const resetFillData = (val) => {
                 targetFillEle.html = "";
 
-                let fillChildComp;
-
                 val.forEach(e => {
                     if (/^[a-z]+\-[a-z]+$/.test(contentName)) {
                         // 组件绑定
-                        fillChildComp = $({
-                            tag: contentName
-                        });
+                        let fillChildComp = createXhearProxy(document.createElement(contentName));
 
                         targetFillEle.ele.appendChild(fillChildComp.ele);
 
@@ -540,17 +549,24 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                         Object.assign(fillChildComp, e.object);
                     } else {
                         // 模板绑定
-                        debugger
+                        let fillChildEle = createFillNode({
+                            name: contentName,
+                            temps,
+                            hostXEle: proxyEle.xvele ? proxyEle : proxyEle.$host,
+                            xdata: e
+                        });
+
+                        targetFillEle.ele.appendChild(fillChildEle);
                     }
                 });
             }
 
-            xpAgent.add(attrName, (val, trends) => {
+            let xfaFunc;
+            xpAgent.add(attrName, xfaFunc = (val, trends) => {
                 if (!trends || !trends.length) {
                     resetFillData(val);
                     return;
                 }
-
 
                 trends.forEach(trend => {
                     if (trend.name == "setData" && trend.keys.length == 0 && trend.args[0] == attrName) {
@@ -566,12 +582,18 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 });
             })
 
+            // 清除的时候回收（测了很多遍好像又没有必要）
+            targetFillEle.on("clearxdata", () => {
+                xpAgent.remove(attrName, xfaFunc);
+            });
+
             // 元素层同步到数据层
+            // 用于v-model之类双向数据同步使用
             targetFillEle.watch((e) => {
                 e.trends.forEach(trend => {
                     proxyEle[attrName].entrend(trend);
                 });
-            })
+            });
         });
     }
 
@@ -826,62 +848,70 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     xpAgent.init();
 }
 
-// 制作虚假包围元素
-const createFakeWrapper = (targetProxyEle, targetData) => {
-    let fakeWrapEle = document.createElement("template");
-    fakeWrapEle.appendChild(targetProxyEle.ele);
+// 生成fill填充的template元素
+const createFillNode = (opts) => {
+    // opts = {
+    //     name: "", // 使用的模板名
+    //     temps: {},  // 模板
+    //     hostXEle, // 宿主目标
+    //     xdata // 目标填充元素
+    // };
+    let { temps, hostXEle, name, xdata } = opts;
 
-    let proxyWrapper = createXhearProxy(fakeWrapEle);
+    let template = temps.get(name);
 
-    proxyWrapper[CANSETKEYS] = new Set([...Object.keys(targetData)]);
-    targetProxyEle._fakeWrapper = proxyWrapper;
+    if (!template) {
+        throw {
+            desc: "find out the template",
+            name,
+            targetElement: hostXEle.ele
+        };
+    }
 
-    // 绑定数据
-    Object.defineProperties(proxyWrapper, {
-        "$data": {
-            get: () => targetData
-        },
-        "$target": {
-            // get: () => proxyWrapper
-            get: () => targetProxyEle
-        },
-        "index": {
-            get: () => targetProxyEle.index
-        }
+    // 伪造一个挂载元素的数据
+    let fakeData = createXData({
+        $data: xdata.mirror,
+        $host: hostXEle.mirror
     });
 
-    let oldSetData = proxyWrapper.setData;
-    let oldGetData = proxyWrapper.getData;
-    Object.defineProperties(proxyWrapper, {
-        getData: {
-            value(key) {
-                if (!/\D/.test(key) && key !== '') {
-                    return targetProxyEle[key];
-                }
-                return oldGetData.call(this, key);
-            }
-        },
-        setData: {
-            value(key, val) {
-                if (!/\D/.test(key) && key !== '') {
-                    targetProxyEle[key] = val;
-                    return true;
-                }
-                return oldSetData.call(this, key, val);
-            }
-        }
-    });
+    let xNode = createXhearEle(parseToDom(warpXifTemp(template.innerHTML)));
+    xNode._update = false;
 
-    // 转发update事件
-    proxyWrapper.on("update", e => {
-        emitUpdate(targetProxyEle, "", [], undefined, function (event) {
-            event.modify = e.modify
-            event.keys.push(...e.keys);
-        });
-    });
+    fakeData[CANSETKEYS] = new Set();
 
-    return proxyWrapper;
+    renderTemp({ sroot: xNode.ele, proxyEle: fakeData, temps });
+
+    return xNode.ele;
+
 }
+
+// 将x-if元素嵌套template
+const warpXifTemp = (html) => {
+    let f_temp = document.createElement("template");
+
+    f_temp.innerHTML = html;
+
+    let ifEles = Array.from(f_temp.content.querySelectorAll("[x-if]"));
+
+    // if元素添加 template 包裹
+    ifEles.forEach(e => {
+        if (e.tagName.toLowerCase() == "template") {
+            return;
+        }
+
+        let ifTempEle = document.createElement("template");
+        ifTempEle.setAttribute("x-if", e.getAttribute("x-if"));
+        e.removeAttribute("x-if");
+
+        // 替换位置
+        e.parentNode.insertBefore(ifTempEle, e);
+        ifTempEle.content.appendChild(e);
+    });
+
+    // 填充默认内容
+    return f_temp.innerHTML;
+}
+
 
 // 渲染组件元素
 const renderComponent = (ele, defaults) => {
@@ -973,49 +1003,26 @@ const renderComponent = (ele, defaults) => {
             }
         });
 
-        let f_temp = document.createElement("template");
-
-        f_temp.innerHTML = temp;
-
-        let ifEles = Array.from(f_temp.content.querySelectorAll("[x-if]"));
-
-        // if元素添加 template 包裹
-        ifEles.forEach(e => {
-            if (e.tagName.toLowerCase() == "template") {
-                return;
-            }
-
-            let ifTempEle = document.createElement("template");
-            ifTempEle.setAttribute("x-if", e.getAttribute("x-if"));
-            e.removeAttribute("x-if");
-
-            // 替换位置
-            e.parentNode.insertBefore(ifTempEle, e);
-            ifTempEle.content.appendChild(e);
-        });
-
         // 填充默认内容
-        sroot.innerHTML = f_temp.innerHTML;
+        sroot.innerHTML = warpXifTemp(temp);
 
         // 查找所有模板
-        // let temps = new Map();
-        // let tempEle = Array.from(sroot.querySelectorAll(`template[name]`));
-        // tempEle.length && tempEle.forEach(e => {
-        //     // 内部清除
-        //     e.parentNode.removeChild(e);
+        let temps = new Map();
+        let tempEle = Array.from(sroot.querySelectorAll(`template[name]`));
+        tempEle.length && tempEle.forEach(e => {
+            // 内部清除
+            e.parentNode.removeChild(e);
 
-        //     // 注册元素
-        //     let name = e.getAttribute("name");
+            // 注册元素
+            let name = e.getAttribute("name");
 
-        //     temps.set(name, e);
-        // });
+            temps.set(name, e);
+        });
 
-        nextTick(() => {
-            renderTemp({
-                sroot,
-                proxyEle: xhearEle[PROXYTHIS],
-                // temps
-            });
+        renderTemp({
+            sroot,
+            proxyEle: xhearEle[PROXYTHIS],
+            temps
         });
     }
 

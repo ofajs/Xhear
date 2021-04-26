@@ -469,24 +469,24 @@ class XhearEle extends XData {
     //     return this;
     // }
 
-    getTarget(keys) {
-        let target = this;
-        if (keys.length) {
-            keys.some(k => {
-                if (!target) {
-                    console.warn("getTarget failure");
-                    return true;
-                }
-                target = target[k];
+    // getTarget(keys) {
+    //     let target = this;
+    //     if (keys.length) {
+    //         keys.some(k => {
+    //             if (!target) {
+    //                 console.warn("getTarget failure");
+    //                 return true;
+    //             }
+    //             target = target[k];
 
-                if (target._fakeWrapper) {
-                    target = target._fakeWrapper;
-                    // debugger
-                }
-            });
-        }
-        return target;
-    }
+    //             if (target._fakeWrapper) {
+    //                 target = target._fakeWrapper;
+    //                 // debugger
+    //             }
+    //         });
+    //     }
+    //     return target;
+    // }
 }
 
 const XhearEleFn = XhearEle.prototype;

@@ -1,0 +1,19 @@
+<div style="font-size:20px;font-weight:bold;">{{name}}</div>
+<div x-fill="arr use item1"></div>
+
+<template name="item1">
+    <div style="margin:10px 20px;">
+        <h3 style="margin:0;padding:0;">item1</h3>
+        <div>name => {{$data.name}}
+            <input type="text" x-model="$data.name">
+        </div>
+        <div>host name => {{$host.name}}
+            <input type="text" x-model="$host.name">
+        </div>
+        <div>host tag => {{$host.tag}}</div>
+        <div x-if="$data.childs && $data.childs.length">
+            <div>has childs</div>
+            <div x-fill="$data.childs use item1"></div>
+        </div>
+    </div>
+</template>
