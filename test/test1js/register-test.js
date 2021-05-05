@@ -11,7 +11,7 @@
         },
         temp: `
         <div>
-            <br>
+            reg-sub-ele
             <input type="text" $="dInput" x-model="itext" />
             <br>
         </div>

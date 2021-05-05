@@ -1,9 +1,12 @@
 <div style="font-size:20px;font-weight:bold;">{{name}}</div>
+
+<!-- 填充元素 -->
 <div x-fill="arr use item1"></div>
 
 <template name="item1">
     <div style="margin:10px 20px;">
         <h3 style="margin:0;padding:0;">item1</h3>
+        <div>index => {{$index}}</div>
         <div>name => {{$data.name}}
             <input type="text" x-model="$data.name">
         </div>

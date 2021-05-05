@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(10, 'render condition test');
+    let tester = expect(14, 'render condition test');
 
     let container = $(`
     <div id="condition-container">
@@ -60,8 +60,8 @@
             tester.ok($("condition-test").$a2.css.color.replace(/ /g, "") === "rgb(255,0,0)", "prop condition ok");
             tester.ok($("condition-test").$a1.text == 1, "text bind ok");
             tester.ok($("condition-test").$a2.text == 2, "text condition ok");
-            // tester.ok(!$("condition-test").$shadow.$(".s1"), "v-if bind ok");
-            // tester.ok($("condition-test").$shadow.$(".s2"), "v-if condition ok");
+            tester.ok(!$("condition-test").$shadow.$(".s1"), "v-if bind ok");
+            tester.ok($("condition-test").$shadow.$(".s2"), "v-if condition ok");
             tester.ok($("condition-test").$h1.display, "show bind ok");
             tester.ok($("condition-test").$h2.display === "none", "show condition ok");
 
@@ -70,8 +70,8 @@
             $("condition-test").showS2 = false;
 
             setTimeout(() => {
-                // tester.ok($("condition-test").$shadow.$(".s1"), "v-if bind ok2");
-                // tester.ok(!$("condition-test").$shadow.$(".s2"), "v-if condition ok2");
+                tester.ok($("condition-test").$shadow.$(".s1"), "v-if bind ok2");
+                tester.ok(!$("condition-test").$shadow.$(".s2"), "v-if condition ok2");
                 tester.ok($("condition-test").$h1.display === "none", "show bind ok2");
                 tester.ok($("condition-test").$h2.display, "show condition ok2");
             }, 100);

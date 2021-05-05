@@ -334,7 +334,6 @@ class XDataProcessAgent {
                 // 清除的话事假监听
                 proxyEle.on("clearxdata", e => {
                     // clearXData(target);
-                    // debugger
                     target.unwatch(expr, watchFun);
                 });
             } else {
@@ -367,7 +366,6 @@ class XDataProcessAgent {
 
                 // 清除的话事假监听
                 proxyEle.on("clearxdata", e => {
-                    // debugger
                     target.unwatch(watchFun);
                 });
 
@@ -394,6 +392,17 @@ class XDataProcessAgent {
             change: func
         })
     }
+
+    // 清除监听
+    remove(expr, func) {
+        let processObj = this.processObj;
+        let calls = processObj.get(expr.trim());
+        if (calls) {
+            calls = calls.calls;
+            let tarIndex = calls.findIndex(e => e.change === func);
+            calls.splice(tarIndex, 1);
+        }
+    }
 }
 
 /**
@@ -401,7 +410,7 @@ class XDataProcessAgent {
  * @param {Element} sroot 需要转换模板属性的元素
  */
 const transTemp = (sroot) => {
-    let xModelId = getRandomId();
+    let templateId = getRandomId();
 
     // 重新中转内部特殊属性
     getCanRenderEles(sroot, "*").forEach(e => {
@@ -463,11 +472,11 @@ const transTemp = (sroot) => {
         });
 
         if (ele.getAttribute("x-model")) {
-            ele.setAttribute("x-model-id", xModelId);
+            ele.setAttribute("x-model-id", templateId);
         }
     });
 
-    return { xModelId };
+    return { templateId };
 }
 
 
@@ -477,7 +486,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
 
     const canSetKey = proxyEle[CANSETKEYS];
 
-    let { xModelId } = transTemp(sroot);
+    let { templateId } = transTemp(sroot);
 
     // x-if 为了递归组件和模板，还有可以节省内存的情况
     getCanRenderEles(sroot, "[x-if]").forEach(e => {
@@ -486,14 +495,17 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
         // 定位元素
         let { textnode, par } = postionNode(ele);
 
+        let iTempEle = e.ele;
+
         let targetEle;
 
         xpAgent.add(attrVal, val => {
             if (!val && targetEle) {
                 par.removeChild(targetEle);
-            } else if (val) {
-                targetEle = ele.cloneNode(true);
-                par.insertBefore(targetEle, textnode);
+                targetEle = null;
+            } else if (val && !targetEle) {
+                targetEle = $(iTempEle.innerHTML);
+                par.insertBefore(targetEle.ele, textnode);
                 renderTemp({ sroot, proxyEle, temps });
             }
         });
@@ -506,89 +518,92 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
         xvFills.forEach(e => {
             let { ele, attrVal } = e;
 
-            let contentName = ele.getAttribute("fill-content");
-            let attrName = attrVal;
+            let matchAttr = attrVal.match(/(.+?) +use +(.+)/)
 
-            let matchAttr = attrName.match(/(.+?) +use +(.+)/);
-            if (matchAttr) {
-                contentName = matchAttr[2]
-                attrName = matchAttr[1];
+            if (!matchAttr) {
+                console.error({
+                    expr: attrVal,
+                    desc: "fill expression error",
+                });
+                return;
             }
 
-            if (!contentName || !attrName) {
-                throw {
-                    desc: "No fill attribute",
-                    target: ele,
-                    attr: attrName,
-                    content: contentName
-                };
-            }
+            // attrName 引用填充的属性名
+            // contentName 填充的内容，带 - 名的为自定义组件，其他为填充模板
+            let [, attrName, contentName] = matchAttr;
 
-            // 禁止fill元素的update事件，影响主体组件数据
-            createXhearEle(ele).on("update", e => e.bubble = false);
-
-            // 设置fill元素
+            // 等待填充的x-fill元素
             let targetFillEle = createXhearProxy(ele);
-            ele.__fill_target = {
-                upperFill: proxyEle
-            };
 
-            const resetData = (val) => {
+            // 禁止元素内的冒泡
+            targetFillEle._update = false;
+
+            const resetFillData = (val) => {
                 targetFillEle.html = "";
 
-                // 重新设置值
                 val.forEach(e => {
-                    let fillChildComp;
-
                     if (/^[a-z]+\-[a-z]+$/.test(contentName)) {
                         // 组件绑定
-                        fillChildComp = $({
-                            tag: contentName
-                        });
+                        let fillChildComp = createXhearProxy(document.createElement(contentName));
+
+                        targetFillEle.ele.appendChild(fillChildComp.ele);
 
                         // 组件初次数据设定
                         Object.assign(fillChildComp, e.object);
                     } else {
                         // 模板绑定
-                        fillChildComp = createTemplateElement({
+                        let fillChildEle = createFillItemNode({
                             name: contentName,
                             temps,
-                            parentProxyEle: proxyEle,
-                            parentElement: targetFillEle,
-                            targetData: e
+                            hostXEle: proxyEle.xvele ? proxyEle : proxyEle.$host,
+                            xdata: e
                         });
 
-                        Object.assign(fillChildComp._fakeWrapper, e.object);
-                    }
+                        targetFillEle.ele.appendChild(fillChildEle);
 
-                    targetFillEle.ele.appendChild(fillChildComp.ele);
+                        // renderFillNode();
+                    }
                 });
             }
 
-            xpAgent.add(attrName, (val, trends) => {
+            let xfaFunc;
+            xpAgent.add(attrName, xfaFunc = (val, trends) => {
                 if (!trends || !trends.length) {
-                    resetData(val);
+                    resetFillData(val);
                     return;
                 }
+
                 trends.forEach(trend => {
                     if (trend.name == "setData" && trend.keys.length == 0 && trend.args[0] == attrName) {
-                        resetData(val);
+                        // 重置数据
+                        resetFillData(val);
                         return;
                     }
+
+                    // console.log("trend => ", proxyEle, trend, attrName, targetFillEle.ele);
+                    console.log("trend => ", proxyEle, JSON.parse(JSON.stringify(trend)), attrName, targetFillEle.ele);
+
+                    // debugger
 
                     // 数据层同步到元素层
                     let t2 = JSON.parse(JSON.stringify(trend));
                     t2.keys.shift();
                     targetFillEle.entrend(t2);
                 });
+            })
+
+            // 清除的时候回收（测了很多遍好像又没有必要）
+            targetFillEle.on("clearxdata", () => {
+                xpAgent.remove(attrName, xfaFunc);
             });
 
             // 元素层同步到数据层
+            // 用于v-model之类双向数据同步使用
             targetFillEle.watch((e) => {
                 e.trends.forEach(trend => {
                     proxyEle[attrName].entrend(trend);
                 });
-            })
+            });
         });
     }
 
@@ -755,7 +770,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 switch (inputType) {
                     case "checkbox":
                         // 判断是不是复数形式的元素
-                        let allChecks = getCanRenderEles(sroot, `input[type="checkbox"][rendered-x-model="${modelKey}"][x-model-id="${xModelId}"]`);
+                        let allChecks = getCanRenderEles(sroot, `input[type="checkbox"][rendered-x-model="${modelKey}"][x-model-id="${templateId}"]`);
 
                         // 查看是单个数量还是多个数量
                         if (allChecks.length > 1) {
@@ -781,7 +796,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                             // 单个直接绑定checked值
                             proxyEle.watch(modelKey, (e, val) => {
                                 ele.checked = val;
-                            });
+                            }, true);
                             ele.addEventListener("change", e => {
                                 let { checked } = ele;
                                 proxyEle.setData(modelKey, checked);
@@ -789,7 +804,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                         }
                         return;
                     case "radio":
-                        let allRadios = getCanRenderEles(sroot, `input[type="radio"][rendered-x-model="${modelKey}"][x-model-id="${xModelId}"]`);
+                        let allRadios = getCanRenderEles(sroot, `input[type="radio"][rendered-x-model="${modelKey}"][x-model-id="${templateId}"]`);
 
                         let rid = getRandomId();
 
@@ -806,9 +821,10 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                 }
             // 其他input 类型继续往下走
             case "textarea":
+            case "text":
                 proxyEle.watch(modelKey, (e, val) => {
                     ele.value = val;
-                });
+                }, true);
                 ele.addEventListener("input", e => {
                     proxyEle.setData(modelKey, ele.value);
                 });
@@ -816,7 +832,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
             case "select":
                 proxyEle.watch(modelKey, (e, val) => {
                     ele.value = val;
-                });
+                }, true);
                 ele.addEventListener("change", e => {
                     proxyEle.setData(modelKey, ele.value);
                 });
@@ -827,7 +843,7 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
                     let cEle = ele.__xhear__;
                     cEle.watch("value", (e, val) => {
                         proxyEle.setData(modelKey, val);
-                    });
+                    }, true);
                     proxyEle.watch(modelKey, (e, val) => {
                         cEle.setData("value", val);
                     });
@@ -842,138 +858,87 @@ const renderTemp = ({ sroot, proxyEle, temps }) => {
     xpAgent.init();
 }
 
-// 制作虚假包围元素
-const createFakeWrapper = (targetProxyEle, targetData) => {
-    let fakeWrapEle = document.createElement("template");
-    fakeWrapEle.appendChild(targetProxyEle.ele);
-
-    let proxyWrapper = createXhearProxy(fakeWrapEle);
-
-    proxyWrapper[CANSETKEYS] = new Set([...Object.keys(targetData)]);
-    targetProxyEle._fakeWrapper = proxyWrapper;
-
-    // 绑定数据
-    Object.defineProperties(proxyWrapper, {
-        "$data": {
-            get: () => targetData
-        },
-        "$target": {
-            // get: () => proxyWrapper
-            get: () => targetProxyEle
-        },
-        "index": {
-            get: () => targetProxyEle.index
-        }
-    });
-
-    let oldSetData = proxyWrapper.setData;
-    let oldGetData = proxyWrapper.getData;
-    Object.defineProperties(proxyWrapper, {
-        getData: {
-            value(key) {
-                if (!/\D/.test(key) && key !== '') {
-                    return targetProxyEle[key];
-                }
-                return oldGetData.call(this, key);
-            }
-        },
-        setData: {
-            value(key, val) {
-                if (!/\D/.test(key) && key !== '') {
-                    targetProxyEle[key] = val;
-                    return true;
-                }
-                return oldSetData.call(this, key, val);
-            }
-        }
-    });
-
-    // 转发update事件
-    proxyWrapper.on("update", e => {
-        emitUpdate(targetProxyEle, "", [], undefined, function (event) {
-            event.modify = e.modify
-            event.keys.push(...e.keys);
-        });
-    });
-
-    return proxyWrapper;
+// 渲染fill元素
+const renderFillNode = ({ fillNode }) => {
+    debugger
 }
 
-// 渲染组件内的模板元素
-const createTemplateElement = ({
-    // 模板名
-    name,
-    // 所有的模板数据
-    temps = new Map(),
-    // 顶层依附对象
-    parentProxyEle,
-    // 要渲染数组数据的元素
-    parentElement,
-    // 循环上需要的对象
-    targetData
-}) => {
+// 生成fill填充的template元素
+const createFillItemNode = (opts) => {
+    // opts = {
+    //     name: "", // 使用的模板名
+    //     temps: {},  // 模板
+    //     hostXEle, // 宿主目标
+    //     xdata // 目标对象
+    // };
+    let { temps, hostXEle, name, xdata } = opts;
+
     let template = temps.get(name);
 
     if (!template) {
         throw {
             desc: "find out the template",
             name,
-            targetElement: parentProxyEle.ele
+            targetElement: hostXEle.ele
         };
     }
 
-    // 判断 template 内只能存在一个元素
-    if (template.content.children.length > 1) {
-        console.error({
-            desc: "only one child element will be rendered",
-            target: template,
-            targetElement: parentProxyEle.ele
-        });
-    }
-
-    let n_ele = parseStringToDom(template.content.children[0].outerHTML)[0];
-
-    let targetProxyEle = createXhearProxy(n_ele);
-    let wrapProxyEle = createFakeWrapper(targetProxyEle, targetData);
-
-    // 绑定事件，并且函数的this要指向主体组件上
-    let rootParentProxy = parentProxyEle;
-    while (rootParentProxy._parentProxy) {
-        rootParentProxy = rootParentProxy._parentProxy;
-    }
-    let regData = regDatabase.get(rootParentProxy.tag);
-    let protoDescs = Object.getOwnPropertyDescriptors(regData.proto || {});
-    Object.keys(protoDescs).forEach(funcName => {
-        let descData = protoDescs[funcName];
-        let func = descData.value;
-        if (isFunction(func)) {
-            Object.defineProperty(wrapProxyEle, funcName, {
-                value: func.bind(rootParentProxy)
-            });
+    // 伪造一个挂载元素的数据
+    let fakeData = createXData({
+        $data: xdata.mirror,
+        $host: hostXEle.mirror,
+        get $parent() {
+            return xdata.parent;
+        },
+        get $index() {
+            return xdata.index;
         }
     });
 
-    // 设置父层
-    wrapProxyEle._parentProxy = parentProxyEle;
+    // fakeData.on("update", e => {
+    //     // e.bubble = false;
+    //     // debugger
+    // });
 
-    renderTemp({
-        sroot: wrapProxyEle.ele,
-        proxyEle: wrapProxyEle,
-        temps
+    let xNode = createXhearEle(parseToDom(warpXifTemp(template.innerHTML)));
+    // fakeData._update = false;
+    // xNode._update = false;
+
+    // fakeData[CANSETKEYS] = new Set(["$data", "$host"]);
+    fakeData[CANSETKEYS] = new Set();
+
+    renderTemp({ sroot: xNode.ele, proxyEle: fakeData, temps });
+
+    return xNode.ele;
+}
+
+// 将x-if元素嵌套template
+const warpXifTemp = (html) => {
+    let f_temp = document.createElement("template");
+
+    f_temp.innerHTML = html;
+
+    let ifEles = Array.from(f_temp.content.querySelectorAll("[x-if]"));
+
+    // if元素添加 template 包裹
+    ifEles.forEach(e => {
+        if (e.tagName.toLowerCase() == "template") {
+            return;
+        }
+
+        let ifTempEle = document.createElement("template");
+        ifTempEle.setAttribute("x-if", e.getAttribute("x-if"));
+        e.removeAttribute("x-if");
+
+        // 替换位置
+        e.parentNode.insertBefore(ifTempEle, e);
+        ifTempEle.content.appendChild(e);
     });
 
-    // 不是数据的情况下刷新视图
-    if (!(targetData instanceof XData)) {
-        nextTick(() => {
-            wrapProxyEle.emit("reloadView");
-        });
-    }
-
-    // 从fakeWrapper内删除，不然的话后续
-    targetProxyEle.remove();
-
-    return targetProxyEle;
+    // 填充默认内容
+    return f_temp.innerHTML;
 }
+
 
 // 渲染组件元素
 const renderComponent = (ele, defaults) => {
@@ -1066,7 +1031,7 @@ const renderComponent = (ele, defaults) => {
         });
 
         // 填充默认内容
-        sroot.innerHTML = temp;
+        sroot.innerHTML = warpXifTemp(temp);
 
         // 查找所有模板
         let temps = new Map();
