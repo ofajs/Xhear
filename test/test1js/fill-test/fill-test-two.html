@@ -1,22 +1,39 @@
+<style>
+    .item_title {
+        margin: 0;
+        padding: 0;
+        color: green;
+    }
+
+    .item_one {
+        margin: 20px 0;
+    }
+
+    .item_one_childs>.item_one {
+        margin-left: 20px;
+    }
+</style>
 <div style="font-size:20px;font-weight:bold;">{{name}}</div>
 
 <!-- 填充元素 -->
 <div x-fill="arr use item1"></div>
 
 <template name="item1">
-    <div style="margin:10px 20px;">
-        <h3 style="margin:0;padding:0;">item1</h3>
-        <div>index => {{$index}}</div>
-        <div>name => {{$data.name}}
-            <input type="text" x-model="$data.name">
+    <div class="item_one">
+        <div class="info">
+            <h3 class="item_title">item1</h3>
+            <div>index => {{$index}}</div>
+            <div>name => <span class="dataname">{{$data.name}}</span>
+                <input type="text" x-model="$data.name">
+            </div>
+            <div>host name => {{$host.name}}
+                <input type="text" x-model="$host.name">
+            </div>
+            <div>host tag => {{$host.tag}}</div>
         </div>
-        <div>host name => {{$host.name}}
-            <input type="text" x-model="$host.name">
-        </div>
-        <div>host tag => {{$host.tag}}</div>
-        <div x-if="$data.childs && $data.childs.length">
+        <div class="childs" x-if="$data.childs && $data.childs.length">
             <div>has childs</div>
-            <div x-fill="$data.childs use item1"></div>
+            <div class="item_one_childs" :test-target="$data.nattr" x-fill="$data.childs use item1"></div>
         </div>
     </div>
 </template>

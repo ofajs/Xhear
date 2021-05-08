@@ -111,15 +111,8 @@ const sortByArray = (t, arr) => {
 
 // 重置所有数组方法
 extend(XhearEleFn, {
-    // push就是最原始的appendChild，干脆直接appencChild
     push(...items) {
-        let fragment = document.createDocumentFragment();
-        items.forEach(item => {
-            let ele = parseToDom(item);
-            fragment.appendChild(ele);
-        });
-        this.ele.appendChild(fragment);
-        emitUpdate(this[XDATASELF], "push", items);
+        XhearEleProtoSplice(this, this.length, 0, items);
         return this.length;
     },
     splice(index, howmany, ...items) {

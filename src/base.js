@@ -5,6 +5,7 @@
     //<!--main-->
     //<!--event-->
     //<!--reBuildArray-->
+    //<!--xfill-->
     //<!--register-->
 
     const createXhearEle = ele => (ele.__xhear__ || new XhearEle(ele));

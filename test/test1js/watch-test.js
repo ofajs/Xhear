@@ -28,7 +28,8 @@
         // watch监听
         d.watch(e => {
             tester.ok(e.trends.length == 4, 'trends length ok');
-            tester.ok(e.trends[0].name === "push", 'trends name ok 1');
+            // 数组修正方法(push pop shift unshift)都会被转换为splice
+            tester.ok(e.trends[0].name === "splice", 'trends name ok 1');
             tester.ok(e.trends[1].name == "setData", 'trends name ok 2');
         });
 

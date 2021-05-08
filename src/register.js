@@ -312,9 +312,15 @@ class XDataProcessAgent {
         // 处理用寄存对象
         this.processObj = new Map();
         this.proxyEle = proxyEle;
+        this._hasAdd = false;
     }
 
     init() {
+        if (!this._hasAdd) {
+            // 没有添加就不折腾
+            return;
+        }
+
         let { processObj, proxyEle } = this;
 
         const canSetKey = proxyEle[CANSETKEYS];
@@ -391,6 +397,8 @@ class XDataProcessAgent {
         calls.push({
             change: func
         })
+
+        this._hasAdd = true;
     }
 
     // 清除监听
@@ -468,7 +476,7 @@ const transTemp = (sroot) => {
         }
 
         attrsRemoveKeys.forEach(k => {
-            ele.removeAttribute(k)
+            ele.removeAttribute(propToAttr(k))
         });
 
         if (ele.getAttribute("x-model")) {
@@ -481,16 +489,15 @@ const transTemp = (sroot) => {
 
 
 // 渲染shadow dom 的内容
-const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
-    xpAgent = new XDataProcessAgent(proxyEle);
+const renderTemp = ({ sroot, proxyEle, temps, templateId }) => {
+    let xpAgent = new XDataProcessAgent(proxyEle);
 
     const canSetKey = proxyEle[CANSETKEYS];
 
-    // let { templateId } = transTemp(sroot);
-    if (!templateId) {
-        let d = transTemp(sroot);
-        templateId = d.templateId;
-    }
+    // if (!templateId) {
+    //     let d = transTemp(sroot);
+    //     templateId = d.templateId;
+    // }
 
     // x-if 为了递归组件和模板，还有可以节省内存的情况
     getCanRenderEles(sroot, "[x-if]").forEach(e => {
@@ -517,9 +524,9 @@ const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
 
     // x-fill 填充数组，概念上相当于数组在html中的slot元素
     // x-fill 相比 for 更能发挥 stanz 数据结构的优势；更好的理解多重嵌套的数据结构；
-    let xvFills = getCanRenderEles(sroot, '[x-fill]');
-    if (xvFills.length) {
-        xvFills.forEach(e => {
+    let xFills = getCanRenderEles(sroot, '[x-fill]');
+    if (xFills.length) {
+        xFills.forEach(e => {
             let { ele, attrVal } = e;
 
             let matchAttr = attrVal.match(/(.+?) +use +(.+)/)
@@ -536,13 +543,13 @@ const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
             // contentName 填充的内容，带 - 名的为自定义组件，其他为填充模板
             let [, attrName, contentName] = matchAttr;
 
-            // 等待填充的x-fill元素
-            let targetFillEle = createXhearProxy(ele);
-
-            // 禁止元素内的冒泡
-            targetFillEle._update = false;
-
-            debugger
+            renderFakeFill({
+                ele,
+                attrName,
+                useTempName: contentName,
+                host: proxyEle,
+                temps
+            });
         });
     }
 
@@ -678,6 +685,7 @@ const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
                 if (ele.xvele) {
                     createXhearEle(ele).setData(attrName, val);
                 } else {
+                    attrName = propToAttr(attrName);
                     if (val === undefined || val === null) {
                         ele.removeAttribute(attrName);
                     } else {
@@ -763,7 +771,8 @@ const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
             case "text":
                 proxyEle.watch(modelKey, (e, val) => {
                     ele.value = val;
-                }, true);
+                });
+                nextTick(() => ele.value = proxyEle[modelKey]);
                 ele.addEventListener("input", e => {
                     proxyEle.setData(modelKey, ele.value);
                 });
@@ -771,7 +780,8 @@ const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
             case "select":
                 proxyEle.watch(modelKey, (e, val) => {
                     ele.value = val;
-                }, true);
+                });
+                nextTick(() => ele.value = proxyEle[modelKey]);
                 ele.addEventListener("change", e => {
                     proxyEle.setData(modelKey, ele.value);
                 });
@@ -782,10 +792,10 @@ const renderTemp = ({ sroot, proxyEle, temps, xpAgent, templateId }) => {
                     let cEle = ele.__xhear__;
                     cEle.watch("value", (e, val) => {
                         proxyEle.setData(modelKey, val);
-                    }, true);
+                    });
                     proxyEle.watch(modelKey, (e, val) => {
                         cEle.setData("value", val);
-                    });
+                    }, true);
                 } else {
                     console.warn(`can't x-model with thie element => `, ele);
                 }
@@ -820,8 +830,19 @@ const warpXifTemp = (html) => {
         ifTempEle.content.appendChild(e);
     });
 
+    // template 内的 x-if 也要转换
+    Array.from(f_temp.content.querySelectorAll("template")).forEach(temp => {
+        let { html } = warpXifTemp(temp.innerHTML)
+        temp.innerHTML = html;
+    });
+
+    let { templateId } = transTemp(f_temp.content);
+
     // 填充默认内容
-    return f_temp.innerHTML;
+    return {
+        templateId,
+        html: f_temp.innerHTML
+    };
 }
 
 // 渲染组件元素
@@ -915,7 +936,8 @@ const renderComponent = (ele, defaults) => {
         });
 
         // 填充默认内容
-        sroot.innerHTML = warpXifTemp(temp);
+        let { html, templateId } = warpXifTemp(temp);
+        sroot.innerHTML = html;
 
         // 查找所有模板
         let temps = new Map();
@@ -929,9 +951,6 @@ const renderComponent = (ele, defaults) => {
 
             temps.set(name, e);
         });
-
-
-        let { templateId } = transTemp(sroot);
 
         renderTemp({
             sroot,

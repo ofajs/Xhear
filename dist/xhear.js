@@ -844,7 +844,17 @@
          * @param {String} keyName 获取当前实例相应 key 的数据
          */
         getData(keyName) {
-            let target = this[keyName];
+            let target;
+            if (keyName.includes && keyName.includes(".")) {
+                let attrNameArr = keyName.split(".");
+                target = this;
+                do {
+                    let key = attrNameArr.shift();
+                    target = target[key];
+                } while (attrNameArr.length)
+            } else {
+                target = this[keyName]
+            }
 
             if (target instanceof XData) {
                 target = target[PROXYTHIS];
@@ -1272,15 +1282,22 @@
                     break;
                 case "watchPointKey":
                     let pointKeyArr = expr.split(".");
-                    let firstKey = pointKeyArr[0];
                     let oldVal = this.getTarget(pointKeyArr);
+                    oldVal = oldVal instanceof XData ? oldVal.object : oldVal;
 
                     updateMethod = e => {
                         let {
                             trend
                         } = e;
-                        if (trend.fromKey == firstKey) {
-                            oldVal;
+
+                        let trendKeys = trend.keys.slice();
+
+                        // 补充回trend缺失的末尾key（由于setData会导致末尾Key的失去）
+                        if (trendKeys.length < pointKeyArr.length) {
+                            trendKeys.push(trend.finalSetterKey)
+                        }
+
+                        if (JSON.stringify(pointKeyArr) === JSON.stringify(trendKeys.slice(0, pointKeyArr.length))) {
                             let newVal;
                             try {
                                 newVal = this.getTarget(pointKeyArr);
@@ -1293,7 +1310,7 @@
                                     (newVal !== oldVal) && callback.call(callSelf, {
                                         expr,
                                         old: oldVal,
-                                        val: newVal,
+                                        // val: newVal instanceof XData ? newVal[PROXYTHIS] : newVal,
                                         trends: Array.from(cacheObj.trends)
                                     }, newVal);
 
@@ -3134,15 +3151,8 @@
 
     // 重置所有数组方法
     extend(XhearEleFn, {
-        // push就是最原始的appendChild，干脆直接appencChild
         push(...items) {
-            let fragment = document.createDocumentFragment();
-            items.forEach(item => {
-                let ele = parseToDom(item);
-                fragment.appendChild(ele);
-            });
-            this.ele.appendChild(fragment);
-            emitUpdate(this[XDATASELF], "push", items);
+            XhearEleProtoSplice(this, this.length, 0, items);
             return this.length;
         },
         splice(index, howmany, ...items) {
@@ -3202,6 +3212,163 @@
             emitUpdate(this[XDATASELF], "sort", [arg]);
         }
     });
+    // x-fill 操作足够复杂，使用单独一个文件进行封装
+    // 舍弃原来的component带入模式，因为 template 内就能使用 component
+    // 在数据量小的时候使用，还是很方便的
+
+    // 根据itemData生成一个绑定数据的组件元素或模板元素
+    const createFillItem = ({
+        useTempName,
+        temps,
+        itemData,
+        host
+    }) => {
+        let template = temps.get(useTempName);
+
+        if (!template) {
+            throw {
+                desc: "find out the template",
+                name: useTempName,
+                targetElement: host.ele
+            };
+        }
+
+        // 伪造一个挂载元素的数据
+        let fakeData = createXData({
+            $data: itemData.mirror,
+            $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+        });
+
+        extend(fakeData, {
+            get $parent() {
+                return itemData.parent;
+            },
+            get $index() {
+                return itemData.index;
+            }
+        });
+
+        fakeData[CANSETKEYS] = new Set();
+
+        fakeData = fakeData[PROXYTHIS];
+
+        let xNode = createXhearEle(parseToDom(template.innerHTML));
+
+        xNode._update = false;
+        xNode.__fill_item = itemData;
+        xNode.__fake_item = fakeData;
+
+        renderTemp({
+            sroot: xNode.ele,
+            proxyEle: fakeData,
+            temps
+        });
+
+        return {
+            itemEle: xNode,
+            fakeData
+        };
+    }
+
+    /**
+     * 对fill的目标对象，进行伪造虚拟对象渲染
+     * @param {Element} ele 需要塞入 fake fill 的元素
+     */
+    const renderFakeFill = ({
+        ele,
+        attrName,
+        useTempName,
+        host,
+        temps
+    }) => {
+        // 等待填充的 x-fill 元素
+        let targetFillEle = createXhearProxy(ele);
+
+        // 禁止元素内的update冒泡
+        targetFillEle._update = false;
+
+        // 首次填充元素
+        host[attrName].forEach(itemData => {
+            let {
+                itemEle
+            } = createFillItem({
+                useTempName,
+                itemData,
+                temps,
+                host
+            });
+
+            ele.appendChild(itemEle.ele);
+        });
+
+        // 监听变动，重新设置元素
+        host.watch(attrName, e => {
+            let targetVal = host[attrName];
+
+            e.trends.forEach(trend => {
+                let keys = trend.keys.slice();
+
+                // 数据设置整个数组
+                if (trend.name == "setData" && trend.keys.length < attrName.split(".").length) {
+                    keys.push(trend.args[0]);
+                }
+
+                if (attrName == keys.join(".")) {
+                    // 针对当前节点的变动
+                    nextTick(() => {
+                        // 防止变动再更新
+                        targetVal = host[attrName];
+
+                        targetFillEle.forEach(itemEle => {
+                            let eleItemData = itemEle.__fill_item;
+
+                            if (!targetVal.includes(eleItemData)) {
+                                // 删除不在数据对象内的元素
+                                itemEle.__fill_item = null;
+                                itemEle.ele.parentNode.removeChild(itemEle.ele);
+                            } else {
+                                // 在元素对象内的，提前预备不内部操作的记号
+                                itemEle.ele[RUNARRAY] = 1;
+                            }
+                        });
+
+                        // 等待放开记号的元素
+                        let need_open_runarray = targetFillEle.map(e => e.ele);
+
+                        // 等待重新填充新的元素
+                        let fragment = document.createDocumentFragment();
+
+                        targetVal.forEach(itemData => {
+                            let tarItem = targetFillEle.find(e => e.__fill_item == itemData);
+
+                            if (tarItem) {
+                                fragment.appendChild(tarItem.ele);
+                            } else {
+                                // 新数据重新生成元素
+                                let {
+                                    itemEle
+                                } = createFillItem({
+                                    useTempName,
+                                    itemData,
+                                    temps,
+                                    host
+                                });
+
+                                fragment.appendChild(itemEle.ele);
+                            }
+                        });
+
+                        // 重新填充
+                        targetFillEle.ele.appendChild(fragment);
+
+                        need_open_runarray.forEach(ele => ele[RUNARRAY] = 0);
+
+                    }, targetVal);
+                }
+            });
+        });
+    }
+
     // 注册数据
     const regDatabase = new Map();
 
@@ -3528,9 +3695,15 @@
             // 处理用寄存对象
             this.processObj = new Map();
             this.proxyEle = proxyEle;
+            this._hasAdd = false;
         }
 
         init() {
+            if (!this._hasAdd) {
+                // 没有添加就不折腾
+                return;
+            }
+
             let {
                 processObj,
                 proxyEle
@@ -3615,6 +3788,8 @@
             calls.push({
                 change: func
             })
+
+            this._hasAdd = true;
         }
 
         // 清除监听
@@ -3695,7 +3870,7 @@
             }
 
             attrsRemoveKeys.forEach(k => {
-                ele.removeAttribute(k)
+                ele.removeAttribute(propToAttr(k))
             });
 
             if (ele.getAttribute("x-model")) {
@@ -3714,18 +3889,16 @@
         sroot,
         proxyEle,
         temps,
-        xpAgent,
         templateId
     }) => {
-        xpAgent = new XDataProcessAgent(proxyEle);
+        let xpAgent = new XDataProcessAgent(proxyEle);
 
         const canSetKey = proxyEle[CANSETKEYS];
 
-        // let { templateId } = transTemp(sroot);
-        if (!templateId) {
-            let d = transTemp(sroot);
-            templateId = d.templateId;
-        }
+        // if (!templateId) {
+        //     let d = transTemp(sroot);
+        //     templateId = d.templateId;
+        // }
 
         // x-if 为了递归组件和模板，还有可以节省内存的情况
         getCanRenderEles(sroot, "[x-if]").forEach(e => {
@@ -3764,9 +3937,9 @@
 
         // x-fill 填充数组，概念上相当于数组在html中的slot元素
         // x-fill 相比 for 更能发挥 stanz 数据结构的优势；更好的理解多重嵌套的数据结构；
-        let xvFills = getCanRenderEles(sroot, '[x-fill]');
-        if (xvFills.length) {
-            xvFills.forEach(e => {
+        let xFills = getCanRenderEles(sroot, '[x-fill]');
+        if (xFills.length) {
+            xFills.forEach(e => {
                 let {
                     ele,
                     attrVal
@@ -3786,13 +3959,13 @@
                 // contentName 填充的内容，带 - 名的为自定义组件，其他为填充模板
                 let [, attrName, contentName] = matchAttr;
 
-                // 等待填充的x-fill元素
-                let targetFillEle = createXhearProxy(ele);
-
-                // 禁止元素内的冒泡
-                targetFillEle._update = false;
-
-                debugger
+                renderFakeFill({
+                    ele,
+                    attrName,
+                    useTempName: contentName,
+                    host: proxyEle,
+                    temps
+                });
             });
         }
 
@@ -3945,6 +4118,7 @@
                     if (ele.xvele) {
                         createXhearEle(ele).setData(attrName, val);
                     } else {
+                        attrName = propToAttr(attrName);
                         if (val === undefined || val === null) {
                             ele.removeAttribute(attrName);
                         } else {
@@ -4038,7 +4212,8 @@
                     case "text":
                         proxyEle.watch(modelKey, (e, val) => {
                             ele.value = val;
-                        }, true);
+                        });
+                        nextTick(() => ele.value = proxyEle[modelKey]);
                         ele.addEventListener("input", e => {
                             proxyEle.setData(modelKey, ele.value);
                         });
@@ -4046,7 +4221,8 @@
                     case "select":
                         proxyEle.watch(modelKey, (e, val) => {
                             ele.value = val;
-                        }, true);
+                        });
+                        nextTick(() => ele.value = proxyEle[modelKey]);
                         ele.addEventListener("change", e => {
                             proxyEle.setData(modelKey, ele.value);
                         });
@@ -4057,10 +4233,10 @@
                             let cEle = ele.__xhear__;
                             cEle.watch("value", (e, val) => {
                                 proxyEle.setData(modelKey, val);
-                            }, true);
+                            });
                             proxyEle.watch(modelKey, (e, val) => {
                                 cEle.setData("value", val);
-                            });
+                            }, true);
                         } else {
                             console.warn(`can't x-model with thie element => `, ele);
                         }
@@ -4095,8 +4271,23 @@
             ifTempEle.content.appendChild(e);
         });
 
+        // template 内的 x-if 也要转换
+        Array.from(f_temp.content.querySelectorAll("template")).forEach(temp => {
+            let {
+                html
+            } = warpXifTemp(temp.innerHTML)
+            temp.innerHTML = html;
+        });
+
+        let {
+            templateId
+        } = transTemp(f_temp.content);
+
         // 填充默认内容
-        return f_temp.innerHTML;
+        return {
+            templateId,
+            html: f_temp.innerHTML
+        };
     }
 
     // 渲染组件元素
@@ -4194,7 +4385,11 @@
             });
 
             // 填充默认内容
-            sroot.innerHTML = warpXifTemp(temp);
+            let {
+                html,
+                templateId
+            } = warpXifTemp(temp);
+            sroot.innerHTML = html;
 
             // 查找所有模板
             let temps = new Map();
@@ -4208,11 +4403,6 @@
 
                 temps.set(name, e);
             });
-
-
-            let {
-                templateId
-            } = transTemp(sroot);
 
             renderTemp({
                 sroot,
