@@ -3,7 +3,7 @@
 // 在数据量小的时候使用，还是很方便的
 
 // 根据itemData生成一个绑定数据的组件元素或模板元素
-const createFillItem = ({ useTempName, temps, itemData, host }) => {
+const createFillItem = ({ useTempName, temps, itemData, host, parent, index }) => {
     let template = temps.get(useTempName);
 
     if (!template) {
@@ -15,19 +15,37 @@ const createFillItem = ({ useTempName, temps, itemData, host }) => {
     }
 
     // 伪造一个挂载元素的数据
-    let fakeData = createXData({
-        $data: itemData.mirror,
-        $host: ((host.$host && host.$data) ? host.$host : host).mirror,
-    });
+    let fakeData;
 
-    extend(fakeData, {
-        get $parent() {
-            return itemData.parent;
-        },
-        get $index() {
-            return itemData.index;
-        }
-    });
+    if (itemData instanceof XData) {
+        fakeData = createXData({
+            $data: itemData.mirror,
+            $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+            get $parent() {
+                return parent;
+            },
+            get $index() {
+                return itemData.index !== undefined ? itemData.index : index;
+            }
+        });
+    } else {
+        fakeData = createXData({
+            get $data() {
+                return itemData;
+            },
+            set $data(val) {
+                parent[index] = val;
+                // parent.setData(index, val);
+            },
+            $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+            get $parent() {
+                return parent;
+            },
+            get $index() {
+                return itemData.index !== undefined ? itemData.index : index;
+            }
+        });
+    }
 
     fakeData[CANSETKEYS] = new Set();
 
@@ -58,10 +76,13 @@ const renderFakeFill = ({ ele, attrName, useTempName, host, temps }) => {
     // 禁止元素内的update冒泡
     targetFillEle._update = false;
 
+    let tarData = host[attrName];
+
     // 首次填充元素
-    host[attrName].forEach(itemData => {
+    tarData.forEach((itemData, index) => {
         let { itemEle } = createFillItem({
-            useTempName, itemData, temps, host
+            useTempName, itemData, temps, host,
+            parent: tarData, index
         });
 
         ele.appendChild(itemEle.ele);
@@ -88,7 +109,9 @@ const renderFakeFill = ({ ele, attrName, useTempName, host, temps }) => {
                     targetFillEle.forEach(itemEle => {
                         let eleItemData = itemEle.__fill_item;
 
-                        if (!targetVal.includes(eleItemData)) {
+                        if (!(eleItemData instanceof XData)) {
+                            itemEle.ele.parentNode.removeChild(itemEle.ele);
+                        } else if (!targetVal.includes(eleItemData)) {
                             // 删除不在数据对象内的元素
                             itemEle.__fill_item = null;
                             itemEle.ele.parentNode.removeChild(itemEle.ele);
@@ -104,7 +127,7 @@ const renderFakeFill = ({ ele, attrName, useTempName, host, temps }) => {
                     // 等待重新填充新的元素
                     let fragment = document.createDocumentFragment();
 
-                    targetVal.forEach(itemData => {
+                    targetVal.forEach((itemData, index) => {
                         let tarItem = targetFillEle.find(e => e.__fill_item == itemData);
 
                         if (tarItem) {
@@ -112,7 +135,8 @@ const renderFakeFill = ({ ele, attrName, useTempName, host, temps }) => {
                         } else {
                             // 新数据重新生成元素
                             let { itemEle } = createFillItem({
-                                useTempName, itemData, temps, host
+                                useTempName, itemData, temps, host,
+                                parent: targetVal, index
                             });
 
                             fragment.appendChild(itemEle.ele);

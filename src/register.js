@@ -85,11 +85,17 @@ const exprToFunc = (expr) => {
     try{
         ${funcExprWithThis(expr)}
     }catch(e){
+    let ele = this.ele;
+    if(!ele && this.$host){
+        ele = this.$host.ele;
+    }
     let errObj = {
         expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+        target:ele,
+        error:e
     }
-    this.ele.__xInfo && Object.assign(errObj,this.ele.__xInfo);
-    console.error(errObj,e);
+    ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+    console.error(errObj);
     }
             `);
 
@@ -104,7 +110,6 @@ const exprToFunc = (expr) => {
     //         let errObj = {
     //             expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
     //         }
-    //         ele.__xInfo && Object.assign(errObj,ele.__xInfo);
     //         console.error(errObj,e);
     //     }
     // }
@@ -286,6 +291,10 @@ const getCanRenderEles = (root, expr, opts = { rmAttr: true }) => {
     let arr = queAllToArray(root, expr).map(ele => {
         return { ele };
     });
+
+    if (root instanceof Element && createXhearEle(root).is(expr)) {
+        arr.unshift({ ele: root });
+    }
 
     // 对特殊属性进行处理
     let exData = /^\[(.+)\]$/.exec(expr);
@@ -661,7 +670,7 @@ const renderTemp = ({ sroot, proxyEle, temps, templateId }) => {
                     throw {
                         desc: "Function expressions cannot be used for sync binding",
                     };
-                } else if (!canSetKey.has(expr)) {
+                } else if (!canSetKey.has(expr) && !/^\$data\./.test(expr) && expr !== "$data") {
                     // 不能双向绑定的值
                     console.error({
                         desc: "the key can't sync bind",

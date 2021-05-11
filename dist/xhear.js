@@ -155,7 +155,8 @@
     const clearXMirror = (xobj) => {
         xobj.index = undefined;
         xobj.parent = undefined;
-        xobj[XMIRROR_SELF].mirrorHost.off("update", xobj[XMIRRIR_BIND_UPDATA]);
+        // xobj[XMIRROR_SELF].mirrorHost.off("update", xobj[XMIRRIR_BIND_UPDATA]);
+        xobj[XMIRROR_SELF].mirrorHost.off("update", xobj[XMIRRIR_UPDATA_BINDER]);
         xobj[XMIRROR_SELF].mirrorHost = undefined;
     }
 
@@ -670,11 +671,25 @@
             let length = 0;
 
             // 数据合并
-            Object.keys(obj).forEach(k => {
-                // 值
-                let value = obj[k];
+            // Object.keys(obj).forEach(k => {
+            let descsObj = Object.getOwnPropertyDescriptors(obj);
+            Object.keys(descsObj).forEach(k => {
+                // let value = obj[k];
+                let {
+                    value,
+                    get,
+                    set
+                } = descsObj[k];
 
-                if (/^\_/.test(k) || (hasElement && value instanceof Element)) {
+                if (get || set) {
+                    Object.defineProperty(this, k, {
+                        configurable: true,
+                        enumerable: true,
+                        get,
+                        set,
+                    });
+                    return;
+                } else if (/^\_/.test(k) || (hasElement && value instanceof Element)) {
                     // this[k] = obj[k];
                     Object.defineProperty(this, k, {
                         configurable: true,
@@ -782,7 +797,8 @@
                 return true;
             }
 
-            if (getType(key) === "string") {
+            let key_type = getType(key);
+            if (key_type === "string" || key_type === "number") {
                 let oldVal = _this[key];
 
                 if (value === oldVal) {
@@ -1057,7 +1073,7 @@
 
             // 遍历合并数组，并判断是否有非数字
             Object.keys(this).forEach(k => {
-                if (/^_/.test(k) || !/\D/.test(k) || _unBubble.includes(k)) {
+                if (/^_/.test(k) || !/\D/.test(k) || _unBubble.includes(k) || k === "length") {
                     return;
                 }
 
@@ -3221,7 +3237,9 @@
         useTempName,
         temps,
         itemData,
-        host
+        host,
+        parent,
+        index
     }) => {
         let template = temps.get(useTempName);
 
@@ -3234,19 +3252,37 @@
         }
 
         // 伪造一个挂载元素的数据
-        let fakeData = createXData({
-            $data: itemData.mirror,
-            $host: ((host.$host && host.$data) ? host.$host : host).mirror,
-        });
+        let fakeData;
 
-        extend(fakeData, {
-            get $parent() {
-                return itemData.parent;
-            },
-            get $index() {
-                return itemData.index;
-            }
-        });
+        if (itemData instanceof XData) {
+            fakeData = createXData({
+                $data: itemData.mirror,
+                $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+                get $parent() {
+                    return parent;
+                },
+                get $index() {
+                    return itemData.index !== undefined ? itemData.index : index;
+                }
+            });
+        } else {
+            fakeData = createXData({
+                get $data() {
+                    return itemData;
+                },
+                set $data(val) {
+                    parent[index] = val;
+                    // parent.setData(index, val);
+                },
+                $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+                get $parent() {
+                    return parent;
+                },
+                get $index() {
+                    return itemData.index !== undefined ? itemData.index : index;
+                }
+            });
+        }
 
         fakeData[CANSETKEYS] = new Set();
 
@@ -3287,15 +3323,19 @@
         // 禁止元素内的update冒泡
         targetFillEle._update = false;
 
+        let tarData = host[attrName];
+
         // 首次填充元素
-        host[attrName].forEach(itemData => {
+        tarData.forEach((itemData, index) => {
             let {
                 itemEle
             } = createFillItem({
                 useTempName,
                 itemData,
                 temps,
-                host
+                host,
+                parent: tarData,
+                index
             });
 
             ele.appendChild(itemEle.ele);
@@ -3322,7 +3362,9 @@
                         targetFillEle.forEach(itemEle => {
                             let eleItemData = itemEle.__fill_item;
 
-                            if (!targetVal.includes(eleItemData)) {
+                            if (!(eleItemData instanceof XData)) {
+                                itemEle.ele.parentNode.removeChild(itemEle.ele);
+                            } else if (!targetVal.includes(eleItemData)) {
                                 // 删除不在数据对象内的元素
                                 itemEle.__fill_item = null;
                                 itemEle.ele.parentNode.removeChild(itemEle.ele);
@@ -3338,7 +3380,7 @@
                         // 等待重新填充新的元素
                         let fragment = document.createDocumentFragment();
 
-                        targetVal.forEach(itemData => {
+                        targetVal.forEach((itemData, index) => {
                             let tarItem = targetFillEle.find(e => e.__fill_item == itemData);
 
                             if (tarItem) {
@@ -3351,7 +3393,9 @@
                                     useTempName,
                                     itemData,
                                     temps,
-                                    host
+                                    host,
+                                    parent: targetVal,
+                                    index
                                 });
 
                                 fragment.appendChild(itemEle.ele);
@@ -3461,11 +3505,17 @@
     try{
         ${funcExprWithThis(expr)}
     }catch(e){
+    let ele = this.ele;
+    if(!ele && this.$host){
+        ele = this.$host.ele;
+    }
     let errObj = {
         expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+        target:ele,
+        error:e
     }
-    this.ele.__xInfo && Object.assign(errObj,this.ele.__xInfo);
-    console.error(errObj,e);
+    ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+    console.error(errObj);
     }
             `);
 
@@ -3480,7 +3530,6 @@
         //         let errObj = {
         //             expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
         //         }
-        //         ele.__xInfo && Object.assign(errObj,ele.__xInfo);
         //         console.error(errObj,e);
         //     }
         // }
@@ -3667,6 +3716,12 @@
                 ele
             };
         });
+
+        if (root instanceof Element && createXhearEle(root).is(expr)) {
+            arr.unshift({
+                ele: root
+            });
+        }
 
         // 对特殊属性进行处理
         let exData = /^\[(.+)\]$/.exec(expr);
@@ -4094,7 +4149,7 @@
                         throw {
                             desc: "Function expressions cannot be used for sync binding",
                         };
-                    } else if (!canSetKey.has(expr)) {
+                    } else if (!canSetKey.has(expr) && !/^\$data\./.test(expr) && expr !== "$data") {
                         // 不能双向绑定的值
                         console.error({
                             desc: "the key can't sync bind",

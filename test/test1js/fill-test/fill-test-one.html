@@ -18,6 +18,8 @@
 <!-- 填充元素 -->
 <div x-fill="arr use item1"></div>
 
+<div $="i2Con" x-fill="arr2 use item2"></div>
+
 <template name="item1">
     <div class="item_one">
         <div class="info">
@@ -35,5 +37,12 @@
             <div>has childs</div>
             <div class="item_one_childs" :test-target="$data.nattr" x-fill="$data.childs use item1"></div>
         </div>
+        <div x-if="$data.counts && $data.counts.length" class="counts_con" x-fill="$data.counts use item2"></div>
+    </div>
+</template>
+
+<template name="item2">
+    <div :name="$index + '_' + $data">
+        {{$index}} => <span>{{$data}}</span>
     </div>
 </template>
