@@ -13,107 +13,114 @@ const isFunctionExpr = (str) => { argsWReg.lastIndex = 0; return argsWReg.test(s
 
 // 转化为指向this的函数表达式
 const argsWReg = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|\<|\>)/g;
-const argsWReg_c = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|[\<\>\=]?[=]?=|\<|\>)/;
-const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.|^Number$|^String$|^Object$|^Array$|^parseInt$|^parseFloat$|^undefined$|^null$|^true$|^false$|^[\d])/;
+// const argsWReg_c = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|[\<\>\=]?[=]?=|\<|\>)/;
+// const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.|^Number$|^String$|^Object$|^Array$|^parseInt$|^parseFloat$|^undefined$|^null$|^true$|^false$|^[\d])/;
 
-const argsWithThis = (expr) => {
-    // 替换字符串用的唯一key
-    const sKey = "$$" + getRandomId() + "_";
+// const argsWithThis = (expr) => {
+//     // 替换字符串用的唯一key
+//     const sKey = "$$" + getRandomId() + "_";
 
-    let jump_strs = [];
+//     let jump_strs = [];
 
-    // 规避操作
-    let before_expr = expr.replace(/\? *[\w]+?:/g, e => {
-        let replace_key = "__" + getRandomId() + "__";
+//     // 规避操作
+//     let before_expr = expr.replace(/\? *[\w]+?:/g, e => {
+//         let replace_key = "__" + getRandomId() + "__";
 
-        jump_strs.push({
-            k: replace_key,
-            v: e
-        });
+//         jump_strs.push({
+//             k: replace_key,
+//             v: e
+//         });
 
-        return replace_key;
-    });
+//         return replace_key;
+//     });
 
-    // 先抽取json结构的Key，防止添加this，后面再补充回去
-    let after_expr = before_expr.replace(/[\w]+? *:/g, (e) => {
-        return `${sKey}${e}`;
-    });
+//     // 先抽取json结构的Key，防止添加this，后面再补充回去
+//     let after_expr = before_expr.replace(/[\w]+? *:/g, (e) => {
+//         return `${sKey}${e}`;
+//     });
 
-    // 还原规避字符串
-    jump_strs.forEach(e => {
-        after_expr = after_expr.replace(e.k, e.v);
-    });
+//     // 还原规避字符串
+//     jump_strs.forEach(e => {
+//         after_expr = after_expr.replace(e.k, e.v);
+//     });
 
-    // 针对性的进行拆分
-    let argsSpArr = after_expr.split(argsWReg).map(e => {
-        if (e.includes(sKey)) {
-            return e.replace(sKey, "");
-        }
-        if (argsWReg_c.test(e) || !e.trim() || /^\./.test(e) || ignoreArgKeysReg.test(e)) {
-            return e;
-        }
-        return `this.${e}`;
-    });
+//     // 针对性的进行拆分
+//     let argsSpArr = after_expr.split(argsWReg).map(e => {
+//         if (e.includes(sKey)) {
+//             return e.replace(sKey, "");
+//         }
+//         if (argsWReg_c.test(e) || !e.trim() || /^\./.test(e) || ignoreArgKeysReg.test(e)) {
+//             return e;
+//         }
+//         return `this.${e}`;
+//     });
 
-    return argsSpArr.join("");
-}
+//     return argsSpArr.join("");
+// }
 
 // 使用with性能不好，所以将内部函数变量转为指向this的函数
-const funcExprWithThis = (expr) => {
-    let new_expr = "";
+// const funcExprWithThis = (expr) => {
+//     let new_expr = "";
 
-    let w_arr = expr.split(";").filter(e => !!e);
+//     let w_arr = expr.split(";").filter(e => !!e);
 
-    if (w_arr.length > 1) {
-        w_arr.forEach(e => {
-            new_expr += "\n" + argsWithThis(e) + ";";
-        });
-    } else {
-        new_expr = `return ${argsWithThis(w_arr[0])}`;
-    }
+//     if (w_arr.length > 1) {
+//         w_arr.forEach(e => {
+//             new_expr += "\n" + argsWithThis(e) + ";";
+//         });
+//     } else {
+//         new_expr = `return ${argsWithThis(w_arr[0])}`;
+//     }
 
-    return new_expr;
-}
+//     return new_expr;
+// }
 
 // 获取函数
 const exprToFunc = (expr) => {
-    return new Function("...args", `
-    const $event = args[0];
-    const $args = args;
-    args = undefined;
-
-    try{
-        ${funcExprWithThis(expr)}
-    }catch(e){
-    let ele = this.ele;
-    if(!ele && this.$host){
-        ele = this.$host.ele;
-    }
-    let errObj = {
-        expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
-        target:ele,
-        error:e
-    }
-    ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
-    console.error(errObj);
-    }
-            `);
-
     // return new Function("...args", `
     // const $event = args[0];
     // const $args = args;
     // args = undefined;
-    // with(this){
-    //     try{
-    //         return ${expr}
-    //     }catch(e){
-    //         let errObj = {
-    //             expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
-    //         }
-    //         console.error(errObj,e);
-    //     }
+
+    // try{
+    //     ${funcExprWithThis(expr)}
+    // }catch(e){
+    // let ele = this.ele;
+    // if(!ele && this.$host){
+    //     ele = this.$host.ele;
     // }
-    //     `);
+    // let errObj = {
+    //     expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+    //     target:ele,
+    //     error:e
+    // }
+    // ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+    // console.error(errObj);
+    // }
+    //         `);
+
+    return new Function("...args", `
+    const $event = args[0];
+    const $args = args;
+    args = undefined;
+    with(this){
+        try{
+            return ${expr}
+        }catch(e){
+            let ele = this.ele;
+            if(!ele && this.$host){
+                ele = this.$host.ele;
+            }
+            let errObj = {
+                expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+                target:ele,
+                error:e
+            }
+            ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+            console.error(errObj);
+        }
+    }
+        `);
 }
 
 const register = (opts) => {
