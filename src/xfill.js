@@ -17,16 +17,26 @@ const createFillItem = ({ useTempName, temps, itemData, host, parent, index }) =
     // 伪造一个挂载元素的数据
     let fakeData;
 
+    const $host = (host.$host && host.$data) ? host.$host : host;
+
     if (itemData instanceof XData) {
         fakeData = createXData({
             $data: itemData.mirror,
-            $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+            // $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+            get $host() {
+                return $host;
+            },
             get $parent() {
                 return parent;
             },
             get $index() {
                 return itemData.index !== undefined ? itemData.index : index;
             }
+        });
+
+        itemData.on("updateIndex", e => {
+            // debugger
+            fakeData.emitHandler("updateIndex");
         });
     } else {
         fakeData = createXData({
@@ -37,12 +47,15 @@ const createFillItem = ({ useTempName, temps, itemData, host, parent, index }) =
                 parent[index] = val;
                 // parent.setData(index, val);
             },
-            $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+            // $host: ((host.$host && host.$data) ? host.$host : host).mirror,
+            get $host() {
+                return $host;
+            },
             get $parent() {
                 return parent;
             },
             get $index() {
-                return itemData.index !== undefined ? itemData.index : index;
+                return index;
             }
         });
     }

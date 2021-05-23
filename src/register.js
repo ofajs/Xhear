@@ -13,114 +13,116 @@ const isFunctionExpr = (str) => { argsWReg.lastIndex = 0; return argsWReg.test(s
 
 // 转化为指向this的函数表达式
 const argsWReg = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|\<|\>)/g;
-// const argsWReg_c = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|[\<\>\=]?[=]?=|\<|\>)/;
-// const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.|^Number$|^String$|^Object$|^Array$|^parseInt$|^parseFloat$|^undefined$|^null$|^true$|^false$|^[\d])/;
 
-// const argsWithThis = (expr) => {
-//     // 替换字符串用的唯一key
-//     const sKey = "$$" + getRandomId() + "_";
+const argsWReg_c = /(".*?"|'.*?'|\(|\)|\[|\]|\{|\}|\|\||\&\&|\?|\!|:| |\+|\-|\*|%|\,|[\<\>\=]?[=]?=|\<|\>)/;
+const ignoreArgKeysReg = /(^\$event$|^\$args$|^debugger$|^console\.|^Number$|^String$|^Object$|^Array$|^parseInt$|^parseFloat$|^undefined$|^null$|^true$|^false$|^[\d])/;
 
-//     let jump_strs = [];
+const argsWithThis = (expr) => {
+    // 替换字符串用的唯一key
+    const sKey = "$$" + getRandomId() + "_";
 
-//     // 规避操作
-//     let before_expr = expr.replace(/\? *[\w]+?:/g, e => {
-//         let replace_key = "__" + getRandomId() + "__";
+    let jump_strs = [];
 
-//         jump_strs.push({
-//             k: replace_key,
-//             v: e
-//         });
+    // 规避操作
+    let before_expr = expr.replace(/\? *[\w]+?:/g, e => {
+        let replace_key = "__" + getRandomId() + "__";
 
-//         return replace_key;
-//     });
+        jump_strs.push({
+            k: replace_key,
+            v: e
+        });
 
-//     // 先抽取json结构的Key，防止添加this，后面再补充回去
-//     let after_expr = before_expr.replace(/[\w]+? *:/g, (e) => {
-//         return `${sKey}${e}`;
-//     });
+        return replace_key;
+    });
 
-//     // 还原规避字符串
-//     jump_strs.forEach(e => {
-//         after_expr = after_expr.replace(e.k, e.v);
-//     });
+    // 先抽取json结构的Key，防止添加this，后面再补充回去
+    let after_expr = before_expr.replace(/[\w]+? *:/g, (e) => {
+        return `${sKey}${e}`;
+    });
 
-//     // 针对性的进行拆分
-//     let argsSpArr = after_expr.split(argsWReg).map(e => {
-//         if (e.includes(sKey)) {
-//             return e.replace(sKey, "");
-//         }
-//         if (argsWReg_c.test(e) || !e.trim() || /^\./.test(e) || ignoreArgKeysReg.test(e)) {
-//             return e;
-//         }
-//         return `this.${e}`;
-//     });
+    // 还原规避字符串
+    jump_strs.forEach(e => {
+        after_expr = after_expr.replace(e.k, e.v);
+    });
 
-//     return argsSpArr.join("");
-// }
+    // 针对性的进行拆分
+    let argsSpArr = after_expr.split(argsWReg).map(e => {
+        if (e.includes(sKey)) {
+            return e.replace(sKey, "");
+        }
+        if (argsWReg_c.test(e) || !e.trim() || /^\./.test(e) || ignoreArgKeysReg.test(e)) {
+            return e;
+        }
+        return `this.${e}`;
+    });
+
+    return argsSpArr.join("");
+}
 
 // 使用with性能不好，所以将内部函数变量转为指向this的函数
-// const funcExprWithThis = (expr) => {
-//     let new_expr = "";
+const funcExprWithThis = (expr) => {
+    let new_expr = "";
 
-//     let w_arr = expr.split(";").filter(e => !!e);
+    let w_arr = expr.split(";").filter(e => !!e);
 
-//     if (w_arr.length > 1) {
-//         w_arr.forEach(e => {
-//             new_expr += "\n" + argsWithThis(e) + ";";
-//         });
-//     } else {
-//         new_expr = `return ${argsWithThis(w_arr[0])}`;
-//     }
+    if (w_arr.length > 1) {
+        w_arr.forEach(e => {
+            new_expr += "\n" + argsWithThis(e) + ";";
+        });
+    } else {
+        new_expr = `return ${argsWithThis(w_arr[0])}`;
+    }
 
-//     return new_expr;
-// }
+    return new_expr;
+}
 
 // 获取函数
 const exprToFunc = (expr) => {
-    // return new Function("...args", `
-    // const $event = args[0];
-    // const $args = args;
-    // args = undefined;
-
-    // try{
-    //     ${funcExprWithThis(expr)}
-    // }catch(e){
-    // let ele = this.ele;
-    // if(!ele && this.$host){
-    //     ele = this.$host.ele;
-    // }
-    // let errObj = {
-    //     expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
-    //     target:ele,
-    //     error:e
-    // }
-    // ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
-    // console.error(errObj);
-    // }
-    //         `);
-
+    // 最后测试使用with性能不会差太多
     return new Function("...args", `
     const $event = args[0];
     const $args = args;
     args = undefined;
-    with(this){
-        try{
-            return ${expr}
-        }catch(e){
-            let ele = this.ele;
-            if(!ele && this.$host){
-                ele = this.$host.ele;
-            }
-            let errObj = {
-                expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
-                target:ele,
-                error:e
-            }
-            ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
-            console.error(errObj);
-        }
+
+    try{
+        ${funcExprWithThis(expr)}
+    }catch(e){
+    let ele = this.ele;
+    if(!ele && this.$host){
+        ele = this.$host.ele;
     }
-        `);
+    let errObj = {
+        expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+        target:ele,
+        error:e
+    }
+    ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+    console.error(errObj);
+    }
+            `);
+
+    // return new Function("...args", `
+    // const $event = args[0];
+    // const $args = args;
+    // args = undefined;
+    // with(this){
+    //     try{
+    //         return ${expr}
+    //     }catch(e){
+    //         let ele = this.ele;
+    //         if(!ele && this.$host){
+    //             ele = this.$host.ele;
+    //         }
+    //         let errObj = {
+    //             expr:'${expr.replace(/'/g, "\\'").replace(/"/g, '\\"')}',
+    //             target:ele,
+    //             error:e
+    //         }
+    //         ele && ele.__xInfo && Object.assign(errObj,ele.__xInfo);
+    //         console.error(errObj);
+    //     }
+    // }
+    //     `);
 }
 
 const register = (opts) => {
@@ -349,7 +351,8 @@ class XDataProcessAgent {
             if (canSetKey.has(expr)) {
                 let watchFun;
                 target.watch(expr, watchFun = (e, val) => {
-                    calls.forEach(d => d.change(val, e.trends));
+                    console.log("change 1", expr);
+                    calls.forEach(d => d.change(val));
                 });
                 nextTick(() => watchFun({}, target[expr]));
 
@@ -367,16 +370,18 @@ class XDataProcessAgent {
                 // 是否首次运行
                 let isFirst = 1;
                 target.watch(watchFun = e => {
+                    // console.time(`per_call(${expr}) ${target.xid}`);
                     let val = f.call(target);
 
                     if (isFirst) {
                         isFirst = 0;
                     } else if (val === old_val || (val instanceof XData && val.string === old_val)) {
+                        // console.timeEnd(`per_call(${expr}) ${target.xid}`);
                         return;
                     }
 
-                    let trends = e ? e.trends : undefined;
-                    calls.forEach(d => d.change(val, trends));
+                    calls.forEach(d => d.change(val));
+                    // console.timeEnd(`per_call(${expr}) ${target.xid}`);
 
                     if (val instanceof XData) {
                         old_val = val.string;
