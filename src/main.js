@@ -1,6 +1,6 @@
 const XEleHandler = {
     get(target, key, receiver) {
-        if (!/\D/.test(key)) {
+        if (typeof key === 'string' && !/\D/.test(key)) {
             return createXEle(target.ele.children[key]);
         }
         return Reflect.get(target, key, receiver);
@@ -14,7 +14,7 @@ const XEleHandler = {
         return keys;
     },
     getOwnPropertyDescriptor(target, key) {
-        if (!/\D/.test(key)) {
+        if (typeof key === 'string' && !/\D/.test(key)) {
             return {
                 enumerable: true,
                 configurable: true,
@@ -23,6 +23,9 @@ const XEleHandler = {
         return Reflect.getOwnPropertyDescriptor(target, key);
     }
 };
+
+const EVENTS = Symbol("events");
+
 class XEle extends XData {
     constructor(ele) {
         super(Object.assign({
@@ -32,6 +35,10 @@ class XEle extends XData {
         defineProperties(this, {
             ele: {
                 get: () => ele
+            },
+            [EVENTS]: {
+                writable: true,
+                value: ""
             }
         });
 
