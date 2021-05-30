@@ -4,7 +4,6 @@
     //<!--public-->
     //<!--main-->
     //<!--event-->
-    //<!--array-->
     //<!--register-->
 
     function $(expr) {
@@ -15,8 +14,20 @@
         const exprType = getType(expr);
 
         if (exprType == "string") {
-            return createXEle(document.querySelector(expr));
+            if (!/\<.+\>/.test(expr)) {
+                return createXEle(document.querySelector(expr));
+            } else {
+                return createXEle(parseStringToDom(expr)[0]);
+            }
+        } else if (exprType == "object") {
+            return createXEle(parseDataToDom(expr));
         }
+
+        return null;
+    }
+
+    $.all = (expr) => {
+        return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
     }
 
     glo.$ = $
