@@ -1,4 +1,4 @@
-(function(glo) {
+(function (glo) {
     // base
     let styleEle = document.createElement('style');
     styleEle.innerHTML = `
@@ -34,14 +34,14 @@
     document.head.appendChild(styleEle);
 
     // function 
-    var getDiv = function(text) {
+    var getDiv = function (text) {
         let ele = document.createElement('div');
         ele.innerHTML = text || "";
         return ele;
     };
 
     // 断言
-    var assertLine = function(ast, text) {
+    var assertLine = function (ast, text) {
         let ele = getDiv(text);
         if (ast) {
             ele.classList.add('succeed');
@@ -52,12 +52,15 @@
     };
 
     // 直接打印
-    glo.ok = function(ast, text) {
+    glo.ok = function (ast, text, errInfo) {
         document.body.appendChild(assertLine(ast, text));
+        if (!ast) {
+            console.error(text + " => ", errInfo);
+        }
     };
 
     // 指定次数
-    glo.expect = function(count, title) {
+    glo.expect = function (count, title) {
         // 主体容器
         let mainEle = getDiv();
         mainEle.classList.add('group');
@@ -71,7 +74,7 @@
         titleEle && (mainEle.appendChild(titleEle));
 
         return {
-            ok: function(ast, text) {
+            ok: function (ast, text) {
                 let lineEle = getDiv(count + " : " + text);
                 count--;
                 if (count === 0) {
@@ -89,7 +92,7 @@
 
     var once_data_obj = {};
     // 只会打印一次，会跟踪文本
-    glo.once = function(ast, text) {
+    glo.once = function (ast, text) {
         if (!once_data_obj[text]) {
             let ele = assertLine(ast, '<span style="color:white;">once</span> <span style="color:#2fffff;"> => </span>' + text);
             document.body.appendChild(ele);
