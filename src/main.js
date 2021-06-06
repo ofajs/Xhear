@@ -1,3 +1,4 @@
+// 最基础对象功能
 const XEleHandler = {
     get(target, key, receiver) {
         if (typeof key === 'string' && !/\D/.test(key)) {
@@ -25,6 +26,11 @@ const XEleHandler = {
 };
 
 const EVENTS = Symbol("events");
+const xSetData = XData.prototype.setData;
+
+// 可直接设置的Key
+const xEleDefaultSetKeys = ["text", "html", "display", "style"];
+const CANSETKEYS = Symbol("cansetkeys");
 
 class XEle extends XData {
     constructor(ele) {
@@ -32,18 +38,29 @@ class XEle extends XData {
             tag: ele.tagName.toLowerCase()
         }, XEleHandler));
 
-        defineProperties(this, {
+        const self = this[XDATASELF];
+
+        defineProperties(self, {
             ele: {
                 get: () => ele
             },
             [EVENTS]: {
                 writable: true,
                 value: ""
+            },
+            // 允许被设置的key值
+            [CANSETKEYS]: {
+                value: new Set(xEleDefaultSetKeys)
             }
         });
 
-        delete this.length;
-        this._update = 0;
+        delete self.length;
+    }
+
+    setData(key, value) {
+        if (!this[CANSETKEYS] || this[CANSETKEYS].has(key)) {
+            return xSetData.call(this, key, value);
+        }
     }
 
     get parent() {
@@ -282,54 +299,5 @@ class XEle extends XData {
         });
 
         return cloneEle;
-    }
-
-    splice(index, howmany, ...items) {
-        const { ele } = this;
-        const children = Array.from(ele.children);
-
-        // 删除相应元素
-        const removes = [];
-        let b_index = index;
-        let b_howmany = howmany;
-        let target = children[b_index];
-        while (target && b_howmany > 0) {
-            removes.push(target);
-            ele.removeChild(target);
-            b_index++;
-            b_howmany--;
-            target = children[b_index];
-        }
-
-        // 新增元素
-        if (items.length) {
-            let fragEle = document.createDocumentFragment();
-            items.forEach(e => {
-                if (e instanceof Element) {
-                    fragEle.appendChild(e);
-                    return;
-                }
-
-                let type = getType(e);
-
-                if (type == "string") {
-                    parseStringToDom(e).forEach(e2 => {
-                        fragEle.appendChild(e2);
-                    });
-                } else if (type == "object") {
-                    fragEle.appendChild(parseDataToDom(e));
-                }
-            });
-
-            if (index >= this.length) {
-                // 在末尾添加元素
-                ele.appendChild(fragEle);
-            } else {
-                // 指定index插入
-                ele.insertBefore(fragEle, ele.children[index]);
-            }
-        }
-
-        return removes;
     }
 }

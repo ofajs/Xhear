@@ -7,6 +7,7 @@
  */
 ((glo) => {
     "use strict";
+    //<o:start--toofa.js-->
     // public function
     const getRandomId = () => Math.random().toString(32).substr(2);
     // const getRandomId = (len = 40) => {
@@ -276,7 +277,8 @@
 
             let reval = Reflect.set(this, key, value);
 
-            if (this[CANUPDATE] || this._update === false) {
+            // if (this[CANUPDATE] || this._update === false) {
+            if (this[CANUPDATE]) {
                 // 改动冒泡
                 emitUpdate(this, {
                     xid: this.xid,
@@ -369,6 +371,28 @@
         // watch异步收集版本
         watchTick(func) {
             return this.watch(collect(func));
+        },
+        // 监听直到表达式成功
+        watchUntil(expr) {
+            if (/[^=]=[^=]/.test(expr)) {
+                throw 'cannot use single =';
+            }
+
+            return new Promise(resolve => {
+                // 忽略错误
+                let exprFun = new Function(`
+        try{with(this){
+            return ${expr}
+        }}catch(e){}`).bind(this);
+
+                const wid = this.watch(() => {
+                    let reVal = exprFun();
+                    if (reVal) {
+                        this.unwatch(wid);
+                        resolve(reVal);
+                    }
+                });
+            });
         },
         // 转换为json数据
         toJSON() {
@@ -497,6 +521,7 @@
             });
         }
     });
+    // 公用方法文件
     // 创建xEle元素
     const createXEle = (ele) => {
         return ele.__xEle__ ? ele.__xEle__ : (ele.__xEle__ = new XEle(ele));
@@ -555,6 +580,23 @@
 
         return ele;
     }
+
+    // 将 element attribute 横杠转换为大小写模式
+    const attrToProp = key => {
+        // 判断是否有横线
+        if (/\-/.test(key)) {
+            key = key.replace(/\-[\D]/g, (letter) => letter.substr(1).toUpperCase());
+        }
+        return key;
+    }
+    const propToAttr = key => {
+        if (/[A-Z]/.test(key)) {
+            key = key.replace(/[A-Z]/g, letter => "-" + letter.toLowerCase());
+        }
+        return key;
+    }
+
+    // 最基础对象功能
     const XEleHandler = {
         get(target, key, receiver) {
             if (typeof key === 'string' && !/\D/.test(key)) {
@@ -582,6 +624,11 @@
     };
 
     const EVENTS = Symbol("events");
+    const xSetData = XData.prototype.setData;
+
+    // 可直接设置的Key
+    const xEleDefaultSetKeys = ["text", "html", "display", "style"];
+    const CANSETKEYS = Symbol("cansetkeys");
 
     class XEle extends XData {
         constructor(ele) {
@@ -589,18 +636,29 @@
                 tag: ele.tagName.toLowerCase()
             }, XEleHandler));
 
-            defineProperties(this, {
+            const self = this[XDATASELF];
+
+            defineProperties(self, {
                 ele: {
                     get: () => ele
                 },
                 [EVENTS]: {
                     writable: true,
                     value: ""
+                },
+                // 允许被设置的key值
+                [CANSETKEYS]: {
+                    value: new Set(xEleDefaultSetKeys)
                 }
             });
 
-            delete this.length;
-            this._update = 0;
+            delete self.length;
+        }
+
+        setData(key, value) {
+            if (!this[CANSETKEYS] || this[CANSETKEYS].has(key)) {
+                return xSetData.call(this, key, value);
+            }
         }
 
         get parent() {
@@ -844,7 +902,21 @@
 
             return cloneEle;
         }
+    }
+    // 重造数组方法
+    ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
+        const arrayFnFunc = Array.prototype[methodName];
+        if (arrayFnFunc) {
+            Object.defineProperty(XEle.prototype, methodName, {
+                value(...args) {
+                    return arrayFnFunc.apply(Array.from(this.ele.children).map(createXEle), args);
+                }
+            });
+        }
+    });
 
+    extend(XEle.prototype, {
+        // 最基础的
         splice(index, howmany, ...items) {
             const {
                 ele
@@ -873,6 +945,11 @@
                         return;
                     }
 
+                    if (e instanceof XEle) {
+                        fragEle.appendChild(e.ele);
+                        return;
+                    }
+
                     let type = getType(e);
 
                     if (type == "string") {
@@ -893,12 +970,80 @@
                 }
             }
 
+            // 改动冒泡
+            emitUpdate(this, {
+                xid: this.xid,
+                name: "splice",
+                args: [index, howmany, ...items]
+            });
+
             return removes;
+        },
+        sort(sortCall) {
+            const selfEle = this.ele;
+            const childs = Array.from(selfEle.children).map(createXEle).sort(sortCall);
+
+            const frag = document.createDocumentFragment();
+            childs.forEach(e => {
+                e.ele.__runarray = 1;
+                frag.appendChild(e.ele)
+            });
+            selfEle.appendChild(frag);
+
+            childs.forEach(e => delete e.ele.__runarray);
+
+            emitUpdate(this, {
+                xid: this.xid,
+                name: "sort"
+            });
+            return this;
+        },
+        reverse() {
+            const selfEle = this.ele;
+            const childs = Array.from(selfEle.children).reverse();
+            childs.forEach(ele => selfEle.appendChild(ele));
+            emitUpdate(this, {
+                xid: this.xid,
+                name: "reverse"
+            });
+
+            return this;
         }
-    }
+    });
     // DOM自带事件，何必舍近求远
     const getEventsMap = (target) => {
         return target[EVENTS] ? target[EVENTS] : (target[EVENTS] = new Map());
+    }
+
+    const MOUSEEVENT = glo.MouseEvent || Event;
+    const TOUCHEVENT = glo.TouchEvent || Event;
+
+    // 修正 Event Class 用的数据表
+    const EventMap = new Map([
+        ["click", MOUSEEVENT],
+        ["mousedown", MOUSEEVENT],
+        ["mouseup", MOUSEEVENT],
+        ["mousemove", MOUSEEVENT],
+        ["mouseenter", MOUSEEVENT],
+        ["mouseleave", MOUSEEVENT],
+        ["touchstart", TOUCHEVENT],
+        ["touchend", TOUCHEVENT],
+        ["touchmove", TOUCHEVENT]
+    ]);
+
+    // 触发原生事件
+    const triggerEvenet = (_this, name, data, bubbles = true) => {
+        let TargeEvent = EventMap.get(name) || CustomEvent;
+
+        const event = name instanceof Event ? name : new TargeEvent(name, {
+            bubbles,
+            cancelable: true
+        });
+
+        event.data = data;
+
+        // 触发事件
+        return _this.ele.dispatchEvent(event);
     }
 
     extend(XEle.prototype, {
@@ -906,15 +1051,34 @@
             if (isFunction(selector)) {
                 callback = selector;
                 selector = undefined;
-                this.ele.addEventListener(name, callback);
-                const eid = "e_" + getRandomId()
-                getEventsMap(this).set(eid, {
-                    name,
-                    selector,
-                    callback
-                });
-                return eid;
+            } else {
+                const real_callback = callback;
+                const {
+                    ele
+                } = this;
+                callback = (event) => {
+                    event.path.some(pTarget => {
+                        if (pTarget == ele) {
+                            return true;
+                        }
+
+                        if (createXEle(pTarget).is(selector)) {
+                            event.selector = pTarget;
+                            real_callback(event);
+                            delete event.selector;
+                        }
+                    });
+                }
             }
+
+            this.ele.addEventListener(name, callback);
+            const eid = "e_" + getRandomId()
+            getEventsMap(this).set(eid, {
+                name,
+                selector,
+                callback
+            });
+            return eid;
         },
         off(eid) {
             let d = getEventsMap(this).get(eid);
@@ -947,14 +1111,394 @@
 
             return eid;
         },
-        emit(name, data) {
-
+        trigger(name, data) {
+            return triggerEvenet(this, name, data);
         },
-        emitHandler(name, data) {
-
+        triggerHandler(name, data) {
+            return triggerEvenet(this, name, data, false);
         }
     });
 
+    // 常用事件封装
+    ["click", "focus", "blur"].forEach(name => {
+        extend(XEle.prototype, {
+            [name](callback) {
+                if (isFunction(callback)) {
+                    this.on(name, callback);
+                } else {
+                    // callback 就是 data
+                    return this.trigger(name, callback);
+                }
+            }
+        });
+    });
+    // 注册组件的主要逻辑
+    const register = (opts) => {
+        const defs = {
+            // 注册的组件名
+            tag: "",
+            // 正文内容字符串
+            temp: "",
+            // 和attributes绑定的keys
+            attrs: {},
+            // 默认数据
+            data: {},
+            // 直接监听属性变动对象
+            watch: {},
+            // 合并到原型链上的方法
+            proto: {},
+            // 被创建的时候触发的callback
+            // created() { },
+            // 初次渲染完成后触发的事件
+            // ready() {},
+            // 添加进document执行的callback
+            // attached() {},
+            // 从document删除后执行callback
+            // detached() {},
+            // 容器元素发生变动
+            // slotchange() { }
+        };
+
+        Object.assign(defs, opts);
+
+        if (defs.temp) {
+            defs.temp = transTemp(defs.temp);
+        }
+
+        // 注册原生组件
+        const XhearElement = class extends HTMLElement {
+            constructor(...args) {
+                super(...args);
+
+                const xele = createXEle(this);
+
+                // 修正cansetkey并合并数据
+                xEleInitData(defs, xele);
+
+                if (defs.temp) {
+                    // 添加shadow root
+                    const sroot = this.attachShadow({
+                        mode: "open"
+                    });
+
+                    sroot.innerHTML = defs.temp;
+
+                    renderTemp({
+                        host: xele,
+                        xdata: xele,
+                        content: sroot
+                    });
+                }
+            }
+
+            connectedCallback() {
+                console.log("connectedCallback => ", this);
+                this.__x_connected = true;
+                if (defs.attached && !this.__x_runned_connected) {
+                    nexTick(() => {
+                        if (this.__x_connected && !this.__x_runned_connected) {
+                            this.__x_runned_connected = true;
+                            defs.attached.call(createXEle(this));
+                        }
+                    });
+                }
+            }
+
+            // adoptedCallback() {
+            //     console.log("adoptedCallback => ", this);
+            // }
+
+            disconnectedCallback() {
+                console.log("disconnectedCallback => ", this);
+                this.__x_connected = false;
+                if (defs.detached && !this.__x_runnded_disconnected) {
+                    nexTick(() => {
+                        if (!this.__x_connected && !this.__x_runnded_disconnected) {
+                            this.__x_runnded_disconnected = true;
+                            defs.detached.call(createXEle(this));
+                        }
+                    });
+                }
+            }
+        }
+
+        customElements.define(defs.tag, XhearElement);
+    }
+
+    // 修正cansetkeys并合并数据
+    const xEleInitData = (defs, xele) => {
+        const {
+            attrs,
+            data,
+            watch,
+            proto
+        } = defs;
+
+        const keys = [...Object.keys(attrs), ...Object.keys(data), ...Object.keys(watch)];
+
+        const protoDesp = Object.getOwnPropertyDescriptors(proto);
+        Object.keys(protoDesp).forEach(keyName => {
+            let {
+                set
+            } = protoDesp[keyName];
+
+            if (set) {
+                keys.push(keyName);
+            }
+        });
+
+        keys.forEach(k => xele[CANSETKEYS].add(k));
+
+        const xself = xele[XDATASELF];
+
+        // 合并proto
+        extend(xself, proto);
+
+        // 合并数据
+        Object.assign(xself, data, attrs);
+    }
+
+    // 将temp转化为可渲染的模板
+    const transTemp = (temp) => {
+        // 去除无用的代码（注释代码）
+        temp = temp.replace(/<!--.+?-->/g, "");
+
+        // 自定义字符串转换
+        var textDataArr = temp.match(/{{.+?}}/g);
+        textDataArr && textDataArr.forEach((e) => {
+            var key = /{{(.+?)}}/.exec(e);
+            if (key) {
+                temp = temp.replace(e, `<x-span xvkey="${key[1].trim()}"></x-span>`);
+            }
+        });
+
+        // 再转换
+        const tsTemp = document.createElement("template");
+        tsTemp.innerHTML = temp;
+
+        Array.from(tsTemp.content.querySelectorAll("*")).forEach(ele => {
+            // 绑定属性
+            const bindAttrs = {};
+            // 绑定事件
+            const bindEvent = {};
+
+            let removeKeys = [];
+            Array.from(ele.attributes).forEach(attrObj => {
+                let {
+                    name,
+                    value
+                } = attrObj;
+
+                // 属性绑定
+                let attrExecs = /^:(.+)/.exec(name);
+                if (attrExecs) {
+                    bindAttrs[attrExecs[1]] = value;
+                    removeKeys.push(name);
+                    return;
+                }
+
+                // 事件绑定
+                let eventExecs = /^@(.+)/.exec(name);
+                if (eventExecs) {
+                    bindEvent[eventExecs[1]] = {
+                        name: value
+                    };
+                    removeKeys.push(name);
+                    return;
+                }
+            });
+
+            !isEmptyObj(bindAttrs) && ele.setAttribute("x-bind", JSON.stringify(bindAttrs));
+            !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
+            removeKeys.forEach(name => ele.removeAttribute(name));
+        });
+
+        // 修正 x-if 元素
+        wrapIfTemp(tsTemp);
+
+        // 返回最终结果
+        return tsTemp.innerHTML;
+    }
+
+    // 给 x-if 元素包裹 template
+    const wrapIfTemp = (tempEle) => {
+        let iEles = tempEle.content.querySelectorAll("[x-if]");
+
+        iEles.forEach(ele => {
+            if (ele.tagName.toLowerCase() == "template") {
+                return;
+            }
+
+            let ifTempEle = document.createElement("template");
+            ifTempEle.setAttribute("x-if", ele.getAttribute("x-if"));
+            ele.removeAttribute("x-if");
+
+            ele.parentNode.insertBefore(ifTempEle, ele);
+            ifTempEle.content.appendChild(ele);
+        });
+
+        // 内部 template 也进行包裹
+        Array.from(tempEle.content.querySelectorAll("template")).forEach(wrapIfTemp);
+    }
+    // 获取所有符合表达式的可渲染的元素
+    const getCanRenderEles = (root, expr) => {
+        return Array.from(root.querySelectorAll(expr));
+    }
+
+    // 去除原元素并添加定位textNode
+    const postionNode = e => {
+        let textnode = document.createTextNode("");
+        let parent = e.parentNode;
+        parent.insertBefore(textnode, e);
+        parent.removeChild(e);
+
+        return {
+            textnode,
+            parent
+        };
+    }
+
+    // 将表达式转换为函数
+    const exprToFunc = expr => {
+        return new Function("...args", `
+        const [$event] = args;
+        const {$host,$data} = this;
+        
+        with($host){
+            return ${expr};
+        }
+    `);
+    }
+
+    const regIsFuncExpr = /[\(\)\;\.\=\>\<]/;
+
+    // 渲染组件的逻辑
+    // host 主体组件元素；存放方法的主体
+    // xdata 渲染目标数据；单层渲染下是host，x-fill模式下是具体的数据
+    // content 渲染目标元素
+    const renderTemp = ({
+        host,
+        xdata,
+        content
+    }) => {
+        // 事件绑定
+        getCanRenderEles(content, "[x-on]").forEach(target => {
+            let eventInfo = JSON.parse(target.getAttribute("x-on"));
+
+            let eids = [];
+
+            Object.keys(eventInfo).forEach(eventName => {
+                let {
+                    name
+                } = eventInfo[eventName];
+
+                let eid;
+
+                // 判断是否函数
+                if (regIsFuncExpr.test(name)) {
+                    // 函数绑定
+                    const func = exprToFunc(name);
+                    eid = host.on(eventName, (event) => {
+                        func.call({
+                            $host: host
+                        }, event);
+                    });
+                } else {
+                    // 函数名绑定
+                    eid = host.on(eventName, (event) => {
+                        host[name] && host[name].call(host, event);
+                    });
+                }
+
+                eids.push(eid);
+            });
+
+            target.setAttribute("rendered-on", JSON.stringify(eids));
+        });
+
+        // 表达式到值的设置
+        const exprToSet = (expr, callback) => {
+            // 即时运行的判断函数
+            let runFunc;
+
+            if (regIsFuncExpr.test(expr)) {
+                // 属于函数
+                runFunc = exprToFunc(expr).bind({
+                    $host: host
+                });
+            } else {
+                // 值变动
+                runFunc = () => xdata[expr];
+            }
+
+            // 备份值
+            let backup_val = runFunc();
+
+            // 直接先运行渲染函数
+            callback(backup_val);
+
+            xdata.watchTick(() => {
+                const val = runFunc();
+
+                if (backup_val !== val) {
+                    callback(val);
+                    backup_val = val;
+                }
+            });
+        }
+
+        // 文本渲染
+        getCanRenderEles(content, "x-span").forEach(ele => {
+            // 定位文本元素
+            let {
+                textnode,
+                parent
+            } = postionNode(ele);
+
+            const textEle = document.createElement("span");
+            parent.insertBefore(textEle, textnode);
+
+            exprToSet(ele.getAttribute('xvkey'), val => {
+                textEle.textContent = val;
+            });
+        });
+
+        // 属性绑定
+        getCanRenderEles(content, "[x-bind]").forEach(ele => {
+            const bindData = JSON.parse(ele.getAttribute('x-bind'));
+
+            Object.keys(bindData).forEach(attrName => {
+                exprToSet(bindData[attrName], val => {
+                    ele.setAttribute(attrName, val);
+                });
+            })
+        });
+
+        // if元素渲染
+        getCanRenderEles(content, '[x-if]').forEach(ele => {
+            const expr = ele.getAttribute('x-if');
+
+            // 定位文本元素
+            let {
+                textnode,
+                parent
+            } = postionNode(ele);
+
+            // 生成的目标元素
+            let targetEle;
+
+            exprToSet(expr, val => {
+                if (val) {
+                    // 添加元素
+                    let new_ele = $(ele.content.children[0].outerHTML);
+                    debugger
+                } else if (targetEle) {
+                    // 删除元素
+                    targetEle.parentNode.removeChild(targetEle);
+                }
+            });
+        });
+    }
 
     function $(expr) {
         if (expr instanceof Element) {
@@ -976,9 +1520,13 @@
         return null;
     }
 
-    $.all = (expr) => {
-        return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
-    }
+    Object.assign($, {
+        all(expr) {
+            return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
+        },
+        register
+    });
+    //<o:end--toofa.js-->
 
     glo.$ = $
 })(window);

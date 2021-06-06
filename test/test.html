@@ -12,18 +12,33 @@
 </head>
 
 <body>
-    <div id="ha" class="haha">
-        <div>aaa</div>
-        <div>bbb</div>
-        <div>ccc</div>
-    </div>
-</body>
-<script>
-    let a = $("#ha");
 
-    var eid = a.on("click", e => {
-        console.log("click a");
-    });
-</script>
+    <div id="tar">
+        <!-- <div>3</div>
+        <div>4</div>
+        <div>1</div>
+        <div>2</div> -->
+        <!-- <test-reg>3</test-reg>
+        <test-reg>4</test-reg>
+        <test-reg>1</test-reg>
+        <test-reg>2</test-reg> -->
+    </div>
+    <script>
+        let obs = new MutationObserver((mutationList, observer) => {
+            console.log(mutationList, observer);
+        });
+
+        obs.observe($("#tar").ele, {
+            childList: true,  // 观察目标子节点的变化，是否有添加或者删除
+            attributes: false, // 观察属性变动
+            subtree: true // 观察后代节点
+        });
+    </script>
+
+</body>
+<!-- <script src="test-event.js"></script>
+<script src="test-array.js"></script>
+<script src="test-box.js"></script> -->
+<script src="test-register.js"></script>
 
 </html>

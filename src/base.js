@@ -1,10 +1,13 @@
 ((glo) => {
     "use strict";
+    //<o:start--toofa.js-->
     //<!--../stanz/dist/xdata-->
     //<!--public-->
     //<!--main-->
+    //<!--array-->
     //<!--event-->
     //<!--register-->
+    //<!--render-->
 
     function $(expr) {
         if (expr instanceof Element) {
@@ -26,9 +29,13 @@
         return null;
     }
 
-    $.all = (expr) => {
-        return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
-    }
+    Object.assign($, {
+        all(expr) {
+            return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
+        },
+        register
+    });
+    //<o:end--toofa.js-->
 
     glo.$ = $
 })(window);
