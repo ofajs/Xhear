@@ -29,7 +29,7 @@ const EVENTS = Symbol("events");
 const xSetData = XData.prototype.setData;
 
 // 可直接设置的Key
-const xEleDefaultSetKeys = ["text", "html", "display", "style"];
+const xEleDefaultSetKeys = ["text", "html", "show", "style"];
 const CANSETKEYS = Symbol("cansetkeys");
 
 class XEle extends XData {
@@ -128,12 +128,16 @@ class XEle extends XData {
         Object.assign(style, d);
     }
 
-    get display() {
-        return getComputedStyle(this.ele)['display'];
+    get show() {
+        return this.ele.style.display !== "none";
     }
 
-    set display(val) {
-        this.ele.style['display'] = val;
+    set show(val) {
+        if (val) {
+            this.ele.style.display = "";
+        } else {
+            this.ele.style.display = "none";
+        }
     }
 
     get position() {

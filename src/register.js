@@ -47,6 +47,7 @@ const register = (opts) => {
 
                 sroot.innerHTML = defs.temp;
 
+                // 渲染元素
                 renderTemp({
                     host: xele,
                     xdata: xele,
@@ -125,7 +126,7 @@ const transTemp = (temp) => {
     textDataArr && textDataArr.forEach((e) => {
         var key = /{{(.+?)}}/.exec(e);
         if (key) {
-            temp = temp.replace(e, `<x-span xvkey="${key[1].trim()}"></x-span>`);
+            temp = temp.replace(e, `<span :text="${key[1]}"></span>`);
         }
     });
 
@@ -136,6 +137,7 @@ const transTemp = (temp) => {
     Array.from(tsTemp.content.querySelectorAll("*")).forEach(ele => {
         // 绑定属性
         const bindAttrs = {};
+        const bindProps = {};
         // 绑定事件
         const bindEvent = {};
 
@@ -144,11 +146,17 @@ const transTemp = (temp) => {
             let { name, value } = attrObj;
 
             // 属性绑定
-            let attrExecs = /^:(.+)/.exec(name);
+            let attrExecs = /^attr:(.+)/.exec(name);
             if (attrExecs) {
                 bindAttrs[attrExecs[1]] = value;
                 removeKeys.push(name);
                 return;
+            }
+
+            let propExecs = /^:(.+)/.exec(name);
+            if (propExecs) {
+                bindProps[propExecs[1]] = value;
+                removeKeys.push(name);
             }
 
             // 事件绑定
@@ -162,7 +170,8 @@ const transTemp = (temp) => {
             }
         });
 
-        !isEmptyObj(bindAttrs) && ele.setAttribute("x-bind", JSON.stringify(bindAttrs));
+        !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
+        !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
         !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
         removeKeys.forEach(name => ele.removeAttribute(name));
     });

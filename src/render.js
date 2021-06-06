@@ -17,14 +17,67 @@ const postionNode = e => {
 
 // 将表达式转换为函数
 const exprToFunc = expr => {
-    return new Function("...args", `
-        const [$event] = args;
-        const {$host,$data} = this;
+    return new Function("...$args", `
+        const [$event] = $args;
         
-        with($host){
+        with(this){
             return ${expr};
         }
     `);
+}
+
+// 代理对象监听函数
+// class WatchAgent {
+//     constructor(xdata) {
+//         if (xdata.__watchAgent) {
+//             return xdata.__watchAgent;
+//         }
+
+//         // 互相绑定
+//         this.xdata = xdata;
+//         xdata.__watchAgent = this;
+
+//         // 存储表达式对象
+//         this.exprMap = new Map();
+//     }
+
+//     // 监听表达式变动
+//     watchExpr(expr) {
+//         debugger
+//     }
+// }
+
+// 表达式到值的设置
+const exprToSet = (xdata, host, expr, callback) => {
+    if (xdata === host) {
+        // 即时运行的判断函数
+        let runFunc;
+
+        if (regIsFuncExpr.test(expr)) {
+            // 属于函数
+            runFunc = exprToFunc(expr).bind(host);
+        } else {
+            // 值变动
+            runFunc = () => xdata[expr];
+        }
+
+        // 备份值
+        let backup_val = runFunc();
+
+        // 直接先运行渲染函数
+        callback(backup_val);
+
+        xdata.watchTick(() => {
+            const val = runFunc();
+
+            if (backup_val !== val) {
+                callback(val);
+                backup_val = val;
+            }
+        });
+    } else {
+        debugger
+    }
 }
 
 const regIsFuncExpr = /[\(\)\;\.\=\>\<]/;
@@ -50,7 +103,7 @@ const renderTemp = ({ host, xdata, content }) => {
                 // 函数绑定
                 const func = exprToFunc(name);
                 eid = host.on(eventName, (event) => {
-                    func.call({ $host: host }, event);
+                    func.call(host, event);
                 });
             } else {
                 // 函数名绑定
@@ -65,59 +118,26 @@ const renderTemp = ({ host, xdata, content }) => {
         target.setAttribute("rendered-on", JSON.stringify(eids));
     });
 
-    // 表达式到值的设置
-    const exprToSet = (expr, callback) => {
-        // 即时运行的判断函数
-        let runFunc;
-
-        if (regIsFuncExpr.test(expr)) {
-            // 属于函数
-            runFunc = exprToFunc(expr).bind({
-                $host: host
-            });
-        } else {
-            // 值变动
-            runFunc = () => xdata[expr];
-        }
-
-        // 备份值
-        let backup_val = runFunc();
-
-        // 直接先运行渲染函数
-        callback(backup_val);
-
-        xdata.watchTick(() => {
-            const val = runFunc();
-
-            if (backup_val !== val) {
-                callback(val);
-                backup_val = val;
-            }
-        });
-    }
-
-    // 文本渲染
-    getCanRenderEles(content, "x-span").forEach(ele => {
-        // 定位文本元素
-        let { textnode, parent } = postionNode(ele);
-
-        const textEle = document.createElement("span");
-        parent.insertBefore(textEle, textnode);
-
-        exprToSet(ele.getAttribute('xvkey'), val => {
-            textEle.textContent = val;
-        });
-    });
-
     // 属性绑定
-    getCanRenderEles(content, "[x-bind]").forEach(ele => {
-        const bindData = JSON.parse(ele.getAttribute('x-bind'));
+    getCanRenderEles(content, "[x-attr]").forEach(ele => {
+        const attrData = JSON.parse(ele.getAttribute('x-attr'));
 
-        Object.keys(bindData).forEach(attrName => {
-            exprToSet(bindData[attrName], val => {
+        Object.keys(attrData).forEach(attrName => {
+            exprToSet(xdata, host, attrData[attrName], val => {
                 ele.setAttribute(attrName, val);
             });
         })
+    });
+
+    getCanRenderEles(content, "[x-prop]").forEach(ele => {
+        const propData = JSON.parse(ele.getAttribute('x-prop'));
+        const xEle = createXEle(ele);
+
+        Object.keys(propData).forEach(propName => {
+            exprToSet(xdata, host, propData[propName], val => {
+                xEle[propName] = val;
+            });
+        });
     });
 
     // if元素渲染
@@ -130,11 +150,12 @@ const renderTemp = ({ host, xdata, content }) => {
         // 生成的目标元素
         let targetEle;
 
-        exprToSet(expr, val => {
+        exprToSet(xdata, host, expr, val => {
             if (val) {
                 // 添加元素
-                let new_ele = $(ele.content.children[0].outerHTML);
-                debugger
+                targetEle = $(ele.content.children[0].outerHTML).ele;
+
+                parent.insertBefore(targetEle, textnode);
             } else if (targetEle) {
                 // 删除元素
                 targetEle.parentNode.removeChild(targetEle);
