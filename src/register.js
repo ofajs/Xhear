@@ -118,7 +118,7 @@ const xEleInitData = (defs, xele) => {
 
 // 将temp转化为可渲染的模板
 const transTemp = (temp) => {
-    // 去除无用的代码（注释代码）
+    // 去除注释代码
     temp = temp.replace(/<!--.+?-->/g, "");
 
     // 自定义字符串转换

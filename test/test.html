@@ -12,12 +12,17 @@
 </head>
 
 <body>
-
+    <template>
+        <div>
+            aaa
+        </div>
+    </template>
     <div id="tar">
-        <!-- <div>3</div>
+        <div>3</div>
         <div>4</div>
         <div>1</div>
-        <div>2</div> -->
+        <test-reg>5</test-reg>
+        <div>2</div>
         <!-- <test-reg>3</test-reg>
         <test-reg>4</test-reg>
         <test-reg>1</test-reg>
@@ -31,7 +36,8 @@
         obs.observe($("#tar").ele, {
             childList: true,  // 观察目标子节点的变化，是否有添加或者删除
             attributes: false, // 观察属性变动
-            subtree: true // 观察后代节点
+            subtree: true, // 观察后代节点
+            characterData: false
         });
     </script> -->
 

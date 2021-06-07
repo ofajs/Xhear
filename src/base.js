@@ -24,6 +24,8 @@
             }
         } else if (exprType == "object") {
             return createXEle(parseDataToDom(expr));
+        } else if (expr === document || expr instanceof DocumentFragment) {
+            return createXEle(expr);
         }
 
         return null;

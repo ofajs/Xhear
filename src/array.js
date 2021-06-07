@@ -78,12 +78,12 @@ extend(XEle.prototype, {
 
         const frag = document.createDocumentFragment();
         childs.forEach(e => {
-            e.ele.__runarray = 1;
+            // e.ele.__runarray = 1;
             frag.appendChild(e.ele)
         });
         selfEle.appendChild(frag);
 
-        childs.forEach(e => delete e.ele.__runarray);
+        // childs.forEach(e => e.ele.__runarray = 0);
 
         emitUpdate(this, {
             xid: this.xid,

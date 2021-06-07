@@ -35,7 +35,7 @@ const CANSETKEYS = Symbol("cansetkeys");
 class XEle extends XData {
     constructor(ele) {
         super(Object.assign({
-            tag: ele.tagName.toLowerCase()
+            tag: ele.tagName ? ele.tagName.toLowerCase() : ''
         }, XEleHandler));
 
         const self = this[XDATASELF];
@@ -61,6 +61,16 @@ class XEle extends XData {
         if (!this[CANSETKEYS] || this[CANSETKEYS].has(key)) {
             return xSetData.call(this, key, value);
         }
+    }
+
+    get root() {
+        return createXEle(this.ele.getRootNode());
+    }
+
+    get host() {
+        let root = this.ele.getRootNode();
+        let { host } = root;
+        return host ? createXEle(host) : null;
     }
 
     get parent() {
@@ -194,6 +204,16 @@ class XEle extends XData {
     get outerHeight() {
         let computedStyle = getComputedStyle(this.ele);
         return this.ele.offsetHeight + parseInt(computedStyle['margin-top']) + parseInt(computedStyle['margin-bottom']);
+    }
+
+    get next() {
+        const nextEle = this.ele.nextElementSibling;
+        return nextEle ? createXEle(nextEle) : null;
+    }
+
+    get prev() {
+        const prevEle = this.ele.previousElementSibling;
+        return prevEle ? createXEle(prevEle) : null;
     }
 
     $(expr) {

@@ -5,7 +5,8 @@
             color: "green"
         },
         data: {
-            name: "I am test reg"
+            name: "I am test reg",
+            count: 0,
         },
         temp: `
             <div attr:parname="name" attr:parcolor="color" @blur="logName()" attr:cna="getCAN(0)">{{name}} - {{getCAN(1)}}</div>
@@ -15,11 +16,15 @@
                 <slot></slot>
             </div>
             <div x-if="color == 'red'" class="ctarget">
-                <div @click="logName()" :text="name">defalut text</div>
+                <div>{{count}}</div>
+                <div @click="clickName()" :text="name" style="color:green;">defalut text</div>
                 <div x-if="name == 'change'">{{name}}</div>
             </div>
         `,
         proto: {
+            clickName() {
+                this.count++;
+            },
             logName() {
                 console.log(this.name);
                 return "2";

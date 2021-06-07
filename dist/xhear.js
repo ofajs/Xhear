@@ -633,7 +633,7 @@
     class XEle extends XData {
         constructor(ele) {
             super(Object.assign({
-                tag: ele.tagName.toLowerCase()
+                tag: ele.tagName ? ele.tagName.toLowerCase() : ''
             }, XEleHandler));
 
             const self = this[XDATASELF];
@@ -659,6 +659,18 @@
             if (!this[CANSETKEYS] || this[CANSETKEYS].has(key)) {
                 return xSetData.call(this, key, value);
             }
+        }
+
+        get root() {
+            return createXEle(this.ele.getRootNode());
+        }
+
+        get host() {
+            let root = this.ele.getRootNode();
+            let {
+                host
+            } = root;
+            return host ? createXEle(host) : null;
         }
 
         get parent() {
@@ -794,6 +806,16 @@
         get outerHeight() {
             let computedStyle = getComputedStyle(this.ele);
             return this.ele.offsetHeight + parseInt(computedStyle['margin-top']) + parseInt(computedStyle['margin-bottom']);
+        }
+
+        get next() {
+            const nextEle = this.ele.nextElementSibling;
+            return nextEle ? createXEle(nextEle) : null;
+        }
+
+        get prev() {
+            const prevEle = this.ele.previousElementSibling;
+            return prevEle ? createXEle(prevEle) : null;
         }
 
         $(expr) {
@@ -989,12 +1011,12 @@
 
             const frag = document.createDocumentFragment();
             childs.forEach(e => {
-                e.ele.__runarray = 1;
+                // e.ele.__runarray = 1;
                 frag.appendChild(e.ele)
             });
             selfEle.appendChild(frag);
 
-            childs.forEach(e => delete e.ele.__runarray);
+            // childs.forEach(e => e.ele.__runarray = 0);
 
             emitUpdate(this, {
                 xid: this.xid,
@@ -1265,7 +1287,7 @@
 
     // 将temp转化为可渲染的模板
     const transTemp = (temp) => {
-        // 去除无用的代码（注释代码）
+        // 去除注释代码
         temp = temp.replace(/<!--.+?-->/g, "");
 
         // 自定义字符串转换
@@ -1358,15 +1380,17 @@
         return Array.from(root.querySelectorAll(expr));
     }
 
-    // 去除原元素并添加定位textNode
+    // 去除原元素并添加定位元素
     const postionNode = e => {
-        let textnode = document.createTextNode("");
+        // let textnode = document.createTextNode("");
+        let marker = new Comment("x-marker");
+
         let parent = e.parentNode;
-        parent.insertBefore(textnode, e);
+        parent.insertBefore(marker, e);
         parent.removeChild(e);
 
         return {
-            textnode,
+            marker,
             parent
         };
     }
@@ -1438,6 +1462,26 @@
 
     const regIsFuncExpr = /[\(\)\;\.\=\>\<]/;
 
+    // 元素深度循环函数（包含自身）
+    const elementDeepEach = (ele, callback) => {
+        // callback(ele);
+        Array.from(ele.childNodes).forEach(target => {
+            callback(target);
+
+            if (target instanceof Element) {
+                elementDeepEach(target, callback);
+            }
+        });
+    }
+
+    // 根据 if 语句，去除数据绑定关系
+    const removeElementBind = (target) => {
+        elementDeepEach(target, ele => {
+            if (ele) {}
+            debugger
+        });
+    }
+
     // 渲染组件的逻辑
     // host 主体组件元素；存放方法的主体
     // xdata 渲染目标数据；单层渲染下是host，x-fill模式下是具体的数据
@@ -1453,6 +1497,8 @@
 
             let eids = [];
 
+            const $tar = createXEle(target);
+
             Object.keys(eventInfo).forEach(eventName => {
                 let {
                     name
@@ -1464,12 +1510,12 @@
                 if (regIsFuncExpr.test(name)) {
                     // 函数绑定
                     const func = exprToFunc(name);
-                    eid = host.on(eventName, (event) => {
+                    eid = $tar.on(eventName, (event) => {
                         func.call(host, event);
                     });
                 } else {
                     // 函数名绑定
-                    eid = host.on(eventName, (event) => {
+                    eid = $tar.on(eventName, (event) => {
                         host[name] && host[name].call(host, event);
                     });
                 }
@@ -1508,22 +1554,38 @@
 
             // 定位文本元素
             let {
-                textnode,
+                marker,
                 parent
             } = postionNode(ele);
 
             // 生成的目标元素
-            let targetEle;
+            let targetEle = null;
 
             exprToSet(xdata, host, expr, val => {
-                if (val) {
+                if (val && !targetEle) {
                     // 添加元素
                     targetEle = $(ele.content.children[0].outerHTML).ele;
 
-                    parent.insertBefore(targetEle, textnode);
+                    // parent.insertBefore(targetEle, marker);
+                    parent.replaceChild(targetEle, marker);
+
+                    // 重新渲染
+                    renderTemp({
+                        host,
+                        xdata,
+                        content: targetEle
+                    });
                 } else if (targetEle) {
+                    // 去除数据绑定
+                    removeElementBind(targetEle);
+
                     // 删除元素
-                    targetEle.parentNode.removeChild(targetEle);
+                    // targetEle.parentNode.removeChild(targetEle);
+                    parent.replaceChild(marker, targetEle);
+
+                    targetEle = null;
+                } else {
+                    // 第一次初始化并没有渲染
                 }
             });
         });
@@ -1544,6 +1606,8 @@
             }
         } else if (exprType == "object") {
             return createXEle(parseDataToDom(expr));
+        } else if (expr === document || expr instanceof DocumentFragment) {
+            return createXEle(expr);
         }
 
         return null;
