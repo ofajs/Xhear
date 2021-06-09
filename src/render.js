@@ -1,6 +1,10 @@
 // 获取所有符合表达式的可渲染的元素
 const getCanRenderEles = (root, expr) => {
-    return Array.from(root.querySelectorAll(expr));
+    let arr = Array.from(root.querySelectorAll(expr))
+    if (root instanceof Element && meetsEle(root, expr)) {
+        arr.push(root);
+    }
+    return arr;
 }
 
 // 去除原元素并添加定位元素
@@ -51,35 +55,49 @@ const exprToFunc = expr => {
 
 // 表达式到值的设置
 const exprToSet = (xdata, host, expr, callback) => {
-    if (xdata === host) {
-        // 即时运行的判断函数
-        let runFunc;
+    // 即时运行的判断函数
+    let runFunc;
 
-        if (regIsFuncExpr.test(expr)) {
-            // 属于函数
-            runFunc = exprToFunc(expr).bind(host);
-        } else {
-            // 值变动
-            runFunc = () => xdata[expr];
-        }
-
-        // 备份值
-        let backup_val = runFunc();
-
-        // 直接先运行渲染函数
-        callback(backup_val);
-
-        xdata.watchTick(() => {
-            const val = runFunc();
-
-            if (backup_val !== val) {
-                callback(val);
-                backup_val = val;
-            }
-        });
+    if (regIsFuncExpr.test(expr)) {
+        // 属于函数
+        runFunc = exprToFunc(expr).bind(xdata);
     } else {
-        debugger
+        // 值变动
+        runFunc = () => xdata[expr];
     }
+
+    // 备份比较用的数据
+    let backup_val, backup_ids;
+
+    // 直接运行的渲染函数
+    const watchFun = () => {
+        const val = runFunc();
+
+        if (isxdata(val)) {
+            let ids = val.map(e => e ? e.xid : e).join(",");
+            if (backup_ids !== ids) {
+                callback(val);
+                backup_ids = ids;
+            }
+        } else if (backup_val !== val) {
+            callback(val);
+            backup_val = val;
+        }
+    }
+
+    // 先执行一次
+    watchFun();
+
+    // 需要监听的目标对象
+    let targetData = xdata;
+
+    if (host !== xdata) {
+        // 属于fill 填充渲染
+        if (expr.includes("$host")) {
+            targetData = host;
+        }
+    }
+    targetData.watchTick(watchFun);
 }
 
 const regIsFuncExpr = /[\(\)\;\.\=\>\<]/;
@@ -99,7 +117,7 @@ const elementDeepEach = (ele, callback) => {
 // 根据 if 语句，去除数据绑定关系
 const removeElementBind = (target) => {
     elementDeepEach(target, ele => {
-        if(ele){}
+        if (ele) { }
         debugger
     });
 }
@@ -108,7 +126,7 @@ const removeElementBind = (target) => {
 // host 主体组件元素；存放方法的主体
 // xdata 渲染目标数据；单层渲染下是host，x-fill模式下是具体的数据
 // content 渲染目标元素
-const renderTemp = ({ host, xdata, content }) => {
+const renderTemp = ({ host, xdata, content, temps }) => {
     // 事件绑定
     getCanRenderEles(content, "[x-on]").forEach(target => {
         let eventInfo = JSON.parse(target.getAttribute("x-on"));
@@ -127,12 +145,14 @@ const renderTemp = ({ host, xdata, content }) => {
                 // 函数绑定
                 const func = exprToFunc(name);
                 eid = $tar.on(eventName, (event) => {
-                    func.call(host, event);
+                    // func.call(host, event);
+                    func.call(xdata, event);
                 });
             } else {
                 // 函数名绑定
                 eid = $tar.on(eventName, (event) => {
-                    host[name] && host[name].call(host, event);
+                    // host[name] && host[name].call(host, event);
+                    xdata[name] && xdata[name].call(xdata, event);
                 });
             }
 
@@ -183,19 +203,66 @@ const renderTemp = ({ host, xdata, content }) => {
                 parent.replaceChild(targetEle, marker);
 
                 // 重新渲染
-                renderTemp({ host, xdata, content: targetEle });
+                renderTemp({ host, xdata, content: targetEle, temps });
             } else if (targetEle) {
                 // 去除数据绑定
-                removeElementBind(targetEle);
+                // removeElementBind(targetEle);
 
                 // 删除元素
                 // targetEle.parentNode.removeChild(targetEle);
                 parent.replaceChild(marker, targetEle);
 
                 targetEle = null;
-            } else {
-                // 第一次初始化并没有渲染
             }
+        });
+    });
+
+    getCanRenderEles(content, '[x-fill]').forEach(ele => {
+        const fillData = JSON.parse(ele.getAttribute("x-fill"));
+
+        const container = ele;
+
+        Object.keys(fillData).forEach(tempName => {
+            let propName = fillData[tempName];
+
+            // 是否初始化
+            let isInited;
+
+            exprToSet(xdata, host, propName, targetArr => {
+                // 获取模板
+                let tempData = temps.get(tempName);
+
+                if (!tempData) {
+                    throw {
+                        target: host.ele,
+                        desc: `this template was not found`,
+                        name: tempName
+                    };
+                }
+                if (!isInited) {
+                    targetArr.forEach((data, index) => {
+                        const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
+
+                        // 添加到容器内
+                        container.appendChild(itemEle.ele);
+
+                        const itemData = createXData({
+                            get $host() {
+                                return host
+                            },
+                            get $index() {
+                                return index
+                            }
+                        });
+                        itemData.$data = data;
+
+                        renderTemp({ host, xdata: itemData, content: itemEle.ele, temps });
+                    });
+                } else {
+                    debugger
+                }
+                isInited = 1;
+            });
         });
     });
 }

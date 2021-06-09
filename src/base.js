@@ -16,16 +16,23 @@
 
         const exprType = getType(expr);
 
+        // 目标元素
+        let ele;
+
         if (exprType == "string") {
             if (!/\<.+\>/.test(expr)) {
-                return createXEle(document.querySelector(expr));
+                ele = document.querySelector(expr);
             } else {
-                return createXEle(parseStringToDom(expr)[0]);
+                ele = parseStringToDom(expr)[0]
             }
         } else if (exprType == "object") {
-            return createXEle(parseDataToDom(expr));
+            ele = parseDataToDom(expr);
         } else if (expr === document || expr instanceof DocumentFragment) {
-            return createXEle(expr);
+            ele = expr;
+        }
+
+        if (ele) {
+            return createXEle(ele);
         }
 
         return null;

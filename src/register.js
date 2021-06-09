@@ -27,19 +27,55 @@ const register = (opts) => {
 
     Object.assign(defs, opts);
 
+    let temps;
+
     if (defs.temp) {
-        defs.temp = transTemp(defs.temp);
+        const d = transTemp(defs.temp);
+        defs.temp = d.html;
+        temps = d.temps;
     }
+
+    // 生成新的XEle class
+    const CustomXEle = class extends XEle {
+        constructor(ele) {
+            super(ele);
+        }
+    }
+
+    // 扩展原型
+    extend(CustomXEle.prototype, defs.proto);
+
+    const cansetKeys = getCansetKeys(defs);
+
+    // 扩展CANSETKEYS
+    defineProperties(CustomXEle.prototype, {
+        [CANSETKEYS]: {
+            writable: true,
+            value: new Set([...xEleDefaultSetKeys, ...cansetKeys])
+        }
+    });
 
     // 注册原生组件
     const XhearElement = class extends HTMLElement {
         constructor(...args) {
             super(...args);
 
+            let old_xele = this.__xEle__;
+            if (old_xele) {
+                console.warn({
+                    target: old_xele,
+                    desc: "please re-instantiate the object"
+                });
+            }
+
+            this.__xEle__ = new CustomXEle(this);
+
             const xele = createXEle(this);
 
-            // 修正cansetkey并合并数据
-            xEleInitData(defs, xele);
+            // cansetKeys.forEach(e => xele[CANSETKEYS].add(e));
+            Object.assign(xele, defs.data, defs.attrs);
+
+            defs.created && defs.created.call(xele);
 
             if (defs.temp) {
                 // 添加shadow root
@@ -51,13 +87,16 @@ const register = (opts) => {
                 renderTemp({
                     host: xele,
                     xdata: xele,
-                    content: sroot
+                    content: sroot,
+                    temps
                 });
+
+                defs.ready && defs.ready.call(xele);
             }
         }
 
         connectedCallback() {
-            console.log("connectedCallback => ", this);
+            // console.log("connectedCallback => ", this);
             this.__x_connected = true;
             if (defs.attached && !this.__x_runned_connected) {
                 nexTick(() => {
@@ -74,7 +113,7 @@ const register = (opts) => {
         // }
 
         disconnectedCallback() {
-            console.log("disconnectedCallback => ", this);
+            // console.log("disconnectedCallback => ", this);
             this.__x_connected = false;
             if (defs.detached && !this.__x_runnded_disconnected) {
                 nexTick(() => {
@@ -85,13 +124,22 @@ const register = (opts) => {
                 });
             }
         }
+
+
+        attributeChangedCallback(name, oldValue, newValue) {
+            xele[attrToProp(name)] = newValue;
+        }
+
+        static get observedAttributes() {
+            return Object.keys(defs.attrs).map(e => propToAttr(e));
+        }
     }
 
     customElements.define(defs.tag, XhearElement);
 }
 
-// 修正cansetkeys并合并数据
-const xEleInitData = (defs, xele) => {
+// 根据 defaults 获取可设置的keys
+const getCansetKeys = (defs) => {
     const { attrs, data, watch, proto } = defs;
 
     const keys = [...Object.keys(attrs), ...Object.keys(data), ...Object.keys(watch)];
@@ -105,15 +153,7 @@ const xEleInitData = (defs, xele) => {
         }
     });
 
-    keys.forEach(k => xele[CANSETKEYS].add(k));
-
-    const xself = xele[XDATASELF];
-
-    // 合并proto
-    extend(xself, proto);
-
-    // 合并数据
-    Object.assign(xself, data, attrs);
+    return keys;
 }
 
 // 将temp转化为可渲染的模板
@@ -140,27 +180,38 @@ const transTemp = (temp) => {
         const bindProps = {};
         // 绑定事件
         const bindEvent = {};
+        // 填充
+        const bindFill = {};
 
         let removeKeys = [];
         Array.from(ele.attributes).forEach(attrObj => {
             let { name, value } = attrObj;
 
             // 属性绑定
-            let attrExecs = /^attr:(.+)/.exec(name);
+            const attrExecs = /^attr:(.+)/.exec(name);
             if (attrExecs) {
                 bindAttrs[attrExecs[1]] = value;
                 removeKeys.push(name);
                 return;
             }
 
-            let propExecs = /^:(.+)/.exec(name);
+            const propExecs = /^:(.+)/.exec(name);
             if (propExecs) {
                 bindProps[propExecs[1]] = value;
                 removeKeys.push(name);
+                return;
+            }
+
+            // 填充绑定
+            const fillExecs = /^fill:(.+)/.exec(name);
+            if (fillExecs) {
+                bindFill[fillExecs[1]] = value;
+                removeKeys.push(name);
+                return;
             }
 
             // 事件绑定
-            let eventExecs = /^@(.+)/.exec(name);
+            const eventExecs = /^@(.+)/.exec(name);
             if (eventExecs) {
                 bindEvent[eventExecs[1]] = {
                     name: value
@@ -172,15 +223,35 @@ const transTemp = (temp) => {
 
         !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
         !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
+        !isEmptyObj(bindFill) && ele.setAttribute("x-fill", JSON.stringify(bindFill));
         !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
         removeKeys.forEach(name => ele.removeAttribute(name));
+    });
+
+    // 将 template 内的页进行转换
+    Array.from(tsTemp.content.querySelectorAll("template")).forEach(e => {
+        e.innerHTML = transTemp(e.innerHTML).html;
     });
 
     // 修正 x-if 元素
     wrapIfTemp(tsTemp);
 
+    // 获取模板
+    let temps = new Map();
+
+    Array.from(tsTemp.content.querySelectorAll(`template[name]`)).forEach(e => {
+        temps.set(e.getAttribute("name"), {
+            ele: e,
+            code: e.content.children[0].outerHTML
+        });
+        e.parentNode.removeChild(e);
+    })
+
     // 返回最终结果
-    return tsTemp.innerHTML;
+    return {
+        temps,
+        html: tsTemp.innerHTML
+    };
 }
 
 // 给 x-if 元素包裹 template

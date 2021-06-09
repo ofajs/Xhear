@@ -4,8 +4,8 @@ const createXEle = (ele) => {
     return ele.__xEle__ ? ele.__xEle__ : (ele.__xEle__ = new XEle(ele));
 }
 
-const meetTemp = document.createElement('template');
 // 判断元素是否符合条件
+const meetTemp = document.createElement('template');
 const meetsEle = (ele, expr) => {
     if (!ele.tagName) {
         return false;
@@ -20,9 +20,9 @@ const meetsEle = (ele, expr) => {
     return !!meetTemp.content.querySelector(expr);
 }
 
-const pstTemp = document.createElement('div');
 // 转换元素
 const parseStringToDom = (str) => {
+    const pstTemp = document.createElement('div');
     pstTemp.innerHTML = str;
     let childs = Array.from(pstTemp.children);
     return childs.map(function (e) {

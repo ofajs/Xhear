@@ -49,9 +49,9 @@ class XEle extends XData {
                 value: ""
             },
             // 允许被设置的key值
-            [CANSETKEYS]: {
-                value: new Set(xEleDefaultSetKeys)
-            }
+            // [CANSETKEYS]: {
+            //     value: new Set(xEleDefaultSetKeys)
+            // }
         });
 
         delete self.length;
@@ -71,6 +71,10 @@ class XEle extends XData {
         let root = this.ele.getRootNode();
         let { host } = root;
         return host ? createXEle(host) : null;
+    }
+
+    get shadow() {
+        return createXEle(this.ele.shadowRoot);
     }
 
     get parent() {
@@ -217,7 +221,8 @@ class XEle extends XData {
     }
 
     $(expr) {
-        return createXEle(this.ele.querySelector(expr));
+        const target = this.ele.querySelector(expr);
+        return target ? createXEle(target) : null;
     }
 
     all(expr) {
@@ -325,3 +330,13 @@ class XEle extends XData {
         return cloneEle;
     }
 }
+
+// 允许被设置的key值
+defineProperties(XEle.prototype, {
+    [CANSETKEYS]: {
+        writable: true,
+        value: new Set(xEleDefaultSetKeys)
+    }
+});
+
+window.haha = XEle.prototype;
