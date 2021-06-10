@@ -181,7 +181,7 @@ const transTemp = (temp) => {
         // 绑定事件
         const bindEvent = {};
         // 填充
-        const bindFill = {};
+        const bindFill = [];
 
         let removeKeys = [];
         Array.from(ele.attributes).forEach(attrObj => {
@@ -205,7 +205,7 @@ const transTemp = (temp) => {
             // 填充绑定
             const fillExecs = /^fill:(.+)/.exec(name);
             if (fillExecs) {
-                bindFill[fillExecs[1]] = value;
+                bindFill.push(fillExecs[1], value);
                 removeKeys.push(name);
                 return;
             }
@@ -223,7 +223,7 @@ const transTemp = (temp) => {
 
         !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
         !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
-        !isEmptyObj(bindFill) && ele.setAttribute("x-fill", JSON.stringify(bindFill));
+        bindFill.length && ele.setAttribute("x-fill", JSON.stringify(bindFill));
         !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
         removeKeys.forEach(name => ele.removeAttribute(name));
     });

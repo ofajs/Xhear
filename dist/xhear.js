@@ -260,7 +260,8 @@
                     });
                 } else {
                     // 直接设置函数
-                    this.setData(key, value);
+                    // this.setData(key, value);
+                    proxy_self[key] = value;
                 }
             });
 
@@ -286,22 +287,6 @@
         }
 
         setData(key, value) {
-            // 确认key是隐藏属性
-            if (/^_/.test(key)) {
-                if (!this.hasOwnProperty(key)) {
-                    defineProperties(this, {
-                        [key]: {
-                            writable: true,
-                            configurable: true,
-                            value
-                        }
-                    })
-                } else {
-                    Reflect.set(this, key, value);
-                }
-                return true;
-            }
-
             let valueType = getType(value);
             if (valueType == "array" || valueType == "object") {
                 value = createXData(value, "sub");
@@ -370,6 +355,23 @@
             if (typeof key === "symbol") {
                 return Reflect.set(target, key, value, receiver);
             }
+
+            // 确认key是隐藏属性
+            if (/^_/.test(key)) {
+                if (!target.hasOwnProperty(key)) {
+                    defineProperties(target, {
+                        [key]: {
+                            writable: true,
+                            configurable: true,
+                            value
+                        }
+                    })
+                } else {
+                    Reflect.set(target, key, value, receiver);
+                }
+                return true;
+            }
+
             return target.setData(key, value);
         },
         deleteProperty: function(target, key) {
@@ -708,11 +710,12 @@
 
     class XEle extends XData {
         constructor(ele) {
-            super(Object.assign({
-                tag: ele.tagName ? ele.tagName.toLowerCase() : ''
-            }, XEleHandler));
+            // super(Object.assign({}, XEleHandler));
+            super(XEleHandler);
 
             const self = this[XDATASELF];
+
+            self.tag = ele.tagName ? ele.tagName.toLowerCase() : ''
 
             defineProperties(self, {
                 ele: {
@@ -758,6 +761,18 @@
                 parentNode
             } = this.ele;
             return (!parentNode || parentNode === document) ? null : createXEle(parentNode);
+        }
+
+        get index() {
+            let {
+                parentNode
+            } = this.ele;
+
+            if (!parentNode) {
+                return null;
+            }
+
+            return Array.prototype.indexOf.call(parentNode.children, this.ele);
         }
 
         get length() {
@@ -1100,14 +1115,7 @@
             const selfEle = this.ele;
             const childs = Array.from(selfEle.children).map(createXEle).sort(sortCall);
 
-            const frag = document.createDocumentFragment();
-            childs.forEach(e => {
-                // e.ele.__runarray = 1;
-                frag.appendChild(e.ele)
-            });
-            selfEle.appendChild(frag);
-
-            // childs.forEach(e => e.ele.__runarray = 0);
+            rebuildXEleArray(selfEle, childs);
 
             emitUpdate(this, {
                 xid: this.xid,
@@ -1118,7 +1126,7 @@
         reverse() {
             const selfEle = this.ele;
             const childs = Array.from(selfEle.children).reverse();
-            childs.forEach(ele => selfEle.appendChild(ele));
+            rebuildXEleArray(selfEle, childs);
             emitUpdate(this, {
                 xid: this.xid,
                 name: "reverse"
@@ -1127,6 +1135,27 @@
             return this;
         }
     });
+
+    // 根据先后顺序数组进行元素排序
+    const rebuildXEleArray = (container, rearray) => {
+        const {
+            children
+        } = container;
+
+        rearray.forEach((e, index) => {
+            let ele = e.ele || e;
+
+            const targetChild = children[index];
+
+            if (!targetChild) {
+                debugger
+                // 属于后面新增
+                container.push(ele);
+            } else if (ele !== targetChild) {
+                container.insertBefore(ele, targetChild);
+            }
+        });
+    }
     // DOM自带事件，何必舍近求远
     const getEventsMap = (target) => {
         return target[EVENTS] ? target[EVENTS] : (target[EVENTS] = new Map());
@@ -1441,7 +1470,7 @@
             // 绑定事件
             const bindEvent = {};
             // 填充
-            const bindFill = {};
+            const bindFill = [];
 
             let removeKeys = [];
             Array.from(ele.attributes).forEach(attrObj => {
@@ -1468,7 +1497,7 @@
                 // 填充绑定
                 const fillExecs = /^fill:(.+)/.exec(name);
                 if (fillExecs) {
-                    bindFill[fillExecs[1]] = value;
+                    bindFill.push(fillExecs[1], value);
                     removeKeys.push(name);
                     return;
                 }
@@ -1486,7 +1515,7 @@
 
             !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
             !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
-            !isEmptyObj(bindFill) && ele.setAttribute("x-fill", JSON.stringify(bindFill));
+            bindFill.length && ele.setAttribute("x-fill", JSON.stringify(bindFill));
             !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
             removeKeys.forEach(name => ele.removeAttribute(name));
         });
@@ -1610,7 +1639,7 @@
         let backup_val, backup_ids;
 
         // 直接运行的渲染函数
-        const watchFun = () => {
+        const watchFun = (e) => {
             const val = runFunc();
 
             if (isxdata(val)) {
@@ -1631,10 +1660,12 @@
         // 需要监听的目标对象
         let targetData = xdata;
 
+        // 属于fill 填充渲染
         if (host !== xdata) {
-            // 属于fill 填充渲染
-            if (expr.includes("$host")) {
+            if (expr.includes("$host") || expr.includes("$index")) {
                 targetData = host;
+            } else {
+                targetData = xdata.$data;
             }
         }
         targetData.watchTick(watchFun);
@@ -1777,54 +1808,127 @@
 
             const container = ele;
 
-            Object.keys(fillData).forEach(tempName => {
-                let propName = fillData[tempName];
+            // 获取填充数组的函数
+            container._getFillArr = () => xdata[propName];
 
-                // 是否初始化
-                let isInited;
+            let [tempName, propName] = fillData;
 
-                exprToSet(xdata, host, propName, targetArr => {
-                    // 获取模板
-                    let tempData = temps.get(tempName);
+            let old_xid;
 
-                    if (!tempData) {
-                        throw {
-                            target: host.ele,
-                            desc: `this template was not found`,
-                            name: tempName
-                        };
-                    }
-                    if (!isInited) {
-                        targetArr.forEach((data, index) => {
-                            const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
+            exprToSet(xdata, host, propName, targetArr => {
+                // 获取模板
+                let tempData = temps.get(tempName);
 
-                            // 添加到容器内
-                            container.appendChild(itemEle.ele);
+                if (!tempData) {
+                    throw {
+                        target: host.ele,
+                        desc: `this template was not found`,
+                        name: tempName
+                    };
+                }
+                if (!old_xid) {
+                    targetArr.forEach((data, index) => {
+                        const itemEle = createFillItem({
+                            // owner: targetArr,
+                            host,
+                            data,
+                            index,
+                            tempData,
+                            temps
+                        });
 
-                            const itemData = createXData({
-                                get $host() {
-                                    return host
-                                },
-                                get $index() {
-                                    return index
-                                }
-                            });
-                            itemData.$data = data;
+                        // 添加到容器内
+                        container.appendChild(itemEle.ele);
+                    });
 
-                            renderTemp({
+                    old_xid = targetArr.xid;
+                } else {
+                    const childs = Array.from(container.children);
+                    const oldArr = childs.map(ele => {
+                        const {
+                            $data
+                        } = ele.__fill_item;
+
+                        // 将不存在的元素删除
+                        if (!targetArr.includes($data)) {
+                            container.removeChild(ele);
+                        }
+
+                        return $data;
+                    });
+
+                    // 即将用于重构的元素数组
+                    const new_childs = [];
+
+                    // 位移并将新对象重新创建元素绑定
+                    targetArr.forEach((data, index) => {
+                        let oldIndex = oldArr.indexOf(data);
+                        if (oldIndex > -1) {
+                            // 只是换位置的
+                            new_childs.push(childs[oldIndex]);
+                        } else {
+                            // 需要新增的
+                            let newItem = createFillItem({
+                                // owner: targetArr,
                                 host,
-                                xdata: itemData,
-                                content: itemEle.ele,
+                                data,
+                                index,
+                                tempData,
                                 temps
                             });
-                        });
-                    } else {
-                        debugger
-                    }
-                    isInited = 1;
-                });
+
+                            new_childs.push(newItem.ele);
+                        }
+                    });
+
+                    rebuildXEleArray(container, new_childs);
+                }
             });
         });
+    }
+
+    // 生成fillItem元素
+    const createFillItem = ({
+        // owner,
+        host,
+        data,
+        index,
+        tempData,
+        temps
+    }) => {
+        const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
+
+        const itemData = {
+            get $host() {
+                return host;
+            },
+            get $data() {
+                return data;
+            },
+            get $index() {
+                // return owner.indexOf(data);
+                const {
+                    parent
+                } = itemEle;
+
+                if (parent) {
+                    return parent.ele._getFillArr().indexOf(data);
+                } else {
+                    return index;
+                }
+            }
+        };
+
+        itemEle.ele.__fill_item = itemData;
+
+        renderTemp({
+            host,
+            xdata: itemData,
+            content: itemEle.ele,
+            temps
+        });
+
+        return itemEle;
     }
 
     function $(expr) {

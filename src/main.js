@@ -34,11 +34,12 @@ const CANSETKEYS = Symbol("cansetkeys");
 
 class XEle extends XData {
     constructor(ele) {
-        super(Object.assign({
-            tag: ele.tagName ? ele.tagName.toLowerCase() : ''
-        }, XEleHandler));
+        // super(Object.assign({}, XEleHandler));
+        super(XEleHandler);
 
         const self = this[XDATASELF];
+
+        self.tag = ele.tagName ? ele.tagName.toLowerCase() : ''
 
         defineProperties(self, {
             ele: {
@@ -80,6 +81,16 @@ class XEle extends XData {
     get parent() {
         let { parentNode } = this.ele;
         return (!parentNode || parentNode === document) ? null : createXEle(parentNode);
+    }
+
+    get index() {
+        let { parentNode } = this.ele;
+
+        if (!parentNode) {
+            return null;
+        }
+
+        return Array.prototype.indexOf.call(parentNode.children, this.ele);
     }
 
     get length() {

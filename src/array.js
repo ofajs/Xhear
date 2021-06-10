@@ -76,14 +76,7 @@ extend(XEle.prototype, {
         const selfEle = this.ele;
         const childs = Array.from(selfEle.children).map(createXEle).sort(sortCall);
 
-        const frag = document.createDocumentFragment();
-        childs.forEach(e => {
-            // e.ele.__runarray = 1;
-            frag.appendChild(e.ele)
-        });
-        selfEle.appendChild(frag);
-
-        // childs.forEach(e => e.ele.__runarray = 0);
+        rebuildXEleArray(selfEle, childs);
 
         emitUpdate(this, {
             xid: this.xid,
@@ -94,7 +87,7 @@ extend(XEle.prototype, {
     reverse() {
         const selfEle = this.ele;
         const childs = Array.from(selfEle.children).reverse();
-        childs.forEach(ele => selfEle.appendChild(ele));
+        rebuildXEleArray(selfEle, childs);
         emitUpdate(this, {
             xid: this.xid,
             name: "reverse"
@@ -103,3 +96,22 @@ extend(XEle.prototype, {
         return this;
     }
 });
+
+// 根据先后顺序数组进行元素排序
+const rebuildXEleArray = (container, rearray) => {
+    const { children } = container;
+
+    rearray.forEach((e, index) => {
+        let ele = e.ele || e;
+
+        const targetChild = children[index];
+
+        if (!targetChild) {
+            debugger
+            // 属于后面新增
+            container.push(ele);
+        } else if (ele !== targetChild) {
+            container.insertBefore(ele, targetChild);
+        }
+    });
+}

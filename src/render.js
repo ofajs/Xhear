@@ -70,7 +70,7 @@ const exprToSet = (xdata, host, expr, callback) => {
     let backup_val, backup_ids;
 
     // 直接运行的渲染函数
-    const watchFun = () => {
+    const watchFun = (e) => {
         const val = runFunc();
 
         if (isxdata(val)) {
@@ -91,10 +91,12 @@ const exprToSet = (xdata, host, expr, callback) => {
     // 需要监听的目标对象
     let targetData = xdata;
 
+    // 属于fill 填充渲染
     if (host !== xdata) {
-        // 属于fill 填充渲染
-        if (expr.includes("$host")) {
+        if (expr.includes("$host") || expr.includes("$index")) {
             targetData = host;
+        } else {
+            targetData = xdata.$data;
         }
     }
     targetData.watchTick(watchFun);
@@ -222,47 +224,104 @@ const renderTemp = ({ host, xdata, content, temps }) => {
 
         const container = ele;
 
-        Object.keys(fillData).forEach(tempName => {
-            let propName = fillData[tempName];
+        // 获取填充数组的函数
+        container._getFillArr = () => xdata[propName];
 
-            // 是否初始化
-            let isInited;
+        let [tempName, propName] = fillData;
 
-            exprToSet(xdata, host, propName, targetArr => {
-                // 获取模板
-                let tempData = temps.get(tempName);
+        let old_xid;
 
-                if (!tempData) {
-                    throw {
-                        target: host.ele,
-                        desc: `this template was not found`,
-                        name: tempName
-                    };
-                }
-                if (!isInited) {
-                    targetArr.forEach((data, index) => {
-                        const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
+        exprToSet(xdata, host, propName, targetArr => {
+            // 获取模板
+            let tempData = temps.get(tempName);
 
-                        // 添加到容器内
-                        container.appendChild(itemEle.ele);
-
-                        const itemData = createXData({
-                            get $host() {
-                                return host
-                            },
-                            get $index() {
-                                return index
-                            }
-                        });
-                        itemData.$data = data;
-
-                        renderTemp({ host, xdata: itemData, content: itemEle.ele, temps });
+            if (!tempData) {
+                throw {
+                    target: host.ele,
+                    desc: `this template was not found`,
+                    name: tempName
+                };
+            }
+            if (!old_xid) {
+                targetArr.forEach((data, index) => {
+                    const itemEle = createFillItem({
+                        // owner: targetArr,
+                        host, data, index, tempData, temps
                     });
-                } else {
-                    debugger
-                }
-                isInited = 1;
-            });
+
+                    // 添加到容器内
+                    container.appendChild(itemEle.ele);
+                });
+
+                old_xid = targetArr.xid;
+            } else {
+                const childs = Array.from(container.children);
+                const oldArr = childs.map(ele => {
+                    const { $data } = ele.__fill_item;
+
+                    // 将不存在的元素删除
+                    if (!targetArr.includes($data)) {
+                        container.removeChild(ele);
+                    }
+
+                    return $data;
+                });
+
+                // 即将用于重构的元素数组
+                const new_childs = [];
+
+                // 位移并将新对象重新创建元素绑定
+                targetArr.forEach((data, index) => {
+                    let oldIndex = oldArr.indexOf(data);
+                    if (oldIndex > -1) {
+                        // 只是换位置的
+                        new_childs.push(childs[oldIndex]);
+                    } else {
+                        // 需要新增的
+                        let newItem = createFillItem({
+                            // owner: targetArr,
+                            host, data, index, tempData, temps
+                        });
+
+                        new_childs.push(newItem.ele);
+                    }
+                });
+
+                rebuildXEleArray(container, new_childs);
+            }
         });
     });
+}
+
+// 生成fillItem元素
+const createFillItem = ({
+    // owner,
+    host, data, index, tempData, temps
+}) => {
+    const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
+
+    const itemData = {
+        get $host() {
+            return host;
+        },
+        get $data() {
+            return data;
+        },
+        get $index() {
+            // return owner.indexOf(data);
+            const { parent } = itemEle;
+
+            if (parent) {
+                return parent.ele._getFillArr().indexOf(data);
+            } else {
+                return index;
+            }
+        }
+    };
+
+    itemEle.ele.__fill_item = itemData;
+
+    renderTemp({ host, xdata: itemData, content: itemEle.ele, temps });
+
+    return itemEle;
 }
