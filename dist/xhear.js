@@ -1148,9 +1148,8 @@
             const targetChild = children[index];
 
             if (!targetChild) {
-                debugger
                 // 属于后面新增
-                container.push(ele);
+                container.appendChild(ele);
             } else if (ele !== targetChild) {
                 container.insertBefore(ele, targetChild);
             }
@@ -1320,6 +1319,9 @@
             constructor(ele) {
                 super(ele);
             }
+
+            // 强制刷新视图
+            forceUpdate() {}
         }
 
         // 扩展原型
@@ -1602,6 +1604,7 @@
     }
 
     // 代理对象监听函数
+    // 相同的表达式函数只会被执行一次，进而提高性能
     // class WatchAgent {
     //     constructor(xdata) {
     //         if (xdata.__watchAgent) {
@@ -1621,6 +1624,34 @@
     //         debugger
     //     }
     // }
+
+    // 清除表达式属性并将数据添加到元素对象内
+    const moveAttrExpr = (ele, exprName, propData) => {
+        ele.removeAttribute(exprName);
+
+        let renderedData = ele.__renderData;
+        if (!renderedData) {
+            renderedData = ele.__renderData = {}
+            // 增加渲染过后的数据
+            ele.setAttribute("x-rendered", "");
+        }
+
+        renderedData[exprName] = propData;
+    }
+
+    // 添加监听数据
+    const addBindingData = (target, bindings) => {
+        let _binds = target.__bindings || (target.__bindings = []);
+        _binds.push(...bindings);
+    }
+
+    const bindWatch = (data, func, bindings) => {
+        let eid = data.watchTick(func);
+        bindings.push({
+            eid,
+            target: data
+        });
+    }
 
     // 表达式到值的设置
     const exprToSet = (xdata, host, expr, callback) => {
@@ -1643,13 +1674,20 @@
             const val = runFunc();
 
             if (isxdata(val)) {
-                let ids = val.map(e => e ? e.xid : e).join(",");
+                // 对象只监听数组变动
+                let ids = val.map(e => (e && e.xid) ? e.xid : e).join(",");
                 if (backup_ids !== ids) {
-                    callback(val);
+                    callback({
+                        val,
+                        modifys: e
+                    });
                     backup_ids = ids;
                 }
             } else if (backup_val !== val) {
-                callback(val);
+                callback({
+                    val,
+                    modifys: e
+                });
                 backup_val = val;
             }
         }
@@ -1657,18 +1695,38 @@
         // 先执行一次
         watchFun();
 
-        // 需要监听的目标对象
-        let targetData = xdata;
+        // 已绑定的数据
+        const bindings = [];
 
-        // 属于fill 填充渲染
         if (host !== xdata) {
-            if (expr.includes("$host") || expr.includes("$index")) {
-                targetData = host;
+            // fill 填充渲染
+            // xdata负责监听$index
+            // xdata.$data为item数据本身
+            // $host为组件数据
+            if (expr.includes("$host")) {
+                if (expr.includes("$index")) {
+                    bindWatch(xdata, watchFun, bindings);
+                }
+                bindWatch(host, watchFun, bindings);
+            } else if (expr.includes("$index")) {
+                bindWatch(xdata, watchFun, bindings);
+                isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
+            } else if (expr.includes("$data")) {
+                isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
             } else {
-                targetData = xdata.$data;
+                throw {
+                    desc: "fill element must use $data $host or $index",
+                    target: host,
+                    expr
+                };
             }
+        } else {
+            // host数据绑定
+            bindWatch(xdata, watchFun, bindings);
         }
-        targetData.watchTick(watchFun);
+
+        // 返回绑定的关系数据
+        return bindings;
     }
 
     const regIsFuncExpr = /[\(\)\;\.\=\>\<]/;
@@ -1688,8 +1746,15 @@
     // 根据 if 语句，去除数据绑定关系
     const removeElementBind = (target) => {
         elementDeepEach(target, ele => {
-            if (ele) {}
-            debugger
+            if (ele.__bindings) {
+                ele.__bindings.forEach(e => {
+                    let {
+                        target,
+                        eid
+                    } = e;
+                    target.unwatch(eid);
+                });
+            }
         });
     }
 
@@ -1737,17 +1802,23 @@
                 eids.push(eid);
             });
 
-            target.setAttribute("rendered-on", JSON.stringify(eids));
+            moveAttrExpr(target, "x-on", eventInfo);
         });
 
         // 属性绑定
         getCanRenderEles(content, "[x-attr]").forEach(ele => {
             const attrData = JSON.parse(ele.getAttribute('x-attr'));
 
+            moveAttrExpr(ele, "x-attr", attrData);
+
             Object.keys(attrData).forEach(attrName => {
-                exprToSet(xdata, host, attrData[attrName], val => {
+                const bindings = exprToSet(xdata, host, attrData[attrName], ({
+                    val
+                }) => {
                     ele.setAttribute(attrName, val);
                 });
+
+                addBindingData(ele, bindings);
             })
         });
 
@@ -1755,10 +1826,26 @@
             const propData = JSON.parse(ele.getAttribute('x-prop'));
             const xEle = createXEle(ele);
 
+            moveAttrExpr(ele, "x-prop", propData);
+
             Object.keys(propData).forEach(propName => {
-                exprToSet(xdata, host, propData[propName], val => {
+                const bindings = exprToSet(xdata, host, propData[propName], ({
+                    val
+                }) => {
                     xEle[propName] = val;
                 });
+
+                addBindingData(ele, bindings);
+            });
+        });
+
+        // 数据双向绑定
+        getCanRenderEles(content, "[x-sync]").forEach(ele => {
+            const propData = JSON.parse(ele.getAttribute('x-sync'));
+            const xEle = createXEle(ele);
+
+            Object.keys(propData).forEach(propName => {
+                debugger
             });
         });
 
@@ -1775,7 +1862,10 @@
             // 生成的目标元素
             let targetEle = null;
 
-            exprToSet(xdata, host, expr, val => {
+            const bindings = exprToSet(xdata, host, expr, ({
+                val
+            }) => {
+                // exprToSet(xdata, host, expr, ({ val }) => {
                 if (val && !targetEle) {
                     // 添加元素
                     targetEle = $(ele.content.children[0].outerHTML).ele;
@@ -1790,9 +1880,9 @@
                         content: targetEle,
                         temps
                     });
-                } else if (targetEle) {
+                } else if (!val && targetEle) {
                     // 去除数据绑定
-                    // removeElementBind(targetEle);
+                    removeElementBind(targetEle);
 
                     // 删除元素
                     // targetEle.parentNode.removeChild(targetEle);
@@ -1801,21 +1891,26 @@
                     targetEle = null;
                 }
             });
+
+            addBindingData(marker, bindings);
         });
 
+        // 填充绑定
         getCanRenderEles(content, '[x-fill]').forEach(ele => {
             const fillData = JSON.parse(ele.getAttribute("x-fill"));
 
             const container = ele;
 
-            // 获取填充数组的函数
-            container._getFillArr = () => xdata[propName];
-
             let [tempName, propName] = fillData;
 
             let old_xid;
 
-            exprToSet(xdata, host, propName, targetArr => {
+            // 提前把 x-fill 属性去掉，防止重复渲染
+            moveAttrExpr(ele, "x-fill", fillData);
+
+            const bindings = exprToSet(xdata, host, propName, d => {
+                const targetArr = d.val;
+
                 // 获取模板
                 let tempData = temps.get(tempName);
 
@@ -1826,10 +1921,11 @@
                         name: tempName
                     };
                 }
+
                 if (!old_xid) {
+                    // 完全填充
                     targetArr.forEach((data, index) => {
                         const itemEle = createFillItem({
-                            // owner: targetArr,
                             host,
                             data,
                             index,
@@ -1844,52 +1940,62 @@
                     old_xid = targetArr.xid;
                 } else {
                     const childs = Array.from(container.children);
-                    const oldArr = childs.map(ele => {
-                        const {
-                            $data
-                        } = ele.__fill_item;
+                    const oldArr = childs.map(e => e.__fill_item.$data);
 
-                        // 将不存在的元素删除
-                        if (!targetArr.includes($data)) {
-                            container.removeChild(ele);
-                        }
+                    const holder = Symbol("holder");
 
-                        return $data;
-                    });
-
-                    // 即将用于重构的元素数组
-                    const new_childs = [];
-
-                    // 位移并将新对象重新创建元素绑定
-                    targetArr.forEach((data, index) => {
-                        let oldIndex = oldArr.indexOf(data);
-                        if (oldIndex > -1) {
-                            // 只是换位置的
-                            new_childs.push(childs[oldIndex]);
-                        } else {
-                            // 需要新增的
+                    const afterChilds = [];
+                    targetArr.forEach((e, index) => {
+                        let oldIndex = oldArr.indexOf(e);
+                        if (oldIndex === -1) {
+                            // 属于新增
                             let newItem = createFillItem({
-                                // owner: targetArr,
                                 host,
-                                data,
+                                data: e,
                                 index,
                                 tempData,
                                 temps
                             });
 
-                            new_childs.push(newItem.ele);
+                            afterChilds.push(newItem.ele);
+                        } else {
+                            // 属于位移
+                            let targetEle = childs[oldIndex];
+                            // 更新index
+                            targetEle.__fill_item.$index = index;
+                            afterChilds.push(targetEle);
+
+                            // 标识已用
+                            oldArr[oldIndex] = holder;
                         }
                     });
 
-                    rebuildXEleArray(container, new_childs);
+                    // 需要被清除数据的
+                    const needRemoves = [];
+
+                    // 删除不在数据内的元素
+                    oldArr.forEach((e, i) => {
+                        if (e !== holder) {
+                            let e2 = childs[i];
+                            needRemoves.push(e2);
+                            container.removeChild(e2);
+                        }
+                    });
+
+                    // 去除数据绑定
+                    needRemoves.forEach(e => removeElementBind(e));
+
+                    // 重构数组
+                    rebuildXEleArray(container, afterChilds);
                 }
             });
+
+            addBindingData(ele, bindings);
         });
     }
 
     // 生成fillItem元素
     const createFillItem = ({
-        // owner,
         host,
         data,
         index,
@@ -1898,26 +2004,20 @@
     }) => {
         const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
 
-        const itemData = {
+        const itemData = createXData({
             get $host() {
                 return host;
             },
+            // $data: data,
+            $index: index,
             get $data() {
                 return data;
             },
-            get $index() {
-                // return owner.indexOf(data);
-                const {
-                    parent
-                } = itemEle;
-
-                if (parent) {
-                    return parent.ele._getFillArr().indexOf(data);
-                } else {
-                    return index;
-                }
-            }
-        };
+            // get $index() {
+            //     return this._index;
+            // },
+            // _index: index
+        });
 
         itemEle.ele.__fill_item = itemData;
 

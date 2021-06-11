@@ -40,6 +40,9 @@ const register = (opts) => {
         constructor(ele) {
             super(ele);
         }
+
+        // 强制刷新视图
+        forceUpdate() { }
     }
 
     // 扩展原型

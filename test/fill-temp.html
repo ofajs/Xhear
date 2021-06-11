@@ -1,11 +1,27 @@
 <p>{{name}}</p>
 <div fill:t1="arr"></div>
+<div fill:t2="arr2" style="display:flex;flex-wrap:wrap;"></div>
+<br><br>
+<div fill:t3="arr2" style="display:flex;flex-wrap:wrap;"></div>
 
 <template name="t1">
-    <div style="padding:10px 20px;">
+    <div attr:name="$data.name" @click="$host.log($data.name)" style="padding:10px 20px;">
         <div>host name => {{$host.name}}</div>
         <div>
-            {{$index}} - {{$data.name}}
+            {{$data.name}} index => {{$index}}
         </div>
+        <div class="childs" x-if="$data.childs && $data.childs.length" fill:t1="$data.childs"></div>
+    </div>
+</template>
+
+<template name="t2">
+    <div style="margin:0 30px;color:green;">
+        {{$index}} - {{$data}}
+    </div>
+</template>
+
+<template name="t3">
+    <div style="margin:0 30px;color:green;">
+        {{$index + '---' + $host.name}} - {{$data}}
     </div>
 </template>

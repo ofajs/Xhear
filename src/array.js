@@ -107,9 +107,8 @@ const rebuildXEleArray = (container, rearray) => {
         const targetChild = children[index];
 
         if (!targetChild) {
-            debugger
             // 属于后面新增
-            container.push(ele);
+            container.appendChild(ele);
         } else if (ele !== targetChild) {
             container.insertBefore(ele, targetChild);
         }
