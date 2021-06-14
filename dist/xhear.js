@@ -710,8 +710,9 @@
 
     class XEle extends XData {
         constructor(ele) {
-            // super(Object.assign({}, XEleHandler));
-            super(XEleHandler);
+            super(Object.assign({}, XEleHandler));
+            // debugger
+            // super(XEleHandler);
 
             const self = this[XDATASELF];
 
@@ -988,7 +989,7 @@
             }
 
             if (until) {
-                if (until instanceof XhearEle) {
+                if (until instanceof XEle) {
                     let newPars = [];
                     pars.some(e => {
                         if (e === until) {
@@ -1202,7 +1203,15 @@
                     ele
                 } = this;
                 callback = (event) => {
-                    event.path.some(pTarget => {
+                    let path;
+                    if (event.path) {
+                        path = event.path;
+                    } else {
+                        path = createXEle(event.target).parents(null, ele).map(e => e.ele);
+                        path.unshift(event.target);
+                    }
+
+                    path.some(pTarget => {
                         if (pTarget == ele) {
                             return true;
                         }
@@ -1550,7 +1559,7 @@
 
     // 给 x-if 元素包裹 template
     const wrapIfTemp = (tempEle) => {
-        let iEles = tempEle.content.querySelectorAll("[x-if]");
+        let iEles = tempEle.content.querySelectorAll("[if]");
 
         iEles.forEach(ele => {
             if (ele.tagName.toLowerCase() == "template") {
@@ -1558,8 +1567,8 @@
             }
 
             let ifTempEle = document.createElement("template");
-            ifTempEle.setAttribute("x-if", ele.getAttribute("x-if"));
-            ele.removeAttribute("x-if");
+            ifTempEle.setAttribute("if", ele.getAttribute("if"));
+            ele.removeAttribute("if");
 
             ele.parentNode.insertBefore(ifTempEle, ele);
             ifTempEle.content.appendChild(ele);
@@ -1602,28 +1611,6 @@
         }
     `);
     }
-
-    // 代理对象监听函数
-    // 相同的表达式函数只会被执行一次，进而提高性能
-    // class WatchAgent {
-    //     constructor(xdata) {
-    //         if (xdata.__watchAgent) {
-    //             return xdata.__watchAgent;
-    //         }
-
-    //         // 互相绑定
-    //         this.xdata = xdata;
-    //         xdata.__watchAgent = this;
-
-    //         // 存储表达式对象
-    //         this.exprMap = new Map();
-    //     }
-
-    //     // 监听表达式变动
-    //     watchExpr(expr) {
-    //         debugger
-    //     }
-    // }
 
     // 清除表达式属性并将数据添加到元素对象内
     const moveAttrExpr = (ele, exprName, propData) => {
@@ -1850,8 +1837,8 @@
         });
 
         // if元素渲染
-        getCanRenderEles(content, '[x-if]').forEach(ele => {
-            const expr = ele.getAttribute('x-if');
+        getCanRenderEles(content, '[if]').forEach(ele => {
+            const expr = ele.getAttribute('if');
 
             // 定位文本元素
             let {
@@ -1870,8 +1857,8 @@
                     // 添加元素
                     targetEle = $(ele.content.children[0].outerHTML).ele;
 
-                    // parent.insertBefore(targetEle, marker);
-                    parent.replaceChild(targetEle, marker);
+                    parent.insertBefore(targetEle, marker);
+                    // parent.replaceChild(targetEle, marker);
 
                     // 重新渲染
                     renderTemp({
@@ -1885,8 +1872,8 @@
                     removeElementBind(targetEle);
 
                     // 删除元素
-                    // targetEle.parentNode.removeChild(targetEle);
-                    parent.replaceChild(marker, targetEle);
+                    targetEle.parentNode.removeChild(targetEle);
+                    // parent.replaceChild(marker, targetEle);
 
                     targetEle = null;
                 }
@@ -2017,6 +2004,12 @@
             //     return this._index;
             // },
             // _index: index
+        });
+
+        defineProperties(itemEle, {
+            $item: {
+                get: () => itemData
+            }
         });
 
         itemEle.ele.__fill_item = itemData;

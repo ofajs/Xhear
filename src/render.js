@@ -32,28 +32,6 @@ const exprToFunc = expr => {
     `);
 }
 
-// 代理对象监听函数
-// 相同的表达式函数只会被执行一次，进而提高性能
-// class WatchAgent {
-//     constructor(xdata) {
-//         if (xdata.__watchAgent) {
-//             return xdata.__watchAgent;
-//         }
-
-//         // 互相绑定
-//         this.xdata = xdata;
-//         xdata.__watchAgent = this;
-
-//         // 存储表达式对象
-//         this.exprMap = new Map();
-//     }
-
-//     // 监听表达式变动
-//     watchExpr(expr) {
-//         debugger
-//     }
-// }
-
 // 清除表达式属性并将数据添加到元素对象内
 const moveAttrExpr = (ele, exprName, propData) => {
     ele.removeAttribute(exprName);
@@ -259,8 +237,8 @@ const renderTemp = ({ host, xdata, content, temps }) => {
     });
 
     // if元素渲染
-    getCanRenderEles(content, '[x-if]').forEach(ele => {
-        const expr = ele.getAttribute('x-if');
+    getCanRenderEles(content, '[if]').forEach(ele => {
+        const expr = ele.getAttribute('if');
 
         // 定位文本元素
         let { marker, parent } = postionNode(ele);
@@ -274,8 +252,8 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 // 添加元素
                 targetEle = $(ele.content.children[0].outerHTML).ele;
 
-                // parent.insertBefore(targetEle, marker);
-                parent.replaceChild(targetEle, marker);
+                parent.insertBefore(targetEle, marker);
+                // parent.replaceChild(targetEle, marker);
 
                 // 重新渲染
                 renderTemp({ host, xdata, content: targetEle, temps });
@@ -284,8 +262,8 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 removeElementBind(targetEle);
 
                 // 删除元素
-                // targetEle.parentNode.removeChild(targetEle);
-                parent.replaceChild(marker, targetEle);
+                targetEle.parentNode.removeChild(targetEle);
+                // parent.replaceChild(marker, targetEle);
 
                 targetEle = null;
             }
@@ -404,6 +382,12 @@ const createFillItem = ({
         //     return this._index;
         // },
         // _index: index
+    });
+
+    defineProperties(itemEle, {
+        $item: {
+            get: () => itemData
+        }
     });
 
     itemEle.ele.__fill_item = itemData;

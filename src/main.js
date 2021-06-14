@@ -34,8 +34,9 @@ const CANSETKEYS = Symbol("cansetkeys");
 
 class XEle extends XData {
     constructor(ele) {
-        // super(Object.assign({}, XEleHandler));
-        super(XEleHandler);
+        super(Object.assign({}, XEleHandler));
+        // debugger
+        // super(XEleHandler);
 
         const self = this[XDATASELF];
 
@@ -304,7 +305,7 @@ class XEle extends XData {
         }
 
         if (until) {
-            if (until instanceof XhearEle) {
+            if (until instanceof XEle) {
                 let newPars = [];
                 pars.some(e => {
                     if (e === until) {

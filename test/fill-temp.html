@@ -1,8 +1,7 @@
 <p>{{name}}</p>
 <div fill:t1="arr"></div>
 <div fill:t2="arr2" style="display:flex;flex-wrap:wrap;"></div>
-<br><br>
-<div fill:t3="arr2" style="display:flex;flex-wrap:wrap;"></div>
+<div fill:t3="arr2" style="display:flex;flex-wrap:wrap;margin-top:20px;"></div>
 
 <template name="t1">
     <div attr:name="$data.name" @click="$host.log($data.name)" style="padding:10px 20px;">
@@ -10,7 +9,7 @@
         <div>
             {{$data.name}} index => {{$index}}
         </div>
-        <div class="childs" x-if="$data.childs && $data.childs.length" fill:t1="$data.childs"></div>
+        <div class="childs" if="$data.childs && $data.childs.length" fill:t1="$data.childs"></div>
     </div>
 </template>
 

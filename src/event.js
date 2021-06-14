@@ -44,7 +44,15 @@ extend(XEle.prototype, {
             const real_callback = callback;
             const { ele } = this;
             callback = (event) => {
-                event.path.some(pTarget => {
+                let path;
+                if (event.path) {
+                    path = event.path;
+                } else {
+                    path = createXEle(event.target).parents(null, ele).map(e => e.ele);
+                    path.unshift(event.target);
+                }
+
+                path.some(pTarget => {
                     if (pTarget == ele) {
                         return true;
                     }
