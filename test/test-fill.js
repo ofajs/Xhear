@@ -35,7 +35,7 @@
     });
 
     const fele = $("<test-fill></test-fill>");
-    window.fele = fele
+    // window.fele = fele
 
     tester.ok(fele.shadow[1].length === 4, "fill temp ok");
     tester.ok(fele.shadow[1][2].$(".childs").length === 2, "fill sub temp 1 ok");

@@ -169,7 +169,8 @@ const transTemp = (temp) => {
     textDataArr && textDataArr.forEach((e) => {
         var key = /{{(.+?)}}/.exec(e);
         if (key) {
-            temp = temp.replace(e, `<span :text="${key[1]}"></span>`);
+            // temp = temp.replace(e, `<span :text="${key[1]}"></span>`);
+            temp = temp.replace(e, `<x-span prop="${key[1]}"></x-span>`);
         }
     });
 
@@ -181,10 +182,12 @@ const transTemp = (temp) => {
         // 绑定属性
         const bindAttrs = {};
         const bindProps = {};
+        const bindSync = {};
         // 绑定事件
         const bindEvent = {};
         // 填充
         const bindFill = [];
+
 
         let removeKeys = [];
         Array.from(ele.attributes).forEach(attrObj => {
@@ -201,6 +204,13 @@ const transTemp = (temp) => {
             const propExecs = /^:(.+)/.exec(name);
             if (propExecs) {
                 bindProps[propExecs[1]] = value;
+                removeKeys.push(name);
+                return;
+            }
+
+            const syncExecs = /^sync:(.+)/.exec(name);
+            if (syncExecs) {
+                bindSync[syncExecs[1]] = value;
                 removeKeys.push(name);
                 return;
             }
@@ -226,6 +236,7 @@ const transTemp = (temp) => {
 
         !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
         !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
+        !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));
         bindFill.length && ele.setAttribute("x-fill", JSON.stringify(bindFill));
         !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
         removeKeys.forEach(name => ele.removeAttribute(name));

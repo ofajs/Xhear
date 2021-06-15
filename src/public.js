@@ -1,6 +1,9 @@
 // 公用方法文件
 // 创建xEle元素
 const createXEle = (ele) => {
+    if (!ele) {
+        return null;
+    }
     return ele.__xEle__ ? ele.__xEle__ : (ele.__xEle__ = new XEle(ele));
 }
 
