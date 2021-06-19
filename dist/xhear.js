@@ -1632,6 +1632,8 @@
                     return;
                 }
 
+                // if判断
+
 
                 // 事件绑定
                 const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
@@ -1681,7 +1683,7 @@
 
     // 给 x-if 元素包裹 template
     const wrapIfTemp = (tempEle) => {
-        let iEles = tempEle.content.querySelectorAll("[if]");
+        let iEles = tempEle.content.querySelectorAll("[x-if]");
 
         iEles.forEach(ele => {
             if (ele.tagName.toLowerCase() == "template") {
@@ -1689,8 +1691,8 @@
             }
 
             let ifTempEle = document.createElement("template");
-            ifTempEle.setAttribute("if", ele.getAttribute("if"));
-            ele.removeAttribute("if");
+            ifTempEle.setAttribute("x-if", ele.getAttribute("x-if"));
+            ele.removeAttribute("x-if");
 
             ele.parentNode.insertBefore(ifTempEle, ele);
             ifTempEle.content.appendChild(ele);
@@ -2047,8 +2049,8 @@ with(this){
         });
 
         // if元素渲染
-        getCanRenderEles(content, '[if]').forEach(ele => {
-            const expr = ele.getAttribute('if');
+        getCanRenderEles(content, '[x-if]').forEach(ele => {
+            const expr = ele.getAttribute('x-if');
 
             // 定位文本元素
             let {

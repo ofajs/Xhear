@@ -17,10 +17,10 @@
             <div style="color:red;font-size:14px;">
                 <slot></slot>
             </div>
-            <div if="color == 'red'" class="ctarget">
+            <div x-if="color == 'red'" class="ctarget">
                 <div>{{count}}</div>
                 <div @click="clickName()" :text="name" style="color:green;" id="evetarget">defalut text</div>
-                <div if="name == 'change'">{{name}}</div>
+                <div x-if="name == 'change'">{{name}}</div>
             </div>
         `,
         proto: {

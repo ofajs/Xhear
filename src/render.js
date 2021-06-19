@@ -300,8 +300,8 @@ const renderTemp = ({ host, xdata, content, temps }) => {
     });
 
     // if元素渲染
-    getCanRenderEles(content, '[if]').forEach(ele => {
-        const expr = ele.getAttribute('if');
+    getCanRenderEles(content, '[x-if]').forEach(ele => {
+        const expr = ele.getAttribute('x-if');
 
         // 定位文本元素
         let { marker, parent } = postionNode(ele);

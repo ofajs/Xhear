@@ -231,6 +231,8 @@ const transTemp = (temp) => {
                 return;
             }
 
+            // if判断
+            
 
             // 事件绑定
             const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
@@ -280,7 +282,7 @@ const transTemp = (temp) => {
 
 // 给 x-if 元素包裹 template
 const wrapIfTemp = (tempEle) => {
-    let iEles = tempEle.content.querySelectorAll("[if]");
+    let iEles = tempEle.content.querySelectorAll("[x-if]");
 
     iEles.forEach(ele => {
         if (ele.tagName.toLowerCase() == "template") {
@@ -288,8 +290,8 @@ const wrapIfTemp = (tempEle) => {
         }
 
         let ifTempEle = document.createElement("template");
-        ifTempEle.setAttribute("if", ele.getAttribute("if"));
-        ele.removeAttribute("if");
+        ifTempEle.setAttribute("x-if", ele.getAttribute("x-if"));
+        ele.removeAttribute("x-if");
 
         ele.parentNode.insertBefore(ifTempEle, ele);
         ifTempEle.content.appendChild(ele);
