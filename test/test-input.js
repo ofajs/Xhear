@@ -1,15 +1,24 @@
-(() => {
-    let tester = expect(15, 'input element test');
+(async () => {
+    let tester = expect(15, 'form test');
 
-    let ele = $(`
-    <div>
-        <input type="text" id="t1" />
-        <input type="radio" name="val" value="1" />
-        <input type="radio" name="val" value="2" />
-    </div>
-    `);
+    $.register({
+        tag: "test-input",
+        temp: await fetch('./form-temp.html').then(e => e.text()),
+        data: {
+            val1: "val 1",
+            val2: true
+        },
+        proto: {
+            getRadioVal() {
+                let tar = this.shadow.all('[name="radioval"]').filter(e => e.checked)[0];
+                return tar ? tar.value : 'none';
+            }
+        }
+    });
+
+    const ele = $("<test-input></test-input>");
 
     window.ele = ele;
 
-    $("body").push(ele);
+    // $("body").push(ele);
 })();

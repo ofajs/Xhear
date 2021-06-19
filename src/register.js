@@ -170,7 +170,7 @@ const transTemp = (temp) => {
         var key = /{{(.+?)}}/.exec(e);
         if (key) {
             // temp = temp.replace(e, `<span :text="${key[1]}"></span>`);
-            temp = temp.replace(e, `<x-span prop="${key[1]}"></x-span>`);
+            temp = temp.replace(e, `<x-span prop="${encodeURI(key[1])}"></x-span>`);
         }
     });
 
@@ -233,7 +233,7 @@ const transTemp = (temp) => {
 
 
             // 事件绑定
-            const eventExecs = /^@(.+)/.exec(name);
+            const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
             if (eventExecs) {
                 bindEvent[eventExecs[1]] = {
                     name: value

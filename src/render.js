@@ -24,11 +24,11 @@ const postionNode = e => {
 // 将表达式转换为函数
 const exprToFunc = expr => {
     return new Function("...$args", `
-        const [$event] = $args;
-        
-        with(this){
-            return ${expr};
-        }
+const [$event] = $args;
+
+with(this){
+    return ${expr};
+}
     `);
 }
 
@@ -55,7 +55,7 @@ const bindWatch = (data, func, bindings) => {
 }
 
 // 表达式到值的设置
-const exprToSet = ({ xdata, host, expr, callback, isArray, isFill }) => {
+const exprToSet = ({ xdata, host, expr, callback, isArray }) => {
     // 即时运行的判断函数
     let runFunc;
 
@@ -104,7 +104,8 @@ const exprToSet = ({ xdata, host, expr, callback, isArray, isFill }) => {
     // 已绑定的数据
     const bindings = [];
 
-    if (host !== xdata) {
+    // if (host !== xdata) {
+    if (!(xdata instanceof XEle)) {
         // fill内的再填充渲染
         // xdata负责监听$index
         // xdata.$data为item数据本身
@@ -279,7 +280,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
 
     // 文本绑定
     getCanRenderEles(content, 'x-span').forEach(ele => {
-        let expr = ele.getAttribute("prop");
+        let expr = decodeURI(ele.getAttribute("prop"));
 
         let { marker, parent } = postionNode(ele);
 
@@ -356,7 +357,6 @@ const renderTemp = ({ host, xdata, content, temps }) => {
             xdata, host,
             expr: propName,
             isArray: 1,
-            isFill: 1,
             callback: d => {
                 const targetArr = d.val;
 

@@ -412,7 +412,7 @@
         }
     }
 
-    const createXData = (obj, status) => {
+    const createXData = (obj, status = "root") => {
         if (isxdata(obj)) {
             obj._xtatus = status;
             return obj;
@@ -926,7 +926,7 @@
         }
 
         all(expr) {
-            return Array.from(this.ele.children).map(e => {
+            return Array.from(this.ele.querySelectorAll(expr)).map(e => {
                 return createXEle(e);
             })
         }
@@ -1040,7 +1040,7 @@
             value: new Set(xEleDefaultSetKeys)
         }
     });
-
+    // 因为表单太常用了，将表单组件进行规范
     // input元素有专用的渲染字段
     const renderInput = (xele) => {
         let type = xele.attr("type") || "text";
@@ -1568,7 +1568,7 @@
             var key = /{{(.+?)}}/.exec(e);
             if (key) {
                 // temp = temp.replace(e, `<span :text="${key[1]}"></span>`);
-                temp = temp.replace(e, `<x-span prop="${key[1]}"></x-span>`);
+                temp = temp.replace(e, `<x-span prop="${encodeURI(key[1])}"></x-span>`);
             }
         });
 
@@ -1634,7 +1634,7 @@
 
 
                 // 事件绑定
-                const eventExecs = /^@(.+)/.exec(name);
+                const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
                 if (eventExecs) {
                     bindEvent[eventExecs[1]] = {
                         name: value
@@ -1726,11 +1726,11 @@
     // 将表达式转换为函数
     const exprToFunc = expr => {
         return new Function("...$args", `
-        const [$event] = $args;
-        
-        with(this){
-            return ${expr};
-        }
+const [$event] = $args;
+
+with(this){
+    return ${expr};
+}
     `);
     }
 
@@ -1762,8 +1762,7 @@
         host,
         expr,
         callback,
-        isArray,
-        isFill
+        isArray
     }) => {
         // 即时运行的判断函数
         let runFunc;
@@ -1822,7 +1821,8 @@
         // 已绑定的数据
         const bindings = [];
 
-        if (host !== xdata) {
+        // if (host !== xdata) {
+        if (!(xdata instanceof XEle)) {
             // fill内的再填充渲染
             // xdata负责监听$index
             // xdata.$data为item数据本身
@@ -2020,7 +2020,7 @@
 
         // 文本绑定
         getCanRenderEles(content, 'x-span').forEach(ele => {
-            let expr = ele.getAttribute("prop");
+            let expr = decodeURI(ele.getAttribute("prop"));
 
             let {
                 marker,
@@ -2117,7 +2117,6 @@
                 host,
                 expr: propName,
                 isArray: 1,
-                isFill: 1,
                 callback: d => {
                     const targetArr = d.val;
 

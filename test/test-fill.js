@@ -54,7 +54,7 @@
         // 更改数据
         fele.arr2.unshift(999)
         fele.name = "change name";
-    }, 500).nexter(() => {
+    }).nexter(() => {
         tester.ok(fele.shadow[2].length === 5, "fill length ok 3")
         tester.ok(fele.shadow[2][0].text.replace(/\s/g, "") === '0-999', "render temp text 5 ok");
         tester.ok(fele.shadow[2][4].text.replace(/\s/g, "") === '4-22', "render temp text 6 ok");
@@ -62,7 +62,7 @@
         tester.ok(fele.shadow[3].length === 5, "fill length ok 4")
         tester.ok(fele.shadow[3][0].text.replace(/\s/g, "") === '0---changename-999', "render temp text 7 ok");
         tester.ok(fele.shadow[3][4].text.replace(/\s/g, "") === '4---changename-22', "render temp text 8 ok");
-    }, 500);
+    });
 
-    $("body").push(fele);
+    // $("body").push(fele);
 })();
