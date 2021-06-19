@@ -90,7 +90,6 @@ const exprToSet = ({ xdata, host, expr, callback, isArray, isFill }) => {
                     callback({ val, modifys: e });
                     backup_objstr = obj_str;
                 }
-
             }
         } else if (backup_val !== val) {
             callback({ val, modifys: e });
@@ -105,7 +104,7 @@ const exprToSet = ({ xdata, host, expr, callback, isArray, isFill }) => {
     // 已绑定的数据
     const bindings = [];
 
-    if (host !== xdata && isFill) {
+    if (host !== xdata) {
         // fill内的再填充渲染
         // xdata负责监听$index
         // xdata.$data为item数据本身
@@ -115,14 +114,14 @@ const exprToSet = ({ xdata, host, expr, callback, isArray, isFill }) => {
                 bindWatch(xdata, watchFun, bindings);
             }
             bindWatch(host, watchFun, bindings);
-        } else if (expr.includes("$index")) {
+        } else if (expr.includes("$index") || expr.includes("$item")) {
             bindWatch(xdata, watchFun, bindings);
             isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
         } else if (expr.includes("$data")) {
             isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
         } else {
             throw {
-                desc: "fill element must use $data $host or $index",
+                desc: "fill element must use $data $host $item or $index",
                 target: host,
                 expr
             };
@@ -340,6 +339,8 @@ const renderTemp = ({ host, xdata, content, temps }) => {
     // 填充绑定
     getCanRenderEles(content, '[x-fill]').forEach(ele => {
         const fillData = JSON.parse(ele.getAttribute("x-fill"));
+        let fillKeys = ele.getAttribute("x-item");
+        fillKeys && (fillKeys = JSON.parse(fillKeys));
 
         const container = ele;
 
@@ -349,6 +350,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
 
         // 提前把 x-fill 属性去掉，防止重复渲染
         moveAttrExpr(ele, "x-fill", fillData);
+        moveAttrExpr(ele, "x-item", fillKeys);
 
         const bindings = exprToSet({
             xdata, host,
@@ -376,6 +378,10 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                             host, data, index, tempData, temps
                         });
 
+                        if (fillKeys) {
+                            initKeyToItem(itemEle, fillKeys, xdata, host);
+                        }
+
                         // 添加到容器内
                         container.appendChild(itemEle.ele);
                     });
@@ -395,6 +401,10 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                             let newItem = createFillItem({
                                 host, data: e, index, tempData, temps
                             });
+
+                            if (fillKeys) {
+                                initKeyToItem(newItem, fillKeys, xdata, host);
+                            }
 
                             afterChilds.push(newItem.ele);
                         } else {
@@ -434,7 +444,25 @@ const renderTemp = ({ host, xdata, content, temps }) => {
     });
 }
 
+const initKeyToItem = (itemEle, fillKeys, xdata, host) => {
+    let fData = itemEle.$item;
+    Object.keys(fillKeys).forEach(key => {
+        let expr = fillKeys[key];
+
+        const propName = attrToProp(key);
+        let itemBindings = exprToSet({
+            xdata, host, expr,
+            callback: ({ val }) => {
+                fData[propName] = val;
+            }
+        });
+
+        addBindingData(itemEle.ele, itemBindings);
+    });
+}
+
 // 生成fillItem元素
+// fillKeys 传递的Key
 const createFillItem = ({
     host, data, index, tempData, temps
 }) => {
@@ -449,6 +477,10 @@ const createFillItem = ({
         get $data() {
             return data;
         },
+        get $item() {
+            // 获取自身
+            return itemData;
+        }
         // get $index() {
         //     return this._index;
         // },
@@ -458,6 +490,9 @@ const createFillItem = ({
     defineProperties(itemEle, {
         $item: {
             get: () => itemData
+        },
+        $data: {
+            get: () => data
         }
     });
 

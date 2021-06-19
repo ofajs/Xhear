@@ -187,6 +187,7 @@ const transTemp = (temp) => {
         const bindEvent = {};
         // 填充
         const bindFill = [];
+        const bindItem = {};
 
 
         let removeKeys = [];
@@ -223,6 +224,14 @@ const transTemp = (temp) => {
                 return;
             }
 
+            const itemExecs = /^item:(.+)/.exec(name);
+            if (itemExecs) {
+                bindItem[itemExecs[1]] = value;
+                removeKeys.push(name);
+                return;
+            }
+
+
             // 事件绑定
             const eventExecs = /^@(.+)/.exec(name);
             if (eventExecs) {
@@ -238,6 +247,7 @@ const transTemp = (temp) => {
         !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
         !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));
         bindFill.length && ele.setAttribute("x-fill", JSON.stringify(bindFill));
+        !isEmptyObj(bindItem) && ele.setAttribute("x-item", JSON.stringify(bindItem));
         !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
         removeKeys.forEach(name => ele.removeAttribute(name));
     });

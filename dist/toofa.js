@@ -1043,6 +1043,10 @@ const renderInput = (xele) => {
             enumerable: true,
             get: () => type
         },
+        name: {
+            enumerable: true,
+            get: () => ele.name
+        },
         value: {
             enumerable: true,
             get() {
@@ -1571,6 +1575,7 @@ const transTemp = (temp) => {
         const bindEvent = {};
         // 填充
         const bindFill = [];
+        const bindItem = {};
 
 
         let removeKeys = [];
@@ -1610,6 +1615,14 @@ const transTemp = (temp) => {
                 return;
             }
 
+            const itemExecs = /^item:(.+)/.exec(name);
+            if (itemExecs) {
+                bindItem[itemExecs[1]] = value;
+                removeKeys.push(name);
+                return;
+            }
+
+
             // 事件绑定
             const eventExecs = /^@(.+)/.exec(name);
             if (eventExecs) {
@@ -1625,6 +1638,7 @@ const transTemp = (temp) => {
         !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
         !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));
         bindFill.length && ele.setAttribute("x-fill", JSON.stringify(bindFill));
+        !isEmptyObj(bindItem) && ele.setAttribute("x-item", JSON.stringify(bindItem));
         !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
         removeKeys.forEach(name => ele.removeAttribute(name));
     });
@@ -1781,7 +1795,6 @@ const exprToSet = ({
                     });
                     backup_objstr = obj_str;
                 }
-
             }
         } else if (backup_val !== val) {
             callback({
@@ -1799,7 +1812,7 @@ const exprToSet = ({
     // 已绑定的数据
     const bindings = [];
 
-    if (host !== xdata && isFill) {
+    if (host !== xdata) {
         // fill内的再填充渲染
         // xdata负责监听$index
         // xdata.$data为item数据本身
@@ -1809,14 +1822,14 @@ const exprToSet = ({
                 bindWatch(xdata, watchFun, bindings);
             }
             bindWatch(host, watchFun, bindings);
-        } else if (expr.includes("$index")) {
+        } else if (expr.includes("$index") || expr.includes("$item")) {
             bindWatch(xdata, watchFun, bindings);
             isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
         } else if (expr.includes("$data")) {
             isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
         } else {
             throw {
-                desc: "fill element must use $data $host or $index",
+                desc: "fill element must use $data $host $item or $index",
                 target: host,
                 expr
             };
@@ -2076,6 +2089,8 @@ const renderTemp = ({
     // 填充绑定
     getCanRenderEles(content, '[x-fill]').forEach(ele => {
         const fillData = JSON.parse(ele.getAttribute("x-fill"));
+        let fillKeys = ele.getAttribute("x-item");
+        fillKeys && (fillKeys = JSON.parse(fillKeys));
 
         const container = ele;
 
@@ -2085,6 +2100,7 @@ const renderTemp = ({
 
         // 提前把 x-fill 属性去掉，防止重复渲染
         moveAttrExpr(ele, "x-fill", fillData);
+        moveAttrExpr(ele, "x-item", fillKeys);
 
         const bindings = exprToSet({
             xdata,
@@ -2117,6 +2133,10 @@ const renderTemp = ({
                             temps
                         });
 
+                        if (fillKeys) {
+                            initKeyToItem(itemEle, fillKeys, xdata, host);
+                        }
+
                         // 添加到容器内
                         container.appendChild(itemEle.ele);
                     });
@@ -2140,6 +2160,10 @@ const renderTemp = ({
                                 tempData,
                                 temps
                             });
+
+                            if (fillKeys) {
+                                initKeyToItem(newItem, fillKeys, xdata, host);
+                            }
 
                             afterChilds.push(newItem.ele);
                         } else {
@@ -2179,7 +2203,29 @@ const renderTemp = ({
     });
 }
 
+const initKeyToItem = (itemEle, fillKeys, xdata, host) => {
+    let fData = itemEle.$item;
+    Object.keys(fillKeys).forEach(key => {
+        let expr = fillKeys[key];
+
+        const propName = attrToProp(key);
+        let itemBindings = exprToSet({
+            xdata,
+            host,
+            expr,
+            callback: ({
+                val
+            }) => {
+                fData[propName] = val;
+            }
+        });
+
+        addBindingData(itemEle.ele, itemBindings);
+    });
+}
+
 // 生成fillItem元素
+// fillKeys 传递的Key
 const createFillItem = ({
     host,
     data,
@@ -2198,6 +2244,10 @@ const createFillItem = ({
         get $data() {
             return data;
         },
+        get $item() {
+            // 获取自身
+            return itemData;
+        }
         // get $index() {
         //     return this._index;
         // },
@@ -2207,6 +2257,9 @@ const createFillItem = ({
     defineProperties(itemEle, {
         $item: {
             get: () => itemData
+        },
+        $data: {
+            get: () => data
         }
     });
 

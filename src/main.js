@@ -364,6 +364,10 @@ const renderInput = (xele) => {
             enumerable: true,
             get: () => type
         },
+        name: {
+            enumerable: true,
+            get: () => ele.name
+        },
         value: {
             enumerable: true,
             get() {
