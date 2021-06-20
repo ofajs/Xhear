@@ -189,10 +189,20 @@ const transTemp = (temp) => {
         const bindFill = [];
         const bindItem = {};
 
+        // if判断
+        let bindIf = "";
 
         let removeKeys = [];
         Array.from(ele.attributes).forEach(attrObj => {
             let { name, value } = attrObj;
+
+            // if判断
+            const ifExecs = /^if:/.exec(name);
+            if (ifExecs) {
+                bindIf = value;
+                removeKeys.push(name);
+                return;
+            }
 
             // 属性绑定
             const attrExecs = /^attr:(.+)/.exec(name);
@@ -231,9 +241,6 @@ const transTemp = (temp) => {
                 return;
             }
 
-            // if判断
-            
-
             // 事件绑定
             const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
             if (eventExecs) {
@@ -245,6 +252,7 @@ const transTemp = (temp) => {
             }
         });
 
+        bindIf && (ele.setAttribute("x-if", bindIf));
         !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
         !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
         !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));

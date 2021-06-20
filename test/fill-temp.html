@@ -9,8 +9,8 @@
         <div>
             {{$data.name}} index => {{$index}}
         </div>
-        <div class="root_item_name" x-if="$item.headItem" style="color:rgb(71, 71, 255);">head item name => {{$item.headItem}}</div>
-        <div class="childs" x-if="$data.childs && $data.childs.length" fill:t1="$data.childs"
+        <div class="root_item_name" if:="$item.headItem" style="color:rgb(71, 71, 255);">head item name => {{$item.headItem}}</div>
+        <div class="childs" if:="$data.childs && $data.childs.length" fill:t1="$data.childs"
             item:head-item="$item.headItem ||  $data.name">
         </div>
     </div>
