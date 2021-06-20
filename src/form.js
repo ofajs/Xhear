@@ -93,3 +93,7 @@ const renderInput = (xele) => {
 
     defineProperties(xele, d_opts);
 }
+
+// extend(XEle.prototype, {
+//     from()
+// });

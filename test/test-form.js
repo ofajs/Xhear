@@ -9,10 +9,10 @@
             val2: true
         },
         proto: {
-            getRadioVal() {
-                let tar = this.shadow.all('[name="radioval"]').filter(e => e.checked)[0];
-                return tar ? tar.value : 'none';
-            }
+            // getRadioVal() {
+            //     let tar = this.shadow.all('[name="radioval"]').filter(e => e.checked)[0];
+            //     return tar ? tar.value : 'none';
+            // }
         }
     });
 
@@ -20,5 +20,5 @@
 
     window.ele = ele;
 
-    // $("body").push(ele);
+    $("body").unshift(ele);
 })();

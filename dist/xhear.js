@@ -1137,6 +1137,10 @@
 
         defineProperties(xele, d_opts);
     }
+
+    // extend(XEle.prototype, {
+    //     from()
+    // });
     // 重造数组方法
     ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
         const arrayFnFunc = Array.prototype[methodName];
