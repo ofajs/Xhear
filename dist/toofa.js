@@ -1730,7 +1730,7 @@ const postionNode = e => {
 // 将表达式转换为函数
 const exprToFunc = expr => {
     return new Function("...$args", `
-const [$event] = $args;
+const [$e] = $args;
 
 with(this){
     return ${expr};
