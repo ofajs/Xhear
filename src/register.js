@@ -13,15 +13,15 @@ const register = (opts) => {
         watch: {},
         // 合并到原型链上的方法
         proto: {},
-        // 被创建的时候触发的callback
+        // // 组件被创建时触发的函数（数据初始化完成）
         // created() { },
-        // 初次渲染完成后触发的事件
-        // ready() {},
-        // 添加进document执行的callback
-        // attached() {},
-        // 从document删除后执行callback
-        // detached() {},
-        // 容器元素发生变动
+        // // 组件数据初始化完成后触发的函数（初次渲染完毕）
+        // ready() { },
+        // // 被添加到document触发的函数
+        // attached() { },
+        // // 被移出document触发的函数
+        // detached() { },
+        // // 容器元素发生改变
         // slotchange() { }
     };
 
@@ -96,6 +96,15 @@ const register = (opts) => {
 
                 defs.ready && defs.ready.call(xele);
             }
+
+            // attrs监听
+            !isEmptyObj(defs.attrs) && xele.watchTick(e => {
+                this.__set_attr = 1;
+                Object.keys(defs.attrs).forEach(key => {
+                    this.setAttribute(key, xele[key]);
+                });
+                delete this.__set_attr;
+            });
         }
 
         connectedCallback() {
@@ -128,9 +137,10 @@ const register = (opts) => {
             }
         }
 
-
         attributeChangedCallback(name, oldValue, newValue) {
-            xele[attrToProp(name)] = newValue;
+            if (this.__set_attr) return;
+
+            createXEle(this)[attrToProp(name)] = newValue;
         }
 
         static get observedAttributes() {
