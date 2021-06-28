@@ -39,7 +39,11 @@ class XEle extends XData {
 
         const self = this[XDATASELF];
 
-        self.tag = ele.tagName ? ele.tagName.toLowerCase() : ''
+        self.tag = ele.tagName ? ele.tagName.toLowerCase() : '';
+
+        // self.owner = new WeakSet();
+        // XEle不允许拥有owner
+        self.owner = null;
 
         defineProperties(self, {
             ele: {

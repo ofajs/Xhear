@@ -147,7 +147,7 @@
         target[WATCHS].forEach(f => f(opts))
 
         // 向上冒泡
-        target.owner.forEach(parent => emitUpdate(parent, opts));
+        target.owner && target.owner.forEach(parent => emitUpdate(parent, opts));
     }
 
     class XData {
@@ -217,6 +217,7 @@
                 // 所有父层对象存储的位置
                 // 拥有者对象
                 owner: {
+                    writable: true,
                     value: new Set()
                 },
                 // 数组对象
@@ -718,7 +719,11 @@
 
             const self = this[XDATASELF];
 
-            self.tag = ele.tagName ? ele.tagName.toLowerCase() : ''
+            self.tag = ele.tagName ? ele.tagName.toLowerCase() : '';
+
+            // self.owner = new WeakSet();
+            // XEle不允许拥有owner
+            self.owner = null;
 
             defineProperties(self, {
                 ele: {
