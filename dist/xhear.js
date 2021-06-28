@@ -1391,6 +1391,66 @@
             }
         });
     });
+    // 渲染元素
+    const renderXEle = ({
+        xele,
+        defs,
+        temps,
+        _this
+    }) => {
+        Object.assign(xele, defs.data, defs.attrs);
+
+        defs.created && defs.created.call(xele);
+
+        if (defs.temp) {
+            // 添加shadow root
+            const sroot = _this.attachShadow({
+                mode: "open"
+            });
+
+            sroot.innerHTML = defs.temp;
+
+            // 渲染元素
+            renderTemp({
+                host: xele,
+                xdata: xele,
+                content: sroot,
+                temps
+            });
+        }
+
+        defs.ready && defs.ready.call(xele);
+
+        // attrs监听
+        !isEmptyObj(defs.attrs) && xele.watchTick(e => {
+            _this.__set_attr = 1;
+            Object.keys(defs.attrs).forEach(key => {
+                _this.setAttribute(key, xele[key]);
+            });
+            delete _this.__set_attr;
+        });
+
+        // watch函数触发
+        let d_watch = defs.watch;
+        if (!isEmptyObj(d_watch)) {
+            let vals = {};
+            xele.watchTick(() => {
+                Object.keys(d_watch).forEach(k => {
+                    let func = d_watch[k];
+
+                    let val = xele[k];
+
+                    if (val === vals[k]) {
+                        return;
+                    }
+                    vals[k] = val;
+
+                    func.call(xele, val);
+                });
+            });
+        }
+    }
+
     // 注册组件的主要逻辑
     const register = (opts) => {
         const defs = {
@@ -1402,7 +1462,7 @@
             attrs: {},
             // 默认数据
             data: {},
-            // 直接监听属性变动对象
+            // 根据属性直接设置值
             watch: {},
             // 合并到原型链上的方法
             proto: {},
@@ -1434,8 +1494,18 @@
                 super(ele);
             }
 
-            // 强制刷新视图
-            forceUpdate() {}
+            // // 强制刷新视图
+            // forceUpdate() { }
+            // 回收元素内所有的数据（防止垃圾回收失败）
+            revoke() {
+                Object.values(this).forEach(child => {
+                    if (!(child instanceof XEle) && isxdata(child)) {
+                        clearXDataOwner(child, this[XDATASELF]);
+                    }
+                });
+
+                removeElementBind(this.shadow.ele);
+            }
         }
 
         // 扩展原型
@@ -1468,37 +1538,11 @@
 
                 const xele = createXEle(this);
 
-                // cansetKeys.forEach(e => xele[CANSETKEYS].add(e));
-                Object.assign(xele, defs.data, defs.attrs);
-
-                defs.created && defs.created.call(xele);
-
-                if (defs.temp) {
-                    // 添加shadow root
-                    const sroot = this.attachShadow({
-                        mode: "open"
-                    });
-
-                    sroot.innerHTML = defs.temp;
-
-                    // 渲染元素
-                    renderTemp({
-                        host: xele,
-                        xdata: xele,
-                        content: sroot,
-                        temps
-                    });
-
-                    defs.ready && defs.ready.call(xele);
-                }
-
-                // attrs监听
-                !isEmptyObj(defs.attrs) && xele.watchTick(e => {
-                    this.__set_attr = 1;
-                    Object.keys(defs.attrs).forEach(key => {
-                        this.setAttribute(key, xele[key]);
-                    });
-                    delete this.__set_attr;
+                renderXEle({
+                    xele,
+                    defs,
+                    temps,
+                    _this: this
                 });
             }
 

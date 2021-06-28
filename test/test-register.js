@@ -10,6 +10,11 @@
             name: "I am test reg",
             count: 0,
         },
+        watch: {
+            color(color) {
+                console.log("color => ", color, this);
+            }
+        },
         temp: `
             <div attr:parname="name" attr:parcolor="color" attr:cna="getCAN(count)">{{name}} - {{getCAN(count)}}</div>
             <div :html="color"></div>
