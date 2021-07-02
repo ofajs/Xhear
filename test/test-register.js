@@ -73,6 +73,6 @@
         tester.ok(testele.shadow.$(".ctarget")[0].text == 1, "render text in if ok");
     }, 200)
 
-    $("body").push(testele);
+    // $("body").push(testele);
     // window.testele = testele;
 })();

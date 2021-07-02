@@ -47,7 +47,16 @@ const parseDataToDom = (objData) => {
     // 添加数据
     objData.class && ele.setAttribute('class', objData.class);
     objData.slot && ele.setAttribute('slot', objData.slot);
-    objData.text && (ele.textContent = objData.text);
+    // objData.text && (ele.textContent = objData.text);
+
+    const xele = createXEle(ele);
+
+    // 数据合并
+    xele[CANSETKEYS].forEach(k => {
+        if (objData[k]) {
+            xele[k] = objData[k];
+        }
+    });
 
     // 填充子元素
     let akey = 0;

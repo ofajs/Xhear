@@ -33,21 +33,26 @@ const renderXEle = ({ xele, defs, temps, _this }) => {
     // watch函数触发
     let d_watch = defs.watch;
     if (!isEmptyObj(d_watch)) {
-        let vals = {};
-        xele.watchTick(() => {
-            Object.keys(d_watch).forEach(k => {
-                let func = d_watch[k];
+        Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
+        xele.watchKey(d_watch);
+        // let vals = {};
+        // xele.watchTick(f = (e) => {
+        //     Object.keys(d_watch).forEach(k => {
+        //         let func = d_watch[k];
 
-                let val = xele[k];
+        //         let val = xele[k];
 
-                if (val === vals[k]) {
-                    return;
-                }
-                vals[k] = val;
+        //         if (val === vals[k]) {
+        //             return;
+        //         }
+        //         vals[k] = val;
 
-                func.call(xele, val);
-            });
-        });
+        //         func.call(xele, val);
+        //     });
+        // });
+
+        // // 先运行一次
+        // f();
     }
 }
 
@@ -148,7 +153,7 @@ const register = (opts) => {
             // console.log("connectedCallback => ", this);
             this.__x_connected = true;
             if (defs.attached && !this.__x_runned_connected) {
-                nexTick(() => {
+                nextTick(() => {
                     if (this.__x_connected && !this.__x_runned_connected) {
                         this.__x_runned_connected = true;
                         defs.attached.call(createXEle(this));
@@ -165,7 +170,7 @@ const register = (opts) => {
             // console.log("disconnectedCallback => ", this);
             this.__x_connected = false;
             if (defs.detached && !this.__x_runnded_disconnected) {
-                nexTick(() => {
+                nextTick(() => {
                     if (!this.__x_connected && !this.__x_runnded_disconnected) {
                         this.__x_runnded_disconnected = true;
                         defs.detached.call(createXEle(this));

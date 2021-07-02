@@ -137,17 +137,25 @@
 
 
     const XDATASELF = Symbol("self");
+    const PROXYSELF = Symbol("proxy");
     const WATCHS = Symbol("watchs");
     const CANUPDATE = Symbol("can_update");
 
     const cansetXtatus = new Set(["root", "sub", "revoke"]);
 
-    const emitUpdate = (target, opts) => {
+    const emitUpdate = (target, opts, path) => {
+        let new_path;
+        if (!path) {
+            new_path = opts.path = [target[PROXYSELF]];
+        } else {
+            new_path = opts.path = [target[PROXYSELF], ...path];
+        }
+
         // 触发callback
         target[WATCHS].forEach(f => f(opts))
 
         // 向上冒泡
-        target.owner && target.owner.forEach(parent => emitUpdate(parent, opts));
+        target.owner && target.owner.forEach(parent => emitUpdate(parent, opts, new_path.slice()));
     }
 
     class XData {
@@ -177,6 +185,9 @@
             defineProperties(this, {
                 [XDATASELF]: {
                     value: this
+                },
+                [PROXYSELF]: {
+                    value: proxy_self
                 },
                 // 每个对象必有的id
                 xid: {
@@ -472,6 +483,61 @@
                 });
             });
         },
+        // 监听相应key
+        watchKey(obj) {
+            let oldVal = {};
+            return this.watch(collect((arr) => {
+                Object.keys(obj).forEach(key => {
+                    // 当前值
+                    let val = this[key];
+
+                    if (oldVal[key] !== val) {
+                        obj[key].call(this, val);
+                    } else if (isxdata(val)) {
+                        // 判断改动arr内是否有当前key的改动
+                        let hasChange = arr.some(e => {
+                            let p = e.path[1];
+
+                            if (p == oldVal[key]) {
+                                return true;
+                            }
+                        });
+
+                        if (hasChange) {
+                            obj[key].call(this, val);
+                        }
+                    }
+
+                    oldVal[key] = val;
+                });
+            }));
+        },
+        // watchKey(key, func) {
+        //     let oldVal = this[key];
+        //     return this.watch(collect((arr) => {
+        //         // 当前值
+        //         let val = this[key];
+
+        //         if (oldVal !== val) {
+        //             func(val);
+        //         } else if (isxdata(val)) {
+        //             // 判断改动arr内是否有当前key的改动
+        //             let hasChange = arr.some(e => {
+        //                 let p = e.path[1];
+
+        //                 if (p == oldVal) {
+        //                     return true;
+        //                 }
+        //             });
+
+        //             if (hasChange) {
+        //                 func(val);
+        //             }
+        //         }
+
+        //         oldVal = val;
+        //     }));
+        // },
         // 转换为json数据
         toJSON() {
             let obj = {};
@@ -649,7 +715,16 @@
         // 添加数据
         objData.class && ele.setAttribute('class', objData.class);
         objData.slot && ele.setAttribute('slot', objData.slot);
-        objData.text && (ele.textContent = objData.text);
+        // objData.text && (ele.textContent = objData.text);
+
+        const xele = createXEle(ele);
+
+        // 数据合并
+        xele[CANSETKEYS].forEach(k => {
+            if (objData[k]) {
+                xele[k] = objData[k];
+            }
+        });
 
         // 填充子元素
         let akey = 0;
@@ -1035,6 +1110,13 @@
             });
 
             return cloneEle;
+        }
+
+        remove() {
+            const {
+                ele
+            } = this;
+            ele.parentNode.removeChild(ele);
         }
     }
 
@@ -1438,21 +1520,26 @@
         // watch函数触发
         let d_watch = defs.watch;
         if (!isEmptyObj(d_watch)) {
-            let vals = {};
-            xele.watchTick(() => {
-                Object.keys(d_watch).forEach(k => {
-                    let func = d_watch[k];
+            Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
+            xele.watchKey(d_watch);
+            // let vals = {};
+            // xele.watchTick(f = (e) => {
+            //     Object.keys(d_watch).forEach(k => {
+            //         let func = d_watch[k];
 
-                    let val = xele[k];
+            //         let val = xele[k];
 
-                    if (val === vals[k]) {
-                        return;
-                    }
-                    vals[k] = val;
+            //         if (val === vals[k]) {
+            //             return;
+            //         }
+            //         vals[k] = val;
 
-                    func.call(xele, val);
-                });
-            });
+            //         func.call(xele, val);
+            //     });
+            // });
+
+            // // 先运行一次
+            // f();
         }
     }
 
@@ -1555,7 +1642,7 @@
                 // console.log("connectedCallback => ", this);
                 this.__x_connected = true;
                 if (defs.attached && !this.__x_runned_connected) {
-                    nexTick(() => {
+                    nextTick(() => {
                         if (this.__x_connected && !this.__x_runned_connected) {
                             this.__x_runned_connected = true;
                             defs.attached.call(createXEle(this));
@@ -1572,7 +1659,7 @@
                 // console.log("disconnectedCallback => ", this);
                 this.__x_connected = false;
                 if (defs.detached && !this.__x_runnded_disconnected) {
-                    nexTick(() => {
+                    nextTick(() => {
                         if (!this.__x_connected && !this.__x_runnded_disconnected) {
                             this.__x_runnded_disconnected = true;
                             defs.detached.call(createXEle(this));

@@ -348,6 +348,11 @@ class XEle extends XData {
 
         return cloneEle;
     }
+
+    remove() {
+        const { ele } = this;
+        ele.parentNode.removeChild(ele);
+    }
 }
 
 // 允许被设置的key值
