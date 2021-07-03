@@ -376,7 +376,7 @@ const xdataHandler = {
 
         return target.setData(key, value);
     },
-    deleteProperty: function (target, key) {
+    deleteProperty: function(target, key) {
         return target.delete(key);
     }
 }
@@ -431,7 +431,7 @@ extend(XData.prototype, {
             expr = _this => {
                 try {
                     return f.call(_this, _this);
-                } catch (e) { }
+                } catch (e) {}
             };
         }
 
@@ -464,17 +464,23 @@ extend(XData.prototype, {
             return ${expr}
         }}catch(e){}`).bind(this);
 
-            const wid = this.watch(() => {
+            let f;
+            const wid = this.watch(f = () => {
                 let reVal = exprFun();
                 if (reVal) {
                     this.unwatch(wid);
                     resolve(reVal);
                 }
             });
+            f();
         });
     },
     // 监听相应key
-    watchKey(obj) {
+    watchKey(obj, immediately) {
+        if (immediately) {
+            Object.keys(obj).forEach(key => obj[key].call(this, this[key]));
+        }
+
         let oldVal = {};
         return this.watch(collect((arr) => {
             Object.keys(obj).forEach(key => {
@@ -502,32 +508,6 @@ extend(XData.prototype, {
             });
         }));
     },
-    // watchKey(key, func) {
-    //     let oldVal = this[key];
-    //     return this.watch(collect((arr) => {
-    //         // 当前值
-    //         let val = this[key];
-
-    //         if (oldVal !== val) {
-    //             func(val);
-    //         } else if (isxdata(val)) {
-    //             // 判断改动arr内是否有当前key的改动
-    //             let hasChange = arr.some(e => {
-    //                 let p = e.path[1];
-
-    //                 if (p == oldVal) {
-    //                     return true;
-    //                 }
-    //             });
-
-    //             if (hasChange) {
-    //                 func(val);
-    //             }
-    //         }
-
-    //         oldVal = val;
-    //     }));
-    // },
     // 转换为json数据
     toJSON() {
         let obj = {};
@@ -686,7 +666,7 @@ const parseStringToDom = (str) => {
     const pstTemp = document.createElement('div');
     pstTemp.innerHTML = str;
     let childs = Array.from(pstTemp.children);
-    return childs.map(function (e) {
+    return childs.map(function(e) {
         pstTemp.removeChild(e);
         return e;
     });
@@ -1510,8 +1490,8 @@ const renderXEle = ({
     // watch函数触发
     let d_watch = defs.watch;
     if (!isEmptyObj(d_watch)) {
-        Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
-        xele.watchKey(d_watch);
+        // Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
+        xele.watchKey(d_watch, true);
         // let vals = {};
         // xele.watchTick(f = (e) => {
         //     Object.keys(d_watch).forEach(k => {
@@ -1556,6 +1536,8 @@ const register = (opts) => {
         // attached() { },
         // // 被移出document触发的函数
         // detached() { },
+        // // 容器元素发生改变
+        // slotchange() { }
     };
 
     Object.assign(defs, opts);

@@ -33,8 +33,8 @@ const renderXEle = ({ xele, defs, temps, _this }) => {
     // watch函数触发
     let d_watch = defs.watch;
     if (!isEmptyObj(d_watch)) {
-        Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
-        xele.watchKey(d_watch);
+        // Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
+        xele.watchKey(d_watch, true);
         // let vals = {};
         // xele.watchTick(f = (e) => {
         //     Object.keys(d_watch).forEach(k => {

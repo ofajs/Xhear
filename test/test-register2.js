@@ -34,4 +34,15 @@
     }).nexter(() => {
         tester.ok(testele.shadow[0].text == 'change val', "render ok 2");
     });
+
+    $.register({
+        tag: "reg-three",
+        attrs: {
+            val: "1"
+        }
+    });
+
+    let t2ele = $(`<reg-three val="2"></reg-three>`);
+
+    window.t2ele = t2ele;
 })();
