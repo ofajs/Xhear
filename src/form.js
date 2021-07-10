@@ -95,5 +95,11 @@ const renderInput = (xele) => {
 }
 
 // extend(XEle.prototype, {
-//     from()
+//     // 专门用于表单的组件
+//     form(opts) {
+//         const defs = {
+
+//         };
+//         debugger
+//     }
 // });

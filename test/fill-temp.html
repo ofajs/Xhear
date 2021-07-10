@@ -9,8 +9,9 @@
         <div>
             {{$data.name}} index => {{$index}}
         </div>
-        <div class="root_item_name" if:="$item.headItem" style="color:rgb(71, 71, 255);">head item name => {{$item.headItem}}</div>
-        <div class="childs" if:="$data.childs && $data.childs.length" fill:t1="$data.childs"
+        <div class="root_item_name" #if="$item.headItem" style="color:rgb(71, 71, 255);">head item name =>
+            {{$item.headItem}}</div>
+        <div class="childs" #if="$data.childs && $data.childs.length" fill:t1="$data.childs"
             item:head-item="$item.headItem ||  $data.name">
         </div>
     </div>
@@ -22,11 +23,16 @@
     </div>
 </template>
 
-<template name="t3">
+<div temp:t3 style="margin:0 30px;color:green;">
+    {{$index + '---' + $host.name}} - {{$data}}
+</div>
+
+<!-- <template name="t3">
     <div style="margin:0 30px;color:green;">
         {{$index + '---' + $host.name}} - {{$data}}
     </div>
-</template>
+</template> -->
+
 
 <style>
     :host {

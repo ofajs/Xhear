@@ -463,7 +463,7 @@
         },
         // 监听直到表达式成功
         watchUntil(expr) {
-            if (/[^=]=[^=]/.test(expr)) {
+            if (/[^=><]=[^=]/.test(expr)) {
                 throw 'cannot use single =';
             }
 
@@ -1206,7 +1206,13 @@
     }
 
     // extend(XEle.prototype, {
-    //     from()
+    //     // 专门用于表单的组件
+    //     form(opts) {
+    //         const defs = {
+
+    //         };
+    //         debugger
+    //     }
     // });
     // 重造数组方法
     ['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
@@ -1492,7 +1498,7 @@
         !isEmptyObj(defs.attrs) && xele.watchTick(e => {
             _this.__set_attr = 1;
             Object.keys(defs.attrs).forEach(key => {
-                _this.setAttribute(key, xele[key]);
+                _this.setAttribute(propToAttr(key), xele[key]);
             });
             delete _this.__set_attr;
         });
@@ -1500,26 +1506,7 @@
         // watch函数触发
         let d_watch = defs.watch;
         if (!isEmptyObj(d_watch)) {
-            // Object.keys(d_watch).forEach(key => d_watch[key].call(xele, xele[key]));
             xele.watchKey(d_watch, true);
-            // let vals = {};
-            // xele.watchTick(f = (e) => {
-            //     Object.keys(d_watch).forEach(k => {
-            //         let func = d_watch[k];
-
-            //         let val = xele[k];
-
-            //         if (val === vals[k]) {
-            //             return;
-            //         }
-            //         vals[k] = val;
-
-            //         func.call(xele, val);
-            //     });
-            // });
-
-            // // 先运行一次
-            // f();
         }
     }
 
@@ -1555,7 +1542,7 @@
         let temps;
 
         if (defs.temp) {
-            const d = transTemp(defs.temp);
+            const d = transTemp(defs.temp, defs.tag);
             defs.temp = d.html;
             temps = d.temps;
         }
@@ -1688,7 +1675,7 @@
     }
 
     // 将temp转化为可渲染的模板
-    const transTemp = (temp) => {
+    const transTemp = (temp, regTagName) => {
         // 去除注释代码
         temp = temp.replace(/<!--.+?-->/g, "");
 
@@ -1706,91 +1693,198 @@
         const tsTemp = document.createElement("template");
         tsTemp.innerHTML = temp;
 
+        // 原生元素上修正 temp:xxx模板
+        let addTemps = [],
+            removeRegEles = [];
+        Array.from(tsTemp.content.children).forEach(ele => {
+            Array.from(ele.attributes).some(({
+                name,
+                value
+            }) => {
+                let tempMatch = /^temp:(.+)/.exec(name);
+                if (tempMatch) {
+                    let [, tempName] = tempMatch;
+                    let tempEle = document.createElement("template");
+                    tempEle.setAttribute('name', tempName);
+                    ele.removeAttribute(name);
+                    tempEle.innerHTML = ele.outerHTML;
+                    addTemps.push(tempEle);
+                    removeRegEles.push(ele);
+                    return true;
+                }
+            });
+        });
+
+        if (addTemps.length) {
+            addTemps.forEach(ele => {
+                tsTemp.content.appendChild(ele);
+            });
+            removeRegEles.forEach(ele => {
+                tsTemp.content.removeChild(ele);
+            });
+        }
+
+
         Array.from(tsTemp.content.querySelectorAll("*")).forEach(ele => {
-            // 绑定属性
-            const bindAttrs = {};
-            const bindProps = {};
-            const bindSync = {};
-            // 绑定事件
-            const bindEvent = {};
-            // 填充
-            const bindFill = [];
-            const bindItem = {};
+            // 绑定对象
+            const bindData = {};
 
-            // if判断
-            let bindIf = "";
+            // 需要被删除的属性
+            const needRemoveAttrs = [];
 
-            let removeKeys = [];
             Array.from(ele.attributes).forEach(attrObj => {
                 let {
                     name,
                     value
                 } = attrObj;
 
-                // if判断
-                const ifExecs = /^if:/.exec(name);
-                if (ifExecs) {
-                    bindIf = value;
-                    removeKeys.push(name);
-                    return;
+                // 指令
+                let command;
+                // 目标
+                let target;
+
+                if (/^#/.test(name)) {
+                    command = "cmd";
+                    target = name.replace(/^#/, "");
+                } else if (/^@/.test(name)) {
+                    command = "on";
+                    target = name.replace(/^@/, "");
+                } else if (name.includes(":")) {
+                    // 带有指令分隔符的，进行之类修正
+                    let m_arr = name.split(":");
+
+                    if (m_arr.length == 2) {
+                        // 模板正确，进行赋值
+                        command = m_arr[0];
+                        target = m_arr[1];
+
+                        if (command === "") {
+                            // 属性绑定修正
+                            command = "prop";
+                        }
+                    } else {
+                        // 绑定标识出错
+                        throw {
+                            desc: "template binding mark error",
+                            target: ele,
+                            expr: name
+                        };
+                    }
                 }
 
-                // 属性绑定
-                const attrExecs = /^attr:(.+)/.exec(name);
-                if (attrExecs) {
-                    bindAttrs[attrExecs[1]] = value;
-                    removeKeys.push(name);
-                    return;
-                }
-
-                const propExecs = /^:(.+)/.exec(name);
-                if (propExecs) {
-                    bindProps[propExecs[1]] = value;
-                    removeKeys.push(name);
-                    return;
-                }
-
-                const syncExecs = /^sync:(.+)/.exec(name);
-                if (syncExecs) {
-                    bindSync[syncExecs[1]] = value;
-                    removeKeys.push(name);
-                    return;
-                }
-
-                // 填充绑定
-                const fillExecs = /^fill:(.+)/.exec(name);
-                if (fillExecs) {
-                    bindFill.push(fillExecs[1], value);
-                    removeKeys.push(name);
-                    return;
-                }
-
-                const itemExecs = /^item:(.+)/.exec(name);
-                if (itemExecs) {
-                    bindItem[itemExecs[1]] = value;
-                    removeKeys.push(name);
-                    return;
-                }
-
-                // 事件绑定
-                const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
-                if (eventExecs) {
-                    bindEvent[eventExecs[1]] = {
-                        name: value
-                    };
-                    removeKeys.push(name);
-                    return;
+                if (command) {
+                    let data = bindData[command] || (bindData[command] = {});
+                    if (command == "on") {
+                        data[target] = {
+                            name: value
+                        };
+                    } else if (target) {
+                        data[target] = value;
+                    }
+                    needRemoveAttrs.push(name);
                 }
             });
 
-            bindIf && (ele.setAttribute("x-if", bindIf));
-            !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
-            !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
-            !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));
-            bindFill.length && ele.setAttribute("x-fill", JSON.stringify(bindFill));
-            !isEmptyObj(bindItem) && ele.setAttribute("x-item", JSON.stringify(bindItem));
-            !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
-            removeKeys.forEach(name => ele.removeAttribute(name));
+            if (needRemoveAttrs.length) {
+                // ele.setAttribute("bind-data", JSON.stringify(bindData));
+                // ele.setAttribute('bind-keys', Object.keys(bindData).join(" "));
+
+                // 原属性还原
+                Object.keys(bindData).forEach(bName => {
+                    let data = bindData[bName];
+                    if (bName == "cmd") {
+                        Object.keys(data).forEach(dName => {
+                            ele.setAttribute(`x-cmd-${dName}`, data[dName]);
+                        });
+                    } else {
+                        ele.setAttribute(`x-${bName}`, JSON.stringify(data));
+                    }
+                });
+
+                needRemoveAttrs.forEach(name => ele.removeAttribute(name));
+            }
+
+            // // 绑定属性
+            // const bindAttrs = {};
+            // const bindProps = {};
+            // const bindSync = {};
+            // // 绑定事件
+            // const bindEvent = {};
+            // // 填充
+            // const bindFill = {};
+            // const bindItem = {};
+
+            // // if判断
+            // let bindIf = "";
+
+            // let removeKeys = [];
+            // Array.from(ele.attributes).forEach(attrObj => {
+            //     let { name, value } = attrObj;
+
+            //     // if判断
+            //     const ifExecs = /^#if/.exec(name);
+            //     if (ifExecs) {
+            //         bindIf = value;
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+
+            //     // 属性绑定
+            //     const attrExecs = /^attr:(.+)/.exec(name);
+            //     if (attrExecs) {
+            //         bindAttrs[attrExecs[1]] = value;
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+
+            //     const propExecs = /^:(.+)/.exec(name);
+            //     if (propExecs) {
+            //         bindProps[propExecs[1]] = value;
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+
+            //     const syncExecs = /^sync:(.+)/.exec(name);
+            //     if (syncExecs) {
+            //         bindSync[syncExecs[1]] = value;
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+
+            //     // 填充绑定
+            //     const fillExecs = /^fill:(.+)/.exec(name);
+            //     if (fillExecs) {
+            //         bindFill[fillExecs[1]] = value;
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+
+            //     const itemExecs = /^item:(.+)/.exec(name);
+            //     if (itemExecs) {
+            //         bindItem[itemExecs[1]] = value;
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+
+            //     // 事件绑定
+            //     const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
+            //     if (eventExecs) {
+            //         bindEvent[eventExecs[1]] = {
+            //             name: value
+            //         };
+            //         removeKeys.push(name);
+            //         return;
+            //     }
+            // });
+
+            // bindIf && (ele.setAttribute("x-cmd-if", bindIf));
+            // !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
+            // !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
+            // !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));
+            // !isEmptyObj(bindFill) && ele.setAttribute("x-fill", JSON.stringify(bindFill));
+            // !isEmptyObj(bindItem) && ele.setAttribute("x-item", JSON.stringify(bindItem));
+            // !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
+            // removeKeys.forEach(name => ele.removeAttribute(name));
         });
 
         // 将 template 内的页进行转换
@@ -1798,7 +1892,7 @@
             e.innerHTML = transTemp(e.innerHTML).html;
         });
 
-        // 修正 x-if 元素
+        // 修正 x-cmd-if 元素
         wrapIfTemp(tsTemp);
 
         // 获取模板
@@ -1812,6 +1906,32 @@
             e.parentNode.removeChild(e);
         })
 
+        // 对temp进行检测
+        if (temps.size) {
+            for (let [key, e] of temps.entries()) {
+                const {
+                    children
+                } = e.ele.content;
+                if (children.length !== 1) {
+                    throw {
+                        name: key,
+                        html: e.code,
+                        tag: regTagName,
+                        desc: "register error, only one element must exist in the template"
+                    };
+                } else {
+                    if (children[0].getAttribute("x-cmd-if")) {
+                        throw {
+                            name: key,
+                            html: e.code,
+                            tag: regTagName,
+                            desc: "register error, cannot use if on template first element"
+                        };
+                    }
+                }
+            }
+        }
+
         // 返回最终结果
         return {
             temps,
@@ -1819,9 +1939,9 @@
         };
     }
 
-    // 给 x-if 元素包裹 template
+    // 给 x-cmd-if 元素包裹 template
     const wrapIfTemp = (tempEle) => {
-        let iEles = tempEle.content.querySelectorAll("[x-if]");
+        let iEles = tempEle.content.querySelectorAll("[x-cmd-if],[x-cmd-else-if],[x-cmd-else],[x-cmd-await],[x-cmd-then],[x-cmd-catch]");
 
         iEles.forEach(ele => {
             if (ele.tagName.toLowerCase() == "template") {
@@ -1829,8 +1949,16 @@
             }
 
             let ifTempEle = document.createElement("template");
-            ifTempEle.setAttribute("x-if", ele.getAttribute("x-if"));
-            ele.removeAttribute("x-if");
+            ["x-cmd-if", "x-cmd-else-if", "x-cmd-else", "x-cmd-await", "x-cmd-then", "x-cmd-catch"].forEach(name => {
+                let val = ele.getAttribute(name);
+
+                if (val === null) {
+                    return;
+                }
+
+                ifTempEle.setAttribute(name, val);
+                ele.removeAttribute(name);
+            });
 
             ele.parentNode.insertBefore(ifTempEle, ele);
             ifTempEle.content.appendChild(ele);
@@ -1888,6 +2016,7 @@ with(this){
         renderedData[exprName] = propData;
     }
 
+    // 绑定函数监听，添加到记录数组
     const bindWatch = (data, func, bindings) => {
         let eid = data.watchTick(func);
         bindings.push({
@@ -1896,15 +2025,8 @@ with(this){
         });
     }
 
-    // 表达式到值的设置
-    const exprToSet = ({
-        xdata,
-        host,
-        expr,
-        callback,
-        isArray
-    }) => {
-        // 即时运行的判断函数
+    // 获取目标数据get函数
+    const renderXdataGetFunc = (expr, xdata) => {
         let runFunc;
 
         if (regIsFuncExpr.test(expr)) {
@@ -1915,49 +2037,17 @@ with(this){
             runFunc = () => xdata[expr];
         }
 
-        // 备份比较用的数据
-        let backup_val, backup_ids, backup_objstr;
+        return runFunc;
+    }
 
-        // 直接运行的渲染函数
-        const watchFun = (e) => {
-            const val = runFunc();
-
-            if (isxdata(val)) {
-                if (isArray) {
-                    // 对象只监听数组变动
-                    let ids = val.map(e => (e && e.xid) ? e.xid : e).join(",");
-                    if (backup_ids !== ids) {
-                        callback({
-                            val,
-                            modifys: e
-                        });
-                        backup_ids = ids;
-                    }
-                } else {
-                    // 对象监听
-                    let obj_str = val.toJSON();
-
-                    if (backup_val !== val || obj_str !== backup_objstr) {
-                        callback({
-                            val,
-                            modifys: e
-                        });
-                        backup_objstr = obj_str;
-                    }
-                }
-            } else if (backup_val !== val) {
-                callback({
-                    val,
-                    modifys: e
-                });
-                backup_objstr = null;
-            }
-            backup_val = val;
-        }
-
-        // 先执行一次
-        watchFun();
-
+    // 渲染器上的watch函数绑定
+    // expr用作判断xdata或host的依据，不做执行
+    const renderInWatch = ({
+        xdata,
+        host,
+        expr,
+        watchFun
+    }) => {
         // 已绑定的数据
         const bindings = [];
 
@@ -1977,20 +2067,82 @@ with(this){
                 isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
             } else if (expr.includes("$data")) {
                 isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
-            } else {
-                throw {
-                    desc: "fill element must use $data $host $item or $index",
-                    target: host,
-                    expr
-                };
             }
+            // else {
+            //     throw {
+            //         desc: "fill element must use $data $host $item or $index",
+            //         target: host,
+            //         expr
+            //     };
+            // }
         } else {
             // host数据绑定
             bindWatch(xdata, watchFun, bindings);
         }
 
-        // 返回绑定的关系数据
         return bindings;
+    }
+
+    // 表达式到值的设置
+    const exprToSet = ({
+        xdata,
+        host,
+        expr,
+        callback,
+        isArray
+    }) => {
+        // 即时运行的判断函数
+        let runFunc = renderXdataGetFunc(expr, xdata);
+
+        // 备份比较用的数据
+        let backup_val, backup_ids, backup_objstr;
+
+        // 直接运行的渲染函数
+        const watchFun = (modifys) => {
+            const val = runFunc();
+
+            if (isxdata(val)) {
+                if (isArray) {
+                    // 对象只监听数组变动
+                    let ids = val.map(e => (e && e.xid) ? e.xid : e).join(",");
+                    if (backup_ids !== ids) {
+                        callback({
+                            val,
+                            modifys
+                        });
+                        backup_ids = ids;
+                    }
+                } else {
+                    // 对象监听
+                    let obj_str = val.toJSON();
+
+                    if (backup_val !== val || obj_str !== backup_objstr) {
+                        callback({
+                            val,
+                            modifys
+                        });
+                        backup_objstr = obj_str;
+                    }
+                }
+            } else if (backup_val !== val) {
+                callback({
+                    val,
+                    modifys
+                });
+                backup_objstr = null;
+            }
+            backup_val = val;
+        }
+
+        // 先执行一次
+        watchFun();
+
+        return renderInWatch({
+            xdata,
+            host,
+            expr,
+            watchFun
+        });
     }
 
     // 添加监听数据
@@ -2025,6 +2177,40 @@ with(this){
                     target.unwatch(eid);
                 });
             }
+        });
+    }
+
+    // 添加渲染模板item内的元素
+    const addTempItemEle = ({
+        temp,
+        temps,
+        marker,
+        parent,
+        host,
+        xdata
+    }) => {
+        // 添加元素
+        let targets = parseStringToDom(temp.innerHTML);
+        targets.forEach(ele => {
+            parent.insertBefore(ele, marker);
+            renderTemp({
+                host,
+                xdata,
+                content: ele,
+                temps
+            });
+        });
+        return targets;
+    }
+
+    // 删除渲染模板item内的元素
+    const removeTempItemEle = (arr) => {
+        arr.forEach(item => {
+            // 去除数据绑定
+            removeElementBind(item)
+
+            // 删除元素
+            item.parentNode.removeChild(item);
         });
     }
 
@@ -2187,8 +2373,36 @@ with(this){
         });
 
         // if元素渲染
-        getCanRenderEles(content, '[x-if]').forEach(ele => {
-            const expr = ele.getAttribute('x-if');
+        getCanRenderEles(content, '[x-cmd-if]').forEach(ele => {
+            const conditionEles = [ele];
+            // 将后续的else-if和else都拿起来
+            let {
+                nextElementSibling
+            } = ele;
+            while (nextElementSibling && (nextElementSibling.hasAttribute("x-cmd-else-if") || nextElementSibling.hasAttribute("x-cmd-else"))) {
+                nextElementSibling.parentNode.removeChild(nextElementSibling);
+                conditionEles.push(nextElementSibling);
+                nextElementSibling = ele.nextElementSibling
+            }
+
+            let all_expr = '';
+
+            // 生成个字的函数
+            const conditions = conditionEles.map((e, index) => {
+                let callback;
+
+                const expr = e.getAttribute("x-cmd-else-if") || e.getAttribute("x-cmd-if");
+
+                if (expr) {
+                    callback = renderXdataGetFunc(expr, xdata);
+                    all_expr += `${index == 0 ? 'if' : 'else-if'}(${expr})...`;
+                }
+
+                return {
+                    callback,
+                    tempEle: e
+                };
+            });
 
             // 定位文本元素
             let {
@@ -2198,7 +2412,126 @@ with(this){
 
             // 生成的目标元素
             let targetEle = null;
+            let oldIndex = -1;
 
+            const watchFun = (modifys) => {
+                let tempEle, tarIndex;
+                conditions.some((e, index) => {
+                    if (!e.callback || e.callback()) {
+                        tempEle = e.tempEle;
+                        tarIndex = index;
+                        return true;
+                    }
+                });
+
+                // 存在改动，进行纠正
+                if (oldIndex !== tarIndex) {
+                    // 旧模板销毁
+                    if (targetEle) {
+                        // 去除数据绑定
+                        removeElementBind(targetEle);
+
+                        // 删除元素
+                        targetEle.parentNode.removeChild(targetEle);
+                        // parent.replaceChild(marker, targetEle);
+                        targetEle = null;
+                    }
+
+                    if (!tempEle) {
+                        // 木存在模板就待定
+                        return;
+                    }
+
+                    // 添加元素
+                    targetEle = parseStringToDom(tempEle.content.children[0].outerHTML)[0];
+
+                    parent.insertBefore(targetEle, marker);
+
+                    // 重新渲染
+                    renderTemp({
+                        host,
+                        xdata,
+                        content: targetEle,
+                        temps
+                    });
+                }
+
+                oldIndex = tarIndex;
+            }
+
+            // 先执行一次
+            watchFun();
+
+            addBindingData(marker, renderInWatch({
+                xdata,
+                host,
+                expr: all_expr,
+                watchFun
+            }));
+
+            // const expr = ele.getAttribute('x-cmd-if');
+
+            // // 定位文本元素
+            // let { marker, parent } = postionNode(ele);
+
+            // // 生成的目标元素
+            // let targetEle = null;
+
+            // const bindings = exprToSet({
+            //     xdata, host, expr,
+            //     callback: ({ val }) => {
+            //         if (val && !targetEle) {
+            //             // 添加元素
+            //             targetEle = $(ele.content.children[0].outerHTML).ele;
+
+            //             parent.insertBefore(targetEle, marker);
+            //             // parent.replaceChild(targetEle, marker);
+
+            //             // 重新渲染
+            //             renderTemp({ host, xdata, content: targetEle, temps });
+            //         } else if (!val && targetEle) {
+            //             // 去除数据绑定
+            //             removeElementBind(targetEle);
+
+            //             // 删除元素
+            //             targetEle.parentNode.removeChild(targetEle);
+            //             // parent.replaceChild(marker, targetEle);
+
+            //             targetEle = null;
+            //         }
+            //     }
+            // });
+
+            // addBindingData(marker, bindings);
+        });
+
+        // await元素渲染
+        getCanRenderEles(content, "[x-cmd-await]").forEach(ele => {
+            let awaitTemp = ele,
+                thenTemp, catchTemp;
+            // 将后续的else-if和else都拿起来
+            let {
+                nextElementSibling
+            } = ele;
+            while (nextElementSibling && (nextElementSibling.hasAttribute("x-cmd-then") || nextElementSibling.hasAttribute("x-cmd-catch"))) {
+                if (nextElementSibling.hasAttribute("x-cmd-then")) {
+                    thenTemp = nextElementSibling;
+                } else if (nextElementSibling.hasAttribute("x-cmd-catch")) {
+                    catchTemp = nextElementSibling;
+                }
+                nextElementSibling.parentNode.removeChild(nextElementSibling);
+                nextElementSibling = ele.nextElementSibling
+            }
+
+            // 添加定位
+            let {
+                marker,
+                parent
+            } = postionNode(ele);
+
+            let expr = ele.getAttribute("x-cmd-await");
+
+            let beforePms, beforeTargets;
             const bindings = exprToSet({
                 xdata,
                 host,
@@ -2206,30 +2539,61 @@ with(this){
                 callback: ({
                     val
                 }) => {
-                    if (val && !targetEle) {
-                        // 添加元素
-                        targetEle = $(ele.content.children[0].outerHTML).ele;
-
-                        parent.insertBefore(targetEle, marker);
-                        // parent.replaceChild(targetEle, marker);
-
-                        // 重新渲染
-                        renderTemp({
-                            host,
-                            xdata,
-                            content: targetEle,
-                            temps
-                        });
-                    } else if (!val && targetEle) {
-                        // 去除数据绑定
-                        removeElementBind(targetEle);
-
-                        // 删除元素
-                        targetEle.parentNode.removeChild(targetEle);
-                        // parent.replaceChild(marker, targetEle);
-
-                        targetEle = null;
+                    // 清除前面的数据
+                    if (beforeTargets) {
+                        removeTempItemEle(beforeTargets);
+                        beforeTargets = null;
                     }
+
+                    // 添加元素
+                    beforeTargets = addTempItemEle({
+                        temp: awaitTemp,
+                        temps,
+                        marker,
+                        parent,
+                        host,
+                        xdata
+                    });
+
+                    beforePms = val;
+
+                    val.then(e => {
+                        if (beforePms !== val) {
+                            return;
+                        }
+                        removeTempItemEle(beforeTargets);
+                        beforeTargets = null;
+                        if (thenTemp) {
+                            beforeTargets = addTempItemEle({
+                                temp: thenTemp,
+                                temps,
+                                marker,
+                                parent,
+                                host,
+                                xdata: {
+                                    [thenTemp.getAttribute("x-cmd-then")]: e
+                                }
+                            });
+                        }
+                    }).catch(err => {
+                        if (beforePms !== val) {
+                            return;
+                        }
+                        removeTempItemEle(beforeTargets);
+                        beforeTargets = null;
+                        if (catchTemp) {
+                            beforeTargets = addTempItemEle({
+                                temp: catchTemp,
+                                temps,
+                                marker,
+                                parent,
+                                host,
+                                xdata: {
+                                    [catchTemp.getAttribute("x-cmd-catch")]: err
+                                }
+                            });
+                        }
+                    })
                 }
             });
 
@@ -2244,7 +2608,7 @@ with(this){
 
             const container = ele;
 
-            let [tempName, propName] = fillData;
+            let [tempName, propName] = Object.entries(fillData)[0];
 
             let old_xid;
 
@@ -2457,7 +2821,8 @@ with(this){
         all(expr) {
             return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
         },
-        register
+        register,
+        xdata: (obj) => createXData(obj)
     });
     //<o:end--toofa.js-->
 

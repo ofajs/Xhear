@@ -25,7 +25,7 @@
 
     let testele = $(`<reg-two></reg-two>`);
 
-    $("body").push(testele);
+    // $("body").push(testele);
 
     tester.ok(testele.shadow[0].text == 'I am d1 val', "render ok 1");
 
@@ -42,7 +42,7 @@
         }
     });
 
-    let t2ele = $(`<reg-three val="2"></reg-three>`);
+    // let t2ele = $(`<reg-three val="2"></reg-three>`);
 
-    window.t2ele = t2ele;
+    // window.t2ele = t2ele;
 })();

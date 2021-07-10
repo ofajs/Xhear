@@ -43,7 +43,8 @@
         all(expr) {
             return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
         },
-        register
+        register,
+        xdata: (obj) => createXData(obj)
     });
     //<o:end--toofa.js-->
 

@@ -46,6 +46,7 @@ const moveAttrExpr = (ele, exprName, propData) => {
     renderedData[exprName] = propData;
 }
 
+// 绑定函数监听，添加到记录数组
 const bindWatch = (data, func, bindings) => {
     let eid = data.watchTick(func);
     bindings.push({
@@ -54,9 +55,8 @@ const bindWatch = (data, func, bindings) => {
     });
 }
 
-// 表达式到值的设置
-const exprToSet = ({ xdata, host, expr, callback, isArray }) => {
-    // 即时运行的判断函数
+// 获取目标数据get函数
+const renderXdataGetFunc = (expr, xdata) => {
     let runFunc;
 
     if (regIsFuncExpr.test(expr)) {
@@ -67,40 +67,12 @@ const exprToSet = ({ xdata, host, expr, callback, isArray }) => {
         runFunc = () => xdata[expr];
     }
 
-    // 备份比较用的数据
-    let backup_val, backup_ids, backup_objstr;
+    return runFunc;
+}
 
-    // 直接运行的渲染函数
-    const watchFun = (e) => {
-        const val = runFunc();
-
-        if (isxdata(val)) {
-            if (isArray) {
-                // 对象只监听数组变动
-                let ids = val.map(e => (e && e.xid) ? e.xid : e).join(",");
-                if (backup_ids !== ids) {
-                    callback({ val, modifys: e });
-                    backup_ids = ids;
-                }
-            } else {
-                // 对象监听
-                let obj_str = val.toJSON();
-
-                if (backup_val !== val || obj_str !== backup_objstr) {
-                    callback({ val, modifys: e });
-                    backup_objstr = obj_str;
-                }
-            }
-        } else if (backup_val !== val) {
-            callback({ val, modifys: e });
-            backup_objstr = null;
-        }
-        backup_val = val;
-    }
-
-    // 先执行一次
-    watchFun();
-
+// 渲染器上的watch函数绑定
+// expr用作判断xdata或host的依据，不做执行
+const renderInWatch = ({ xdata, host, expr, watchFun }) => {
     // 已绑定的数据
     const bindings = [];
 
@@ -120,20 +92,64 @@ const exprToSet = ({ xdata, host, expr, callback, isArray }) => {
             isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
         } else if (expr.includes("$data")) {
             isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
-        } else {
-            throw {
-                desc: "fill element must use $data $host $item or $index",
-                target: host,
-                expr
-            };
         }
+        // else {
+        //     throw {
+        //         desc: "fill element must use $data $host $item or $index",
+        //         target: host,
+        //         expr
+        //     };
+        // }
     } else {
         // host数据绑定
         bindWatch(xdata, watchFun, bindings);
     }
 
-    // 返回绑定的关系数据
     return bindings;
+}
+
+// 表达式到值的设置
+const exprToSet = ({ xdata, host, expr, callback, isArray }) => {
+    // 即时运行的判断函数
+    let runFunc = renderXdataGetFunc(expr, xdata);
+
+    // 备份比较用的数据
+    let backup_val, backup_ids, backup_objstr;
+
+    // 直接运行的渲染函数
+    const watchFun = (modifys) => {
+        const val = runFunc();
+
+        if (isxdata(val)) {
+            if (isArray) {
+                // 对象只监听数组变动
+                let ids = val.map(e => (e && e.xid) ? e.xid : e).join(",");
+                if (backup_ids !== ids) {
+                    callback({ val, modifys });
+                    backup_ids = ids;
+                }
+            } else {
+                // 对象监听
+                let obj_str = val.toJSON();
+
+                if (backup_val !== val || obj_str !== backup_objstr) {
+                    callback({ val, modifys });
+                    backup_objstr = obj_str;
+                }
+            }
+        } else if (backup_val !== val) {
+            callback({ val, modifys });
+            backup_objstr = null;
+        }
+        backup_val = val;
+    }
+
+    // 先执行一次
+    watchFun();
+
+    return renderInWatch({
+        xdata, host, expr, watchFun
+    });
 }
 
 // 添加监听数据
@@ -165,6 +181,30 @@ const removeElementBind = (target) => {
                 target.unwatch(eid);
             });
         }
+    });
+}
+
+// 添加渲染模板item内的元素
+const addTempItemEle = ({
+    temp, temps, marker, parent, host, xdata
+}) => {
+    // 添加元素
+    let targets = parseStringToDom(temp.innerHTML);
+    targets.forEach(ele => {
+        parent.insertBefore(ele, marker);
+        renderTemp({ host, xdata, content: ele, temps });
+    });
+    return targets;
+}
+
+// 删除渲染模板item内的元素
+const removeTempItemEle = (arr) => {
+    arr.forEach(item => {
+        // 去除数据绑定
+        removeElementBind(item)
+
+        // 删除元素
+        item.parentNode.removeChild(item);
     });
 }
 
@@ -300,37 +340,189 @@ const renderTemp = ({ host, xdata, content, temps }) => {
     });
 
     // if元素渲染
-    getCanRenderEles(content, '[x-if]').forEach(ele => {
-        const expr = ele.getAttribute('x-if');
+    getCanRenderEles(content, '[x-cmd-if]').forEach(ele => {
+        const conditionEles = [ele];
+        // 将后续的else-if和else都拿起来
+        let { nextElementSibling } = ele;
+        while (nextElementSibling && (nextElementSibling.hasAttribute("x-cmd-else-if") || nextElementSibling.hasAttribute("x-cmd-else"))) {
+            nextElementSibling.parentNode.removeChild(nextElementSibling);
+            conditionEles.push(nextElementSibling);
+            nextElementSibling = ele.nextElementSibling
+        }
+
+        let all_expr = '';
+
+        // 生成个字的函数
+        const conditions = conditionEles.map((e, index) => {
+            let callback;
+
+            const expr = e.getAttribute("x-cmd-else-if") || e.getAttribute("x-cmd-if");
+
+            if (expr) {
+                callback = renderXdataGetFunc(expr, xdata);
+                all_expr += `${index == 0 ? 'if' : 'else-if'}(${expr})...`;
+            }
+
+            return {
+                callback,
+                tempEle: e
+            };
+        });
 
         // 定位文本元素
         let { marker, parent } = postionNode(ele);
 
         // 生成的目标元素
         let targetEle = null;
+        let oldIndex = -1;
 
-        const bindings = exprToSet({
-            xdata, host, expr,
-            callback: ({ val }) => {
-                if (val && !targetEle) {
-                    // 添加元素
-                    targetEle = $(ele.content.children[0].outerHTML).ele;
+        const watchFun = (modifys) => {
+            let tempEle, tarIndex;
+            conditions.some((e, index) => {
+                if (!e.callback || e.callback()) {
+                    tempEle = e.tempEle;
+                    tarIndex = index;
+                    return true;
+                }
+            });
 
-                    parent.insertBefore(targetEle, marker);
-                    // parent.replaceChild(targetEle, marker);
-
-                    // 重新渲染
-                    renderTemp({ host, xdata, content: targetEle, temps });
-                } else if (!val && targetEle) {
+            // 存在改动，进行纠正
+            if (oldIndex !== tarIndex) {
+                // 旧模板销毁
+                if (targetEle) {
                     // 去除数据绑定
                     removeElementBind(targetEle);
 
                     // 删除元素
                     targetEle.parentNode.removeChild(targetEle);
                     // parent.replaceChild(marker, targetEle);
-
                     targetEle = null;
                 }
+
+                if (!tempEle) {
+                    // 木存在模板就待定
+                    return;
+                }
+
+                // 添加元素
+                targetEle = parseStringToDom(tempEle.content.children[0].outerHTML)[0];
+
+                parent.insertBefore(targetEle, marker);
+
+                // 重新渲染
+                renderTemp({ host, xdata, content: targetEle, temps });
+            }
+
+            oldIndex = tarIndex;
+        }
+
+        // 先执行一次
+        watchFun();
+
+        addBindingData(marker, renderInWatch({
+            xdata, host, expr: all_expr, watchFun
+        }));
+
+        // const expr = ele.getAttribute('x-cmd-if');
+
+        // // 定位文本元素
+        // let { marker, parent } = postionNode(ele);
+
+        // // 生成的目标元素
+        // let targetEle = null;
+
+        // const bindings = exprToSet({
+        //     xdata, host, expr,
+        //     callback: ({ val }) => {
+        //         if (val && !targetEle) {
+        //             // 添加元素
+        //             targetEle = $(ele.content.children[0].outerHTML).ele;
+
+        //             parent.insertBefore(targetEle, marker);
+        //             // parent.replaceChild(targetEle, marker);
+
+        //             // 重新渲染
+        //             renderTemp({ host, xdata, content: targetEle, temps });
+        //         } else if (!val && targetEle) {
+        //             // 去除数据绑定
+        //             removeElementBind(targetEle);
+
+        //             // 删除元素
+        //             targetEle.parentNode.removeChild(targetEle);
+        //             // parent.replaceChild(marker, targetEle);
+
+        //             targetEle = null;
+        //         }
+        //     }
+        // });
+
+        // addBindingData(marker, bindings);
+    });
+
+    // await元素渲染
+    getCanRenderEles(content, "[x-cmd-await]").forEach(ele => {
+        let awaitTemp = ele, thenTemp, catchTemp;
+        // 将后续的else-if和else都拿起来
+        let { nextElementSibling } = ele;
+        while (nextElementSibling && (nextElementSibling.hasAttribute("x-cmd-then") || nextElementSibling.hasAttribute("x-cmd-catch"))) {
+            if (nextElementSibling.hasAttribute("x-cmd-then")) {
+                thenTemp = nextElementSibling;
+            } else if (nextElementSibling.hasAttribute("x-cmd-catch")) {
+                catchTemp = nextElementSibling;
+            }
+            nextElementSibling.parentNode.removeChild(nextElementSibling);
+            nextElementSibling = ele.nextElementSibling
+        }
+
+        // 添加定位
+        let { marker, parent } = postionNode(ele);
+
+        let expr = ele.getAttribute("x-cmd-await");
+
+        let beforePms, beforeTargets;
+        const bindings = exprToSet({
+            xdata, host, expr,
+            callback: ({ val }) => {
+                // 清除前面的数据
+                if (beforeTargets) {
+                    removeTempItemEle(beforeTargets);
+                    beforeTargets = null;
+                }
+
+                // 添加元素
+                beforeTargets = addTempItemEle({
+                    temp: awaitTemp, temps, marker, parent, host, xdata
+                });
+
+                beforePms = val;
+
+                val.then(e => {
+                    if (beforePms !== val) {
+                        return;
+                    }
+                    removeTempItemEle(beforeTargets);
+                    beforeTargets = null;
+                    if (thenTemp) {
+                        beforeTargets = addTempItemEle({
+                            temp: thenTemp, temps, marker, parent, host, xdata: {
+                                [thenTemp.getAttribute("x-cmd-then")]: e
+                            }
+                        });
+                    }
+                }).catch(err => {
+                    if (beforePms !== val) {
+                        return;
+                    }
+                    removeTempItemEle(beforeTargets);
+                    beforeTargets = null;
+                    if (catchTemp) {
+                        beforeTargets = addTempItemEle({
+                            temp: catchTemp, temps, marker, parent, host, xdata: {
+                                [catchTemp.getAttribute("x-cmd-catch")]: err
+                            }
+                        });
+                    }
+                })
             }
         });
 
@@ -345,7 +537,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
 
         const container = ele;
 
-        let [tempName, propName] = fillData;
+        let [tempName, propName] = Object.entries(fillData)[0];
 
         let old_xid;
 
