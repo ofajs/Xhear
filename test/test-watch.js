@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(4, 'register watch test');
+    let tester = expect(10, 'register watch test');
 
     let count = 0;
 
@@ -39,10 +39,28 @@
         tag: "reg-three",
         attrs: {
             val: "1"
-        }
+        },
+        temp: `
+        <div class:a1="val >= 3" class:a2="val >= 4">val</div>
+        `
     });
 
-    // let t2ele = $(`<reg-three val="2"></reg-three>`);
+    let t2ele = $(`<reg-three val="2">{{val}}</reg-three>`);
 
-    // window.t2ele = t2ele;
+    tester.ok(t2ele.shadow[0].class.length === 0, "class length ok 1");
+    tester.ok(t2ele.attr("val") == 2, "attr ok");
+
+    t2ele.val = 3;
+
+    nexter(() => {
+        tester.ok(t2ele.shadow[0].class.length === 1, "class length ok 2");
+        tester.ok(t2ele.attr("val") == 3, "attr ok");
+
+        t2ele.val = 4;
+    }).nexter(() => {
+        tester.ok(t2ele.shadow[0].class.length === 2, "class length ok 3");
+        tester.ok(t2ele.attr("val") == 4, "attr ok");
+     });
+
+    window.t2ele = t2ele;
 })();

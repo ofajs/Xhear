@@ -2207,6 +2207,33 @@ with(this){
             })
         });
 
+        // class绑定
+        getCanRenderEles(content, "[x-class]").forEach(ele => {
+            const classListData = JSON.parse(ele.getAttribute('x-class'));
+
+            moveAttrExpr(ele, "x-class", classListData);
+
+            Object.keys(classListData).forEach(className => {
+                const bindings = exprToSet({
+                    xdata,
+                    host,
+                    expr: classListData[className],
+                    callback: ({
+                        val
+                    }) => {
+                        // ele.setAttribute(className, val);
+                        if (val) {
+                            ele.classList.add(className);
+                        } else {
+                            ele.classList.remove(className);
+                        }
+                    }
+                });
+
+                addBindingData(ele, bindings);
+            })
+        });
+
         getCanRenderEles(content, "[x-prop]").forEach(ele => {
             const propData = JSON.parse(ele.getAttribute('x-prop'));
             const xEle = createXEle(ele);
