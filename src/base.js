@@ -9,6 +9,7 @@
     //<!--event-->
     //<!--register-->
     //<!--render-->
+    //<!--animate-->
 
     function $(expr) {
         if (expr instanceof Element) {

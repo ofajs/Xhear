@@ -786,7 +786,7 @@ class XEle extends XData {
 
         delete self.length;
 
-        if (self.tag == "input") {
+        if (self.tag == "input" || self.tag == "textarea" || self.tag == "select" || (ele.contentEditable == "true")) {
             renderInput(self);
         }
     }
@@ -1136,6 +1136,18 @@ const renderInput = (xele) => {
             value: new Set(["value", "disabled", ...xEleDefaultSetKeys])
         }
     };
+
+    if (ele.contentEditable == "true") {
+        d_opts.value = {
+            enumerable: true,
+            get() {
+                return ele.innerHTML;
+            },
+            set(val) {
+                ele.innerHTML = val;
+            }
+        };
+    }
 
     // 根据类型进行设置
     switch (type) {
@@ -1686,34 +1698,6 @@ const transTemp = (temp, regTagName) => {
     // 原生元素上修正 temp:xxx模板
     let addTemps = [],
         removeRegEles = [];
-    Array.from(tsTemp.content.children).forEach(ele => {
-        Array.from(ele.attributes).some(({
-            name,
-            value
-        }) => {
-            let tempMatch = /^temp:(.+)/.exec(name);
-            if (tempMatch) {
-                let [, tempName] = tempMatch;
-                let tempEle = document.createElement("template");
-                tempEle.setAttribute('name', tempName);
-                ele.removeAttribute(name);
-                tempEle.innerHTML = ele.outerHTML;
-                addTemps.push(tempEle);
-                removeRegEles.push(ele);
-                return true;
-            }
-        });
-    });
-
-    if (addTemps.length) {
-        addTemps.forEach(ele => {
-            tsTemp.content.appendChild(ele);
-        });
-        removeRegEles.forEach(ele => {
-            tsTemp.content.removeChild(ele);
-        });
-    }
-
 
     Array.from(tsTemp.content.querySelectorAll("*")).forEach(ele => {
         // 绑定对象
@@ -1727,6 +1711,19 @@ const transTemp = (temp, regTagName) => {
                 name,
                 value
             } = attrObj;
+
+            // 模板抽离
+            let tempMatch = /^temp:(.+)/.exec(name);
+            if (tempMatch) {
+                let [, tempName] = tempMatch;
+                let tempEle = document.createElement("template");
+                tempEle.setAttribute('name', tempName);
+                ele.removeAttribute(name);
+                tempEle.innerHTML = ele.outerHTML;
+                addTemps.push(tempEle);
+                removeRegEles.push(ele);
+                return true;
+            }
 
             // 指令
             let command;
@@ -1793,89 +1790,16 @@ const transTemp = (temp, regTagName) => {
 
             needRemoveAttrs.forEach(name => ele.removeAttribute(name));
         }
-
-        // // 绑定属性
-        // const bindAttrs = {};
-        // const bindProps = {};
-        // const bindSync = {};
-        // // 绑定事件
-        // const bindEvent = {};
-        // // 填充
-        // const bindFill = {};
-        // const bindItem = {};
-
-        // // if判断
-        // let bindIf = "";
-
-        // let removeKeys = [];
-        // Array.from(ele.attributes).forEach(attrObj => {
-        //     let { name, value } = attrObj;
-
-        //     // if判断
-        //     const ifExecs = /^#if/.exec(name);
-        //     if (ifExecs) {
-        //         bindIf = value;
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-
-        //     // 属性绑定
-        //     const attrExecs = /^attr:(.+)/.exec(name);
-        //     if (attrExecs) {
-        //         bindAttrs[attrExecs[1]] = value;
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-
-        //     const propExecs = /^:(.+)/.exec(name);
-        //     if (propExecs) {
-        //         bindProps[propExecs[1]] = value;
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-
-        //     const syncExecs = /^sync:(.+)/.exec(name);
-        //     if (syncExecs) {
-        //         bindSync[syncExecs[1]] = value;
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-
-        //     // 填充绑定
-        //     const fillExecs = /^fill:(.+)/.exec(name);
-        //     if (fillExecs) {
-        //         bindFill[fillExecs[1]] = value;
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-
-        //     const itemExecs = /^item:(.+)/.exec(name);
-        //     if (itemExecs) {
-        //         bindItem[itemExecs[1]] = value;
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-
-        //     // 事件绑定
-        //     const eventExecs = /^@(.+)/.exec(name) || /^on:(.+)/.exec(name);
-        //     if (eventExecs) {
-        //         bindEvent[eventExecs[1]] = {
-        //             name: value
-        //         };
-        //         removeKeys.push(name);
-        //         return;
-        //     }
-        // });
-
-        // bindIf && (ele.setAttribute("x-cmd-if", bindIf));
-        // !isEmptyObj(bindAttrs) && ele.setAttribute("x-attr", JSON.stringify(bindAttrs));
-        // !isEmptyObj(bindProps) && ele.setAttribute("x-prop", JSON.stringify(bindProps));
-        // !isEmptyObj(bindSync) && ele.setAttribute("x-sync", JSON.stringify(bindSync));
-        // !isEmptyObj(bindFill) && ele.setAttribute("x-fill", JSON.stringify(bindFill));
-        // !isEmptyObj(bindItem) && ele.setAttribute("x-item", JSON.stringify(bindItem));
-        // !isEmptyObj(bindEvent) && ele.setAttribute("x-on", JSON.stringify(bindEvent));
-        // removeKeys.forEach(name => ele.removeAttribute(name));
     });
+
+    if (addTemps.length) {
+        addTemps.forEach(ele => {
+            tsTemp.content.appendChild(ele);
+        });
+        removeRegEles.forEach(ele => {
+            tsTemp.content.removeChild(ele);
+        });
+    }
 
     // 将 template 内的页进行转换
     Array.from(tsTemp.content.querySelectorAll("template")).forEach(e => {
@@ -2777,6 +2701,7 @@ const createFillItem = ({
 
     return itemEle;
 }
+
 
 function $(expr) {
     if (expr instanceof Element) {

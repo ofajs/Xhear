@@ -36,6 +36,18 @@ const renderInput = (xele) => {
         }
     };
 
+    if (ele.contentEditable == "true") {
+        d_opts.value = {
+            enumerable: true,
+            get() {
+                return ele.innerHTML;
+            },
+            set(val) {
+                ele.innerHTML = val;
+            }
+        };
+    }
+
     // 根据类型进行设置
     switch (type) {
         case "radio":

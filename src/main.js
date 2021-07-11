@@ -61,7 +61,7 @@ class XEle extends XData {
 
         delete self.length;
 
-        if (self.tag == "input") {
+        if (self.tag == "input" || self.tag == "textarea" || self.tag == "select" || (ele.contentEditable == "true")) {
             renderInput(self);
         }
     }
