@@ -374,7 +374,16 @@ const xdataHandler = {
             return true;
         }
 
-        return target.setData(key, value);
+        try {
+            return target.setData(key, value);
+        } catch (e) {
+            throw {
+                desc: `failed to set ${key}`,
+                key,
+                value,
+                target: receiver
+            };
+        }
     },
     deleteProperty: function(target, key) {
         return target.delete(key);
@@ -1553,6 +1562,8 @@ const register = (opts) => {
     const CustomXEle = class extends XEle {
         constructor(ele) {
             super(ele);
+
+            ele.isCustom = true;
         }
 
         // // 强制刷新视图
@@ -2082,6 +2093,10 @@ const elementDeepEach = (ele, callback) => {
 // 根据 if 语句，去除数据绑定关系
 const removeElementBind = (target) => {
     elementDeepEach(target, ele => {
+        if (ele.isCustom) {
+            createXEle(ele).revoke();
+        }
+
         if (ele.__bindings) {
             ele.__bindings.forEach(e => {
                 let {
@@ -2764,5 +2779,6 @@ Object.assign($, {
         return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
     },
     register,
-    xdata: (obj) => createXData(obj)
+    xdata: (obj) => createXData(obj),
+    nextTick
 });

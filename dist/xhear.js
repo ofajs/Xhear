@@ -384,7 +384,16 @@
                 return true;
             }
 
-            return target.setData(key, value);
+            try {
+                return target.setData(key, value);
+            } catch (e) {
+                throw {
+                    desc: `failed to set ${key}`,
+                    key,
+                    value,
+                    target: receiver
+                };
+            }
         },
         deleteProperty: function(target, key) {
             return target.delete(key);
@@ -1563,6 +1572,8 @@
         const CustomXEle = class extends XEle {
             constructor(ele) {
                 super(ele);
+
+                ele.isCustom = true;
             }
 
             // // 强制刷新视图
@@ -2092,6 +2103,10 @@ with(this){
     // 根据 if 语句，去除数据绑定关系
     const removeElementBind = (target) => {
         elementDeepEach(target, ele => {
+            if (ele.isCustom) {
+                createXEle(ele).revoke();
+            }
+
             if (ele.__bindings) {
                 ele.__bindings.forEach(e => {
                     let {
@@ -2774,7 +2789,8 @@ with(this){
             return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
         },
         register,
-        xdata: (obj) => createXData(obj)
+        xdata: (obj) => createXData(obj),
+        nextTick
     });
     //<o:end--toofa.js-->
 

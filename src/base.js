@@ -45,7 +45,8 @@
             return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
         },
         register,
-        xdata: (obj) => createXData(obj)
+        xdata: (obj) => createXData(obj),
+        nextTick
     });
     //<o:end--toofa.js-->
 

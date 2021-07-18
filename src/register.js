@@ -78,6 +78,8 @@ const register = (opts) => {
     const CustomXEle = class extends XEle {
         constructor(ele) {
             super(ele);
+
+            ele.isCustom = true;
         }
 
         // // 强制刷新视图

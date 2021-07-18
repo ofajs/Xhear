@@ -175,6 +175,10 @@ const elementDeepEach = (ele, callback) => {
 // 根据 if 语句，去除数据绑定关系
 const removeElementBind = (target) => {
     elementDeepEach(target, ele => {
+        if (ele.isCustom) {
+            createXEle(ele).revoke();
+        }
+
         if (ele.__bindings) {
             ele.__bindings.forEach(e => {
                 let { target, eid } = e;
