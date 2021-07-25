@@ -43,7 +43,17 @@ class XEle extends XData {
 
         // self.owner = new WeakSet();
         // XEle不允许拥有owner
-        self.owner = null;
+        // self.owner = null;
+        // delete self.owner;
+        defineProperties(self, {
+            owner: {
+                get() {
+                    let par = ele.parentNode;
+
+                    return par ? [createXEle(par)] : [];
+                }
+            }
+        });
 
         defineProperties(self, {
             ele: {

@@ -228,6 +228,7 @@
                 // 所有父层对象存储的位置
                 // 拥有者对象
                 owner: {
+                    configurable: true,
                     writable: true,
                     value: new Set()
                 },
@@ -787,7 +788,17 @@
 
             // self.owner = new WeakSet();
             // XEle不允许拥有owner
-            self.owner = null;
+            // self.owner = null;
+            // delete self.owner;
+            defineProperties(self, {
+                owner: {
+                    get() {
+                        let par = ele.parentNode;
+
+                        return par ? [createXEle(par)] : [];
+                    }
+                }
+            });
 
             defineProperties(self, {
                 ele: {
