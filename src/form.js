@@ -1,5 +1,5 @@
 // 因为表单太常用了，将表单组件进行规范
-// input元素有专用的渲染字段
+// 渲染表单元素的方法
 const renderInput = (xele) => {
     let type = xele.attr("type") || "text";
     const { ele } = xele;
@@ -16,10 +16,17 @@ const renderInput = (xele) => {
         value: {
             enumerable: true,
             get() {
-                return ele.value;
+                return ele.hasOwnProperty('__value') ? ele.__value : ele.value;
             },
             set(val) {
-                ele.value = val;
+                // 针对可能输入的是数字被动转成字符
+                ele.value = ele.__value = val;
+
+                emitUpdate(xele, {
+                    xid: xele.xid,
+                    name: "setData",
+                    args: ["value", val]
+                });
             }
         },
         disabled: {
@@ -31,22 +38,15 @@ const renderInput = (xele) => {
                 ele.disabled = val;
             }
         },
+        // 错误信息
+        msg: {
+            writable: true,
+            value: null
+        },
         [CANSETKEYS]: {
-            value: new Set(["value", "disabled", ...xEleDefaultSetKeys])
+            value: new Set(["value", "disabled", "msg", ...xEleDefaultSetKeys])
         }
     };
-
-    if (ele.contentEditable == "true") {
-        d_opts.value = {
-            enumerable: true,
-            get() {
-                return ele.innerHTML;
-            },
-            set(val) {
-                ele.innerHTML = val;
-            }
-        };
-    }
 
     // 根据类型进行设置
     switch (type) {
@@ -69,6 +69,9 @@ const renderInput = (xele) => {
                     }
                 }
             });
+
+            // 不赋予这个字段
+            delete d_opts.msg;
 
             xele.on("change", e => {
                 emitUpdate(xele, {
@@ -93,6 +96,8 @@ const renderInput = (xele) => {
         case "text":
         default:
             xele.on("input", e => {
+                delete ele.__value;
+
                 // 改动冒泡
                 emitUpdate(xele, {
                     xid: xele.xid,
@@ -106,12 +111,191 @@ const renderInput = (xele) => {
     defineProperties(xele, d_opts);
 }
 
-// extend(XEle.prototype, {
-//     // 专门用于表单的组件
-//     form(opts) {
-//         const defs = {
+class FromXData extends XData {
+    constructor(obj, { selector, delay, _target }) {
+        super(obj, "root");
 
-//         };
-//         debugger
-//     }
-// });
+        this._selector = selector;
+        this._target = _target;
+        this._delay = delay;
+
+        let isInit = 0;
+
+        let backupData;
+
+        let watchFun = () => {
+            const eles = this.formEles;
+            const obj = getFromEleData(eles);
+
+            const objKeys = Object.keys(obj);
+            Object.keys(this).filter(e => {
+                return !objKeys.includes(e);
+            }).forEach(k => {
+                delete this[k];
+            });
+
+            Object.assign(this, obj);
+
+            backupData = this.toJSON();
+
+            if (!isInit) {
+                return;
+            }
+
+            verifyFormEle(eles);
+        }
+
+        let timer;
+        this._wid = _target.watch(() => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                watchFun();
+            }, this._delay);
+        });
+
+        // 数据初始化
+        watchFun();
+
+        isInit = 1;
+
+        // 反向数据绑定
+        this.watchTick(e => {
+            let data = this.toJSON();
+
+            Object.entries(data).forEach(([k, value]) => {
+                let oldVal = backupData[k];
+
+                if (value !== oldVal || (typeof value == "object" && typeof oldVal == "object" && JSON.stringify(value) !== JSON.stringify(oldVal))) {
+                    // 相应的元素
+                    let targetEles = this.getTarget(k);
+
+                    targetEles.forEach(ele => {
+                        switch (ele.type) {
+                            case "checkbox":
+                                if (value.includes(ele.value)) {
+                                    ele.checked = true;
+                                } else {
+                                    ele.checked = false;
+                                }
+                                break;
+                            case "radio":
+                                if (ele.value == value) {
+                                    ele.checked = true;
+                                } else {
+                                    ele.checked = false;
+                                }
+                                break;
+                            case "text":
+                            default:
+                                ele.value = value;
+                                break;
+                        }
+                    });
+                }
+            });
+
+            // 备份数据
+            backupData = data;
+        });
+    }
+
+    get formEles() {
+        return this._target.all(this._selector)
+    }
+
+    // 获取对应属性的元素
+    getTarget(propName) {
+        return this.formEles.filter(e => e.name === propName);
+    }
+
+    // 用于验证的方法
+    // verify() {
+    // }
+}
+
+// 从元素上获取表单数据
+const getFromEleData = (eles) => {
+    const obj = {};
+
+    eles.forEach(ele => {
+        const { name, type, value } = ele;
+
+        switch (type) {
+            case "radio":
+                if (ele.checked) {
+                    obj[name] = value;
+                }
+                break;
+            case "checkbox":
+                if (ele.checked) {
+                    let tar_arr = obj[name] || (obj[name] = []);
+                    tar_arr.push(value);
+                }
+                break;
+            case "text":
+            default:
+                obj[name] = value;
+        }
+    });
+
+    return obj;
+}
+
+// 验证表单元素
+const verifyFormEle = (eles) => {
+    // 重新跑一次验证
+    eles.forEach(e => {
+        const event = new CustomEvent("verify", {
+            bubbles: false
+        });
+        event.msg = "";
+        event.formData = this;
+        event.$target = e;
+
+        e.trigger(event);
+
+        const { msg } = event;
+        const msg_type = getType(msg);
+
+        // msg只能是Error或字符串
+        if (msg_type == "string") {
+            e.msg = msg || null;
+        } else if (msg_type == "error") {
+            if (getType(e.msg) !== "error" || e.msg.message !== msg.message) {
+                e.msg = msg;
+            }
+        } else {
+            console.warn({
+                target: e,
+                msg,
+                desc: `msg can only be Error or String`
+            });
+        }
+    });
+}
+
+extend(XEle.prototype, {
+    // 专门用于表单的插件
+    form(opts) {
+        const defs = {
+            // 对表单元素进行修正
+            selector: "input,textarea,select",
+            delay: 100
+        };
+
+        if (getType(opts) === "string") {
+            defs.selector = opts;
+        } else {
+            Object.assign(defs, opts);
+        }
+
+        // 主体返回对象
+        const formdata = new FromXData({}, {
+            selector: defs.selector,
+            delay: defs.delay,
+            _target: this
+        });
+
+        return formdata;
+    }
+});

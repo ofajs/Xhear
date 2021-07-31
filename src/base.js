@@ -44,9 +44,12 @@
         all(expr) {
             return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
         },
+        Components,
         register,
         xdata: (obj) => createXData(obj),
-        nextTick
+        nextTick,
+        fn: XEle.prototype,
+        extend
     });
     //<o:end--toofa.js-->
 

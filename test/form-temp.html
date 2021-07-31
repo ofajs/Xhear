@@ -1,15 +1,15 @@
 <div>
     <input type="text" sync:value="val1" id="t1" />
-    <textarea sync:value="val1"></textarea>
+    <textarea sync:value="val1" id="t1_2"></textarea>
 </div>
 val1 => {{val1}}
 <div>
-    <select sync:value="val1">
+    <select sync:value="val1" id="t1_3">
         <option value="1">1</option>
         <option value="2">2</option>
     </select>
 </div>
-<div contenteditable sync:html="val1"></div>
+<!-- <div contenteditable sync:html="val1"></div> -->
 <div style="margin-top:20px;user-select:none;">
     <input type="checkbox" id="t2" sync:checked="val2">
     <label for="t2">{{val2}}</label>

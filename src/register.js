@@ -1,3 +1,6 @@
+// 所有注册的组件
+const Components = {};
+
 // 渲染元素
 const renderXEle = ({ xele, defs, temps, _this }) => {
     Object.assign(xele, defs.data, defs.attrs);
@@ -75,7 +78,9 @@ const register = (opts) => {
     }
 
     // 生成新的XEle class
-    const CustomXEle = class extends XEle {
+    let className = attrToProp(opts.tag);
+    className = className[0].toUpperCase() + className.slice(1)
+    const CustomXEle = Components[className] = class extends XEle {
         constructor(ele) {
             super(ele);
 

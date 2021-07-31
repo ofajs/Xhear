@@ -71,7 +71,8 @@ class XEle extends XData {
 
         delete self.length;
 
-        if (self.tag == "input" || self.tag == "textarea" || self.tag == "select" || (ele.contentEditable == "true")) {
+        // if (self.tag == "input" || self.tag == "textarea" || self.tag == "select" || (ele.contentEditable == "true")) { // contentEditable可以随时被修改
+        if (self.tag == "input" || self.tag == "textarea" || self.tag == "select") {
             renderInput(self);
         }
     }
@@ -360,8 +361,17 @@ class XEle extends XData {
     }
 
     remove() {
-        const { ele } = this;
-        ele.parentNode.removeChild(ele);
+        const { parent } = this;
+        parent.splice(parent.indexOf(this), 1);
+        // const { ele } = this;
+        // ele.parentNode.removeChild(ele);
+    }
+
+    // 插件方法extend
+    extend(proto) {
+        extend(this, proto, {
+            configurable: true
+        });
     }
 }
 

@@ -24,12 +24,20 @@ const postionNode = e => {
 // 将表达式转换为函数
 const exprToFunc = expr => {
     return new Function("...$args", `
-const [$e] = $args;
+const [$e,$target] = $args;
 
-with(this){
-    return ${expr};
-}
-    `);
+try{
+    with(this){
+        return ${expr};
+    }
+}catch(e){
+    throw {
+        message:e.message || "run error",
+        expr:\`${expr.replace(/`/g, "\\`")}\`,
+        target:this,
+        error:e
+    };
+}`);
 }
 
 // 清除表达式属性并将数据添加到元素对象内
@@ -236,7 +244,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 const func = exprToFunc(name);
                 eid = $tar.on(eventName, (event) => {
                     // func.call(host, event);
-                    func.call(xdata, event);
+                    func.call(xdata, event, $tar);
                 });
             } else {
                 // 函数名绑定
