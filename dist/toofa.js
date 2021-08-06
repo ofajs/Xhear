@@ -599,8 +599,10 @@ extend(XData.prototype, {
             return e;
         })
 
+        let b_howmany = getType(howmany) == 'number' ? howmany : (this.length - index);
+
         // 套入原生方法
-        let rmArrs = arraySplice.call(self, index, howmany, ...items);
+        let rmArrs = arraySplice.call(self, index, b_howmany, ...items);
 
         // rmArrs.forEach(e => isxdata(e) && e.owner.delete(self));
         rmArrs.forEach(e => clearXDataOwner(e, self));
@@ -1265,7 +1267,7 @@ class FromXData extends XData {
 
         let watchFun = () => {
             const eles = this.formEles;
-            const obj = getFromEleData(eles);
+            const obj = getFromEleData(eles, this);
 
             const objKeys = Object.keys(obj);
             Object.keys(this).filter(e => {
@@ -1354,7 +1356,7 @@ class FromXData extends XData {
 }
 
 // 从元素上获取表单数据
-const getFromEleData = (eles) => {
+const getFromEleData = (eles, oldData) => {
     const obj = {};
 
     eles.forEach(ele => {
@@ -1371,9 +1373,14 @@ const getFromEleData = (eles) => {
                 }
                 break;
             case "checkbox":
+                let tar_arr = obj[name] || ((obj[name] = oldData[name]) || (obj[name] = []));
                 if (ele.checked) {
-                    let tar_arr = obj[name] || (obj[name] = []);
-                    tar_arr.push(value);
+                    if (!tar_arr.includes(ele.value)) {
+                        tar_arr.push(value);
+                    }
+                } else if (tar_arr.includes(ele.value)) {
+                    // 包含就删除
+                    tar_arr.splice(tar_arr.indexOf(ele.value), 1);
                 }
                 break;
             case "text":
@@ -1468,7 +1475,7 @@ extend(XEle.prototype, {
         // 删除相应元素
         const removes = [];
         let b_index = index;
-        let b_howmany = howmany;
+        let b_howmany = getType(howmany) == 'number' ? howmany : (this.length - index);
         let target = children[b_index];
         while (target && b_howmany > 0) {
             removes.push(target);

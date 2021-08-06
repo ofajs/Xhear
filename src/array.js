@@ -19,7 +19,7 @@ extend(XEle.prototype, {
         // 删除相应元素
         const removes = [];
         let b_index = index;
-        let b_howmany = howmany;
+        let b_howmany = getType(howmany) == 'number' ? howmany : (this.length - index);
         let target = children[b_index];
         while (target && b_howmany > 0) {
             removes.push(target);

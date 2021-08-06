@@ -125,7 +125,7 @@ class FromXData extends XData {
 
         let watchFun = () => {
             const eles = this.formEles;
-            const obj = getFromEleData(eles);
+            const obj = getFromEleData(eles, this);
 
             const objKeys = Object.keys(obj);
             Object.keys(this).filter(e => {
@@ -214,7 +214,7 @@ class FromXData extends XData {
 }
 
 // 从元素上获取表单数据
-const getFromEleData = (eles) => {
+const getFromEleData = (eles, oldData) => {
     const obj = {};
 
     eles.forEach(ele => {
@@ -227,9 +227,14 @@ const getFromEleData = (eles) => {
                 }
                 break;
             case "checkbox":
+                let tar_arr = obj[name] || ((obj[name] = oldData[name]) || (obj[name] = []));
                 if (ele.checked) {
-                    let tar_arr = obj[name] || (obj[name] = []);
-                    tar_arr.push(value);
+                    if (!tar_arr.includes(ele.value)) {
+                        tar_arr.push(value);
+                    }
+                } else if (tar_arr.includes(ele.value)) {
+                    // 包含就删除
+                    tar_arr.splice(tar_arr.indexOf(ele.value), 1);
                 }
                 break;
             case "text":

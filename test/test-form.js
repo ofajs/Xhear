@@ -39,7 +39,7 @@
 })();
 
 (async () => {
-    let tester = expect(9, 'form test 2');
+    let tester = expect(10, 'form test 2');
 
     $.register({
         tag: "test-form",
@@ -82,7 +82,8 @@
         tester.ok(el2.fdata.a6.includes('A'), "binding checkbox data ok 1");
         tester.ok(el2.fdata.a6.includes('B'), "binding checkbox data ok 2");
         tester.ok(!el2.fdata.a6.includes('C'), "binding checkbox data ok 3");
+        tester.ok(el2.fdata.a6[0] == "B" && el2.fdata.a6[1] == "A", "binding checkbox order ok");
     });
 
-    // $("body").unshift(el2);
+    $("body").unshift(el2);
 })();
