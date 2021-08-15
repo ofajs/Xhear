@@ -85,5 +85,5 @@
         tester.ok(el2.fdata.a6[0] == "B" && el2.fdata.a6[1] == "A", "binding checkbox order ok");
     });
 
-    $("body").unshift(el2);
+    // $("body").unshift(el2);
 })();

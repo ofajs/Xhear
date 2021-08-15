@@ -20,6 +20,16 @@ const renderXEle = ({ xele, defs, temps, _this }) => {
             content: sroot,
             temps
         });
+
+        // 子元素有改动，触发元素渲染
+        xele.shadow && xele.shadow.watchTick(e => {
+            if (e.some(e2 => e2.path.length > 1)) {
+                emitUpdate(xele, {
+                    xid: xele.xid,
+                    name: "forceUpdate"
+                });
+            }
+        }, 10);
     }
 
     defs.ready && defs.ready.call(xele);
@@ -39,6 +49,9 @@ const renderXEle = ({ xele, defs, temps, _this }) => {
         xele.watchKey(d_watch, true);
     }
 }
+
+// 已经运行revoke函数
+const RUNNDEDREVOKE = Symbol("runned_revoke");
 
 // 注册组件的主要逻辑
 const register = (opts) => {
@@ -87,10 +100,20 @@ const register = (opts) => {
             ele.isCustom = true;
         }
 
-        // // 强制刷新视图
-        // forceUpdate() { }
+        // 强制刷新视图
+        forceUpdate() {
+            // 改动冒泡
+            emitUpdate(this, {
+                xid: this.xid,
+                name: "forceUpdate"
+            });
+        }
         // 回收元素内所有的数据（防止垃圾回收失败）
         revoke() {
+            if (this[RUNNDEDREVOKE]) {
+                return;
+            }
+            this[RUNNDEDREVOKE] = 1;
             Object.values(this).forEach(child => {
                 if (!(child instanceof XEle) && isxdata(child)) {
                     clearXDataOwner(child, this[XDATASELF]);

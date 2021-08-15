@@ -573,6 +573,8 @@ const renderTemp = ({ host, xdata, content, temps }) => {
 
         const container = ele;
 
+        createXEle(container)._unupdate = 1;
+
         let [tempName, propName] = Object.entries(fillData)[0];
 
         let old_xid;
