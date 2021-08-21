@@ -28,7 +28,7 @@ const [$e,$target] = $args;
 
 try{
     with(this){
-        return ${expr};
+        ${expr};
     }
 }catch(e){
     throw {
@@ -69,7 +69,7 @@ const renderXdataGetFunc = (expr, xdata) => {
 
     if (regIsFuncExpr.test(expr)) {
         // 属于函数
-        runFunc = exprToFunc(expr).bind(xdata);
+        runFunc = exprToFunc("return " + expr).bind(xdata);
     } else {
         // 值变动
         runFunc = () => xdata[expr];

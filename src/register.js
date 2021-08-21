@@ -2,7 +2,7 @@
 const Components = {};
 
 // 渲染元素
-const renderXEle = ({ xele, defs, temps, _this }) => {
+const renderXEle = async ({ xele, defs, temps, _this }) => {
     Object.assign(xele, defs.data, defs.attrs);
 
     defs.created && defs.created.call(xele);
@@ -30,6 +30,34 @@ const renderXEle = ({ xele, defs, temps, _this }) => {
                 });
             }
         }, 10);
+
+        // 缓冲link
+        let links = sroot.querySelectorAll("link");
+        if (links.length) {
+            await Promise.all(Array.from(links).map(linkEle => {
+                return new Promise((resolve, reject) => {
+                    if (linkEle.sheet) {
+                        resolve();
+                    } else {
+                        let succeedCall, errCall;
+                        linkEle.addEventListener("load", succeedCall = e => {
+                            linkEle.removeEventListener("load", succeedCall);
+                            linkEle.removeEventListener("error", errCall);
+                            resolve();
+                        });
+                        linkEle.addEventListener("error", errCall = e => {
+                            linkEle.removeEventListener("load", succeedCall);
+                            linkEle.removeEventListener("error", errCall);
+                            reject({
+                                desc: "link load error",
+                                ele: linkEle,
+                                target: xele.ele
+                            });
+                        });
+                    }
+                });
+            }));
+        }
     }
 
     defs.ready && defs.ready.call(xele);
@@ -157,11 +185,20 @@ const register = (opts) => {
             renderXEle({
                 xele, defs, temps,
                 _this: this
+            }).then(e => {
+                if (this.__x_connected) {
+                    this.setAttribute("x-render", 1);
+                } else {
+                    this.x_render = 1;
+                }
             });
         }
 
         connectedCallback() {
             // console.log("connectedCallback => ", this);
+            if (this.x_render) {
+                this.setAttribute("x-render", this.x_render)
+            }
             this.__x_connected = true;
             if (defs.attached && !this.__x_runned_connected) {
                 nextTick(() => {

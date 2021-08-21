@@ -279,7 +279,11 @@ class XEle extends XData {
             return ele.getAttribute(key);
         }
 
-        ele.setAttribute(key, value);
+        if (value === null) {
+            ele.removeAttribute(key);
+        } else {
+            ele.setAttribute(key, value);
+        }
     }
 
     siblings(expr) {
@@ -372,6 +376,51 @@ class XEle extends XData {
         extend(this, proto, {
             configurable: true
         });
+    }
+
+    // 监听尺寸变动
+    initSizeObs(time = 300) {
+        if (this._initedSizeObs) {
+            console.warn({
+                target: this.ele,
+                desc: "initRect is runned"
+            });
+            return;
+        }
+        this._initedSizeObs = 1;
+
+        let resizeTimer;
+        // 元素尺寸修正
+        const fixSize = () => {
+            clearTimeout(resizeTimer);
+
+            setTimeout(() => {
+                // 尺寸时间监听
+                emitUpdate(this, {
+                    xid: this.xid,
+                    name: "sizeUpdate"
+                }, undefined, false);
+            }, time);
+        }
+        fixSize();
+        if (window.ResizeObserver) {
+            const resizeObserver = new ResizeObserver(entries => {
+                fixSize();
+            });
+            resizeObserver.observe(this.ele);
+
+            return () => {
+                resizeObserver.disconnect();
+            }
+        } else {
+            let f;
+            window.addEventListener("resize", f = e => {
+                fixSize();
+            });
+            return () => {
+                window.removeEventListener("resize", f);
+            }
+        }
     }
 }
 

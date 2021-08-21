@@ -154,7 +154,7 @@
 
     const cansetXtatus = new Set(["root", "sub", "revoke"]);
 
-    const emitUpdate = (target, opts, path) => {
+    const emitUpdate = (target, opts, path, unupdate) => {
         let new_path;
         if (!path) {
             new_path = opts.path = [target[PROXYSELF]];
@@ -165,7 +165,7 @@
         // 触发callback
         target[WATCHS].forEach(f => f(opts));
 
-        if (target._unupdate) {
+        if (unupdate || target._unupdate) {
             return;
         }
 
@@ -517,9 +517,9 @@
             }
 
             let oldVal = {};
-            // Object.entries(this).forEach(([k, v]) => {
-            //     oldVal[k] = v;
-            // });
+            Object.entries(this).forEach(([k, v]) => {
+                oldVal[k] = v;
+            });
             return this.watch(collect((arr) => {
                 Object.keys(obj).forEach(key => {
                     // 当前值
@@ -1051,7 +1051,11 @@
                 return ele.getAttribute(key);
             }
 
-            ele.setAttribute(key, value);
+            if (value === null) {
+                ele.removeAttribute(key);
+            } else {
+                ele.setAttribute(key, value);
+            }
         }
 
         siblings(expr) {
@@ -1146,6 +1150,51 @@
             extend(this, proto, {
                 configurable: true
             });
+        }
+
+        // 监听尺寸变动
+        initSizeObs(time = 300) {
+            if (this._initedSizeObs) {
+                console.warn({
+                    target: this.ele,
+                    desc: "initRect is runned"
+                });
+                return;
+            }
+            this._initedSizeObs = 1;
+
+            let resizeTimer;
+            // 元素尺寸修正
+            const fixSize = () => {
+                clearTimeout(resizeTimer);
+
+                setTimeout(() => {
+                    // 尺寸时间监听
+                    emitUpdate(this, {
+                        xid: this.xid,
+                        name: "sizeUpdate"
+                    }, undefined, false);
+                }, time);
+            }
+            fixSize();
+            if (window.ResizeObserver) {
+                const resizeObserver = new ResizeObserver(entries => {
+                    fixSize();
+                });
+                resizeObserver.observe(this.ele);
+
+                return () => {
+                    resizeObserver.disconnect();
+                }
+            } else {
+                let f;
+                window.addEventListener("resize", f = e => {
+                    fixSize();
+                });
+                return () => {
+                    window.removeEventListener("resize", f);
+                }
+            }
         }
     }
 
@@ -1728,7 +1777,7 @@
     const Components = {};
 
     // 渲染元素
-    const renderXEle = ({
+    const renderXEle = async ({
         xele,
         defs,
         temps,
@@ -1763,6 +1812,34 @@
                     });
                 }
             }, 10);
+
+            // 缓冲link
+            let links = sroot.querySelectorAll("link");
+            if (links.length) {
+                await Promise.all(Array.from(links).map(linkEle => {
+                    return new Promise((resolve, reject) => {
+                        if (linkEle.sheet) {
+                            resolve();
+                        } else {
+                            let succeedCall, errCall;
+                            linkEle.addEventListener("load", succeedCall = e => {
+                                linkEle.removeEventListener("load", succeedCall);
+                                linkEle.removeEventListener("error", errCall);
+                                resolve();
+                            });
+                            linkEle.addEventListener("error", errCall = e => {
+                                linkEle.removeEventListener("load", succeedCall);
+                                linkEle.removeEventListener("error", errCall);
+                                reject({
+                                    desc: "link load error",
+                                    ele: linkEle,
+                                    target: xele.ele
+                                });
+                            });
+                        }
+                    });
+                }));
+            }
         }
 
         defs.ready && defs.ready.call(xele);
@@ -1892,11 +1969,20 @@
                     defs,
                     temps,
                     _this: this
+                }).then(e => {
+                    if (this.__x_connected) {
+                        this.setAttribute("x-render", 1);
+                    } else {
+                        this.x_render = 1;
+                    }
                 });
             }
 
             connectedCallback() {
                 // console.log("connectedCallback => ", this);
+                if (this.x_render) {
+                    this.setAttribute("x-render", this.x_render)
+                }
                 this.__x_connected = true;
                 if (defs.attached && !this.__x_runned_connected) {
                     nextTick(() => {
@@ -2200,7 +2286,7 @@ const [$e,$target] = $args;
 
 try{
     with(this){
-        return ${expr};
+        ${expr};
     }
 }catch(e){
     throw {
@@ -2241,7 +2327,7 @@ try{
 
         if (regIsFuncExpr.test(expr)) {
             // 属于函数
-            runFunc = exprToFunc(expr).bind(xdata);
+            runFunc = exprToFunc("return " + expr).bind(xdata);
         } else {
             // 值变动
             runFunc = () => xdata[expr];
