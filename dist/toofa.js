@@ -478,13 +478,14 @@ extend(XData.prototype, {
     },
     // 监听直到表达式成功
     watchUntil(expr) {
-        if (/[^=><]=[^=]/.test(expr)) {
+        let isFunc = isFunction(expr);
+        if (!isFunc && /[^=><]=[^=]/.test(expr)) {
             throw 'cannot use single =';
         }
 
         return new Promise(resolve => {
             // 忽略错误
-            let exprFun = new Function(`
+            let exprFun = isFunc ? expr.bind(this) : new Function(`
         try{with(this){
             return ${expr}
         }}catch(e){}`).bind(this);
