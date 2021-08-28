@@ -346,6 +346,15 @@
             return reval;
         }
 
+        // 主动触发更新事件
+        // 方便 get 类型数据触发 watch 
+        update(opts = {}) {
+            emitUpdate(this, Object.assign({}, opts, {
+                xid: this.xid,
+                isCustom: true
+            }));
+        }
+
         delete(key) {
             // 确认key是隐藏属性
             if (/^_/.test(key) || typeof key === "symbol") {
@@ -501,7 +510,7 @@
         }}catch(e){}`).bind(this);
 
                 let f;
-                const wid = this.watch(f = () => {
+                const wid = this.watchTick(f = () => {
                     let reVal = exprFun();
                     if (reVal) {
                         this.unwatch(wid);
@@ -518,9 +527,12 @@
             }
 
             let oldVal = {};
-            Object.entries(this).forEach(([k, v]) => {
-                oldVal[k] = v;
+            Object.keys(obj).forEach(key => {
+                oldVal[key] = this[key];
             });
+            // Object.entries(this).forEach(([k, v]) => {
+            //     oldVal[k] = v;
+            // });
             return this.watch(collect((arr) => {
                 Object.keys(obj).forEach(key => {
                     // 当前值
@@ -1776,6 +1788,25 @@
     });
     // 所有注册的组件
     const Components = {};
+    const ComponentResolves = {};
+
+    // 获取组件
+    const getComp = (name) => {
+        name = attrToProp(name);
+
+        // 组件上有数据就直接返回
+        if (Components[name]) {
+            return Components[name];
+        }
+
+        // 创建挂载组件
+        let pms = new Promise(res => {
+            ComponentResolves[name] = res;
+        });
+        Components[name] = pms;
+
+        return pms;
+    }
 
     // 渲染元素
     const renderXEle = async ({
@@ -1902,9 +1933,9 @@
         }
 
         // 生成新的XEle class
-        let className = attrToProp(opts.tag);
-        className = className[0].toUpperCase() + className.slice(1)
-        const CustomXEle = Components[className] = class extends XEle {
+        let compName = attrToProp(opts.tag);
+        // const CustomXEle = Components[compName] = class extends XEle {
+        const CustomXEle = class extends XEle {
             constructor(ele) {
                 super(ele);
 
@@ -2024,6 +2055,15 @@
         }
 
         customElements.define(defs.tag, XhearElement);
+
+        // 设置注册完成
+        if (ComponentResolves[compName]) {
+            ComponentResolves[compName](CustomXEle);
+            delete ComponentResolves[compName];
+        } else {
+            Components[compName] = Promise.resolve(CustomXEle);
+        }
+
     }
 
     // 根据 defaults 获取可设置的keys
@@ -2448,7 +2488,7 @@ try{
         _binds.push(...bindings);
     }
 
-    const regIsFuncExpr = /[\(\)\;\.\=\>\<]/;
+    const regIsFuncExpr = /[\(\)\;\.\=\>\<\|]/;
 
     // 元素深度循环函数
     const elementDeepEach = (ele, callback) => {
@@ -3152,12 +3192,12 @@ try{
         all(expr) {
             return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
         },
-        Components,
         register,
         xdata: (obj) => createXData(obj),
         nextTick,
         fn: XEle.prototype,
-        extend
+        extend,
+        getComp
     });
     //<o:end--toofa.js-->
 

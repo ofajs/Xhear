@@ -1,5 +1,24 @@
 // 所有注册的组件
 const Components = {};
+const ComponentResolves = {};
+
+// 获取组件
+const getComp = (name) => {
+    name = attrToProp(name);
+
+    // 组件上有数据就直接返回
+    if (Components[name]) {
+        return Components[name];
+    }
+
+    // 创建挂载组件
+    let pms = new Promise(res => {
+        ComponentResolves[name] = res;
+    });
+    Components[name] = pms;
+
+    return pms;
+}
 
 // 渲染元素
 const renderXEle = async ({ xele, defs, temps, _this }) => {
@@ -119,9 +138,9 @@ const register = (opts) => {
     }
 
     // 生成新的XEle class
-    let className = attrToProp(opts.tag);
-    className = className[0].toUpperCase() + className.slice(1)
-    const CustomXEle = Components[className] = class extends XEle {
+    let compName = attrToProp(opts.tag);
+    // const CustomXEle = Components[compName] = class extends XEle {
+    const CustomXEle = class extends XEle {
         constructor(ele) {
             super(ele);
 
@@ -239,6 +258,15 @@ const register = (opts) => {
     }
 
     customElements.define(defs.tag, XhearElement);
+
+    // 设置注册完成
+    if (ComponentResolves[compName]) {
+        ComponentResolves[compName](CustomXEle);
+        delete ComponentResolves[compName];
+    } else {
+        Components[compName] = Promise.resolve(CustomXEle);
+    }
+
 }
 
 // 根据 defaults 获取可设置的keys
