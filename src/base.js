@@ -48,7 +48,6 @@
         xdata: (obj) => createXData(obj),
         nextTick,
         fn: XEle.prototype,
-        extend,
         getComp
     });
     //<o:end--toofa.js-->

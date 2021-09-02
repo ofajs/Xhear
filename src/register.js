@@ -82,13 +82,23 @@ const renderXEle = async ({ xele, defs, temps, _this }) => {
     defs.ready && defs.ready.call(xele);
 
     // attrs监听
-    !isEmptyObj(defs.attrs) && xele.watchTick(e => {
-        _this.__set_attr = 1;
-        Object.keys(defs.attrs).forEach(key => {
-            _this.setAttribute(propToAttr(key), xele[key]);
+    if (!isEmptyObj(defs.attrs)) {
+        const { ele } = xele;
+        // 先判断是否有值可获取
+        Object.keys(defs.attrs).forEach(k => {
+            if (ele.hasAttribute(k)) {
+                xele[k] = ele.getAttribute(k);
+            }
+        })
+
+        xele.watchTick(e => {
+            _this.__set_attr = 1;
+            Object.keys(defs.attrs).forEach(key => {
+                _this.setAttribute(propToAttr(key), xele[key]);
+            });
+            delete _this.__set_attr;
         });
-        delete _this.__set_attr;
-    });
+    }
 
     // watch函数触发
     let d_watch = defs.watch;

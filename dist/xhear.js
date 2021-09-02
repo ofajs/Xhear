@@ -323,13 +323,25 @@
                 value.owner.add(this);
             }
 
-            const oldVal = this[key];
+            let oldVal;
+            const descObj = Object.getOwnPropertyDescriptor(this, key);
+            const p_self = this[PROXYSELF];
+            try {
+                // 为了只有 set 没有 get 的情况
+                oldVal = p_self[key];
+            } catch (err) {}
 
             if (oldVal === value) {
                 return true;
             }
 
-            let reval = Reflect.set(this, key, value);
+            let reval;
+            if (descObj && descObj.set) {
+                descObj.set.call(p_self, value);
+                reval = true;
+            } else {
+                reval = Reflect.set(this, key, value);
+            }
 
             // if (this[CANUPDATE] || this._update === false) {
             if (this[CANUPDATE]) {
@@ -1160,6 +1172,13 @@
 
         // 插件方法extend
         extend(proto) {
+            const descObj = Object.getOwnPropertyDescriptors(proto);
+            Object.entries(descObj).forEach(([key, obj]) => {
+                if (obj.set) {
+                    // 扩展拥有set的可被写入
+                    this[CANSETKEYS].add(key);
+                }
+            });
             extend(this, proto, {
                 configurable: true
             });
@@ -1877,13 +1896,25 @@
         defs.ready && defs.ready.call(xele);
 
         // attrs监听
-        !isEmptyObj(defs.attrs) && xele.watchTick(e => {
-            _this.__set_attr = 1;
-            Object.keys(defs.attrs).forEach(key => {
-                _this.setAttribute(propToAttr(key), xele[key]);
+        if (!isEmptyObj(defs.attrs)) {
+            const {
+                ele
+            } = xele;
+            // 先判断是否有值可获取
+            Object.keys(defs.attrs).forEach(k => {
+                if (ele.hasAttribute(k)) {
+                    xele[k] = ele.getAttribute(k);
+                }
+            })
+
+            xele.watchTick(e => {
+                _this.__set_attr = 1;
+                Object.keys(defs.attrs).forEach(key => {
+                    _this.setAttribute(propToAttr(key), xele[key]);
+                });
+                delete _this.__set_attr;
             });
-            delete _this.__set_attr;
-        });
+        }
 
         // watch函数触发
         let d_watch = defs.watch;
@@ -3196,7 +3227,6 @@ try{
         xdata: (obj) => createXData(obj),
         nextTick,
         fn: XEle.prototype,
-        extend,
         getComp
     });
     //<o:end--toofa.js-->

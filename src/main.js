@@ -373,6 +373,13 @@ class XEle extends XData {
 
     // 插件方法extend
     extend(proto) {
+        const descObj = Object.getOwnPropertyDescriptors(proto);
+        Object.entries(descObj).forEach(([key, obj]) => {
+            if (obj.set) {
+                // 扩展拥有set的可被写入
+                this[CANSETKEYS].add(key);
+            }
+        });
         extend(this, proto, {
             configurable: true
         });
