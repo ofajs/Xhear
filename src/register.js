@@ -94,7 +94,12 @@ const renderXEle = async ({ xele, defs, temps, _this }) => {
         xele.watchTick(e => {
             _this.__set_attr = 1;
             Object.keys(defs.attrs).forEach(key => {
-                _this.setAttribute(propToAttr(key), xele[key]);
+                let val = xele[key];
+                if (val === null || val === undefined) {
+                    _this.removeAttribute(propToAttr(key));
+                } else {
+                    _this.setAttribute(propToAttr(key), xele[key]);
+                }
             });
             delete _this.__set_attr;
         });

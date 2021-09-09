@@ -271,7 +271,11 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 xdata, host,
                 expr: attrData[attrName],
                 callback: ({ val }) => {
-                    ele.setAttribute(attrName, val);
+                    if (val === null || val === undefined) {
+                        ele.removeAttribute(attrName);
+                    } else {
+                        ele.setAttribute(attrName, val);
+                    }
                 }
             });
 
