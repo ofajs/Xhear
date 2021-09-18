@@ -166,7 +166,7 @@ const addBindingData = (target, bindings) => {
     _binds.push(...bindings);
 }
 
-const regIsFuncExpr = /[\(\)\;\.\=\>\<\|]/;
+const regIsFuncExpr = /[\(\)\;\.\=\>\<\|\!\?]/;
 
 // 元素深度循环函数
 const elementDeepEach = (ele, callback) => {
@@ -250,7 +250,25 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 // 函数名绑定
                 eid = $tar.on(eventName, (event) => {
                     // host[name] && host[name].call(host, event);
-                    xdata[name] && xdata[name].call(xdata, event);
+                    const func = xdata[name];
+                    if (func) {
+                        if (isFunction(func)) {
+                            func.call(xdata, event);
+                        } else {
+                            console.error({
+                                target: xdata,
+                                name,
+                                value: func,
+                                desc: "bind value is not function"
+                            });
+                        }
+                    } else {
+                        console.error({
+                            target: xdata,
+                            name,
+                            desc: "no binding function"
+                        });
+                    }
                 });
             }
 

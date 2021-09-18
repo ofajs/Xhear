@@ -539,9 +539,12 @@ extend(XData.prototype, {
             Object.keys(obj).forEach(key => {
                 // 当前值
                 let val = this[key];
+                let old = oldVal[key];
 
-                if (oldVal[key] !== val) {
-                    obj[key].call(this, val);
+                if (old !== val) {
+                    obj[key].call(this, val, {
+                        old
+                    });
                 } else if (isxdata(val)) {
                     // 判断改动arr内是否有当前key的改动
                     let hasChange = arr.some(e => {
@@ -552,7 +555,9 @@ extend(XData.prototype, {
                     });
 
                     if (hasChange) {
-                        obj[key].call(this, val);
+                        obj[key].call(this, val, {
+                            old
+                        });
                     }
                 }
 
@@ -2514,7 +2519,7 @@ const addBindingData = (target, bindings) => {
     _binds.push(...bindings);
 }
 
-const regIsFuncExpr = /[\(\)\;\.\=\>\<\|]/;
+const regIsFuncExpr = /[\(\)\;\.\=\>\<\|\!\?]/;
 
 // 元素深度循环函数
 const elementDeepEach = (ele, callback) => {
@@ -2618,7 +2623,25 @@ const renderTemp = ({
                 // 函数名绑定
                 eid = $tar.on(eventName, (event) => {
                     // host[name] && host[name].call(host, event);
-                    xdata[name] && xdata[name].call(xdata, event);
+                    const func = xdata[name];
+                    if (func) {
+                        if (isFunction(func)) {
+                            func.call(xdata, event);
+                        } else {
+                            console.error({
+                                target: xdata,
+                                name,
+                                value: func,
+                                desc: "bind value is not function"
+                            });
+                        }
+                    } else {
+                        console.error({
+                            target: xdata,
+                            name,
+                            desc: "no binding function"
+                        });
+                    }
                 });
             }
 
@@ -3226,5 +3249,5 @@ Object.assign($, {
     xdata: (obj) => createXData(obj),
     nextTick,
     fn: XEle.prototype,
-    getComp
+    tag: getComp
 });
