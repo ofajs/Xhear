@@ -1,5 +1,5 @@
 (() => {
-    let tester = expect(6, 'if test');
+    let tester = expect(9, 'if test');
 
     $.register({
         tag: "if-test",
@@ -59,4 +59,36 @@
     let iele2 = $("<if-test-two></if-test-two>");
     tester.ok(iele2.shadow.all(".ha").length == 2, "fill if render ok");
     // $("body").push(iele2);
+
+    $.register({
+        tag: "if-test-three",
+        data: {
+            frameView: "222",
+            arr: [{ path: "111" }, { path: "222" }, { path: "333" }]
+        },
+        temp: `
+        <div fill:fileblock="arr"></div>
+        <div temp:fileblock class="file_block">
+            {{$data.path}}
+            <span id="f_tar" #if="$data.path == $host.frameView">😁</span>
+        </div>
+        `,
+        ready() {
+            setTimeout(() => {
+                tester.ok(this.shadow.$("#f_tar"), "fill if ok 1");
+                let frameView = this.frameView;
+                this.frameView = "";
+                setTimeout(() => {
+                    tester.ok(!this.shadow.$("#f_tar"), "fill if ok 2");
+                    this.frameView = frameView;
+                    setTimeout(() => {
+                        tester.ok(this.shadow.$("#f_tar"), "fill if ok 3");
+                    }, 100);
+                }, 100);
+            }, 1000);
+        }
+    });
+
+    let iele3 = $(`<if-test-three style="display:none;"></if-test-three>`);
+    // $("body").unshift(iele3);
 })();

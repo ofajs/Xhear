@@ -2833,7 +2833,7 @@ const renderTemp = ({
 
         // 生成的目标元素
         let targetEle = null;
-        let oldIndex = -1;
+        // let oldIndex = -1;
 
         const watchFun = (modifys) => {
             let tempEle, tarIndex;
@@ -2845,39 +2845,38 @@ const renderTemp = ({
                 }
             });
 
-            // 存在改动，进行纠正
-            if (oldIndex !== tarIndex) {
-                // 旧模板销毁
-                if (targetEle) {
-                    // 去除数据绑定
-                    removeElementBind(targetEle);
+            // if (oldIndex !== tarIndex) {
+            // 旧模板销毁
+            if (targetEle) {
+                // 去除数据绑定
+                removeElementBind(targetEle);
 
-                    // 删除元素
-                    targetEle.parentNode.removeChild(targetEle);
-                    // parent.replaceChild(marker, targetEle);
-                    targetEle = null;
-                }
-
-                if (!tempEle) {
-                    // 木存在模板就待定
-                    return;
-                }
-
-                // 添加元素
-                targetEle = parseStringToDom(tempEle.content.children[0].outerHTML)[0];
-
-                parent.insertBefore(targetEle, marker);
-
-                // 重新渲染
-                renderTemp({
-                    host,
-                    xdata,
-                    content: targetEle,
-                    temps
-                });
+                // 删除元素
+                targetEle.parentNode.removeChild(targetEle);
+                // parent.replaceChild(marker, targetEle);
+                targetEle = null;
             }
 
-            oldIndex = tarIndex;
+            if (!tempEle) {
+                // 木存在模板就待定
+                return;
+            }
+
+            // 添加元素
+            targetEle = parseStringToDom(tempEle.content.children[0].outerHTML)[0];
+
+            parent.insertBefore(targetEle, marker);
+
+            // 重新渲染
+            renderTemp({
+                host,
+                xdata,
+                content: targetEle,
+                temps
+            });
+            // }
+
+            // oldIndex = tarIndex;
         }
 
         // 先执行一次
