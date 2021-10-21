@@ -89,6 +89,6 @@
         }
     });
 
-    let iele3 = $(`<if-test-three style="display:none;"></if-test-three>`);
-    // $("body").unshift(iele3);
+    let iele3 = $(`<if-test-three></if-test-three>`);
+    // $("body").push(iele3);
 })();
