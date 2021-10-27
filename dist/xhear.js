@@ -2533,7 +2533,7 @@ try{
         _binds.push(...bindings);
     }
 
-    const regIsFuncExpr = /[\(\)\;\.\=\>\<\|\!\?]/;
+    const regIsFuncExpr = /[\(\)\;\.\=\>\<\|\!\?\+\-\*\/]/;
 
     // 元素深度循环函数
     const elementDeepEach = (ele, callback) => {
