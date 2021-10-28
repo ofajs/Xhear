@@ -72,7 +72,8 @@ const renderXdataGetFunc = (expr, xdata) => {
         runFunc = exprToFunc("return " + expr).bind(xdata);
     } else {
         // 值变动
-        runFunc = () => xdata[expr];
+        // runFunc = () => xdata[expr];
+        runFunc = () => getXData(xdata, expr);
     }
 
     return runFunc;
@@ -166,7 +167,7 @@ const addBindingData = (target, bindings) => {
     _binds.push(...bindings);
 }
 
-const regIsFuncExpr = /[\(\)\;\.\=\>\<\|\!\?\+\-\*\/]/;
+const regIsFuncExpr = /[\(\)\;\=\>\<\|\!\?\+\-\*\/\&\|\{\}`]/;
 
 // 元素深度循环函数
 const elementDeepEach = (ele, callback) => {
@@ -361,14 +362,14 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 xdata, host,
                 expr: hostPropName,
                 callback: ({ val }) => {
-                    xEle[propName] = val;
+                    setXData(xEle, propName, val);
                 }
             });
 
             const bindings2 = exprToSet({
                 xdata: xEle, host, expr: propName,
                 callback: ({ val }) => {
-                    xdata[hostPropName] = val;
+                    setXData(xdata, hostPropName, val);
                 }
             });
 

@@ -84,3 +84,35 @@ const propToAttr = key => {
     }
     return key;
 }
+
+// 对象获取值，优化对象多点key获取值
+const getXData = (xdata, key) => {
+    if (typeof key === 'string' && key.includes('.')) {
+        let tar = xdata;
+        key.split(".").forEach(k => {
+            tar = tar[k];
+        });
+        return tar;
+    } else {
+        return xdata[key];
+    }
+}
+
+// 对象设置值，优化对象多点key设置值
+const setXData = (xdata, key, value) => {
+    if (typeof key === 'string' && key.includes('.')) {
+        let tar = xdata, tarKey = key;
+        let key_arr = key.split("."), lastid = key_arr.length - 1;
+        key_arr.forEach((k, index) => {
+            if (index === lastid) {
+                tarKey = k;
+                return;
+            }
+            tar = xdata[k];
+        });
+
+        tar[tarKey] = value;
+    } else {
+        xdata[key] = value;
+    }
+}
