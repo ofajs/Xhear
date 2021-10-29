@@ -36,11 +36,11 @@
         temp: `
         <div #await="count" style="color:rgb(128, 128, 255);">Loading</div>
         <div #then="data" style="color:rgb(0, 128, 0);">count => <span :text="data"></span>
-            <button @click="resetCount()">reset</button>
+            <button @click="$host.resetCount()">reset</button>
         </div>
         <div #catch="data" style="color:red;">
             <span :text="data"></span>
-            <button @click="resetCount()">reset</button>
+            <button @click="$host.resetCount()">reset</button>
         </div>
         `,
         data: {

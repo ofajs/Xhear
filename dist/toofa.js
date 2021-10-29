@@ -2658,17 +2658,24 @@ const renderTemp = ({
                 // 函数绑定
                 const func = exprToFunc(name);
                 eid = $tar.on(eventName, (event) => {
-                    // func.call(xdata, event, $tar);
-                    func.call(host, event, $tar);
+                    func.call(xdata, event, $tar);
+                    // func.call(host, event, $tar);
                 });
             } else {
                 // 函数名绑定
                 eid = $tar.on(eventName, (event) => {
+                    // if (name.includes(".")) {
+                    //     throw {
+                    //         desc: "don't use dotted keys function"
+                    //     };
+                    // }
                     // const func = xdata[name];
-                    const func = host[name];
+                    // const func = host[name];
+                    const func = getXData(xdata, name);
                     if (func) {
                         if (isFunction(func)) {
-                            func.call(xdata, event);
+                            // func.call(xdata, event);
+                            func.call(host, event);
                         } else {
                             console.error({
                                 target: xdata,
@@ -3014,7 +3021,8 @@ const renderTemp = ({
                             parent,
                             host,
                             xdata: {
-                                [thenTemp.getAttribute("x-cmd-then")]: e
+                                [thenTemp.getAttribute("x-cmd-then")]: e,
+                                $host: host
                             }
                         });
                     }
@@ -3032,7 +3040,8 @@ const renderTemp = ({
                             parent,
                             host,
                             xdata: {
-                                [catchTemp.getAttribute("x-cmd-catch")]: err
+                                [catchTemp.getAttribute("x-cmd-catch")]: err,
+                                $host: host
                             }
                         });
                     }
