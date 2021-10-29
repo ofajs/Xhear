@@ -244,20 +244,21 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 // 函数绑定
                 const func = exprToFunc(name);
                 eid = $tar.on(eventName, (event) => {
-                    // func.call(host, event);
-                    func.call(xdata, event, $tar);
+                    // func.call(xdata, event, $tar);
+                    func.call(host, event, $tar);
                 });
             } else {
                 // 函数名绑定
                 eid = $tar.on(eventName, (event) => {
-                    // host[name] && host[name].call(host, event);
-                    const func = xdata[name];
+                    // const func = xdata[name];
+                    const func = host[name];
                     if (func) {
                         if (isFunction(func)) {
                             func.call(xdata, event);
                         } else {
                             console.error({
                                 target: xdata,
+                                host,
                                 name,
                                 value: func,
                                 desc: "bind value is not function"
@@ -266,6 +267,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                     } else {
                         console.error({
                             target: xdata,
+                            host,
                             name,
                             desc: "no binding function"
                         });
@@ -494,41 +496,6 @@ const renderTemp = ({ host, xdata, content, temps }) => {
         addBindingData(marker, renderInWatch({
             xdata, host, expr: all_expr, watchFun
         }));
-
-        // const expr = ele.getAttribute('x-cmd-if');
-
-        // // 定位文本元素
-        // let { marker, parent } = postionNode(ele);
-
-        // // 生成的目标元素
-        // let targetEle = null;
-
-        // const bindings = exprToSet({
-        //     xdata, host, expr,
-        //     callback: ({ val }) => {
-        //         if (val && !targetEle) {
-        //             // 添加元素
-        //             targetEle = $(ele.content.children[0].outerHTML).ele;
-
-        //             parent.insertBefore(targetEle, marker);
-        //             // parent.replaceChild(targetEle, marker);
-
-        //             // 重新渲染
-        //             renderTemp({ host, xdata, content: targetEle, temps });
-        //         } else if (!val && targetEle) {
-        //             // 去除数据绑定
-        //             removeElementBind(targetEle);
-
-        //             // 删除元素
-        //             targetEle.parentNode.removeChild(targetEle);
-        //             // parent.replaceChild(marker, targetEle);
-
-        //             targetEle = null;
-        //         }
-        //     }
-        // });
-
-        // addBindingData(marker, bindings);
     });
 
     // await元素渲染

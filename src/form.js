@@ -259,6 +259,10 @@ const verifyFormEle = (eles) => {
 
         e.trigger(event);
 
+        if (!e.hasOwnProperty("msg")) {
+            return;
+        }
+
         const { msg } = event;
         const msg_type = getType(msg);
 
