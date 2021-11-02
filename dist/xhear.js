@@ -1411,7 +1411,7 @@
             let backupData;
 
             let watchFun = () => {
-                const eles = this.formEles;
+                const eles = this.eles();
                 const obj = getFromEleData(eles, this);
 
                 const objKeys = Object.keys(obj);
@@ -1454,7 +1454,7 @@
 
                     if (value !== oldVal || (typeof value == "object" && typeof oldVal == "object" && JSON.stringify(value) !== JSON.stringify(oldVal))) {
                         // 相应的元素
-                        let targetEles = this.getTarget(k);
+                        let targetEles = this.eles(k);
 
                         targetEles.forEach(ele => {
                             switch (ele.type) {
@@ -1486,18 +1486,15 @@
             });
         }
 
-        get formEles() {
-            return this._target.all(this._selector)
-        }
+        eles(propName) {
+            let eles = this._target.all(this._selector)
 
-        // 获取对应属性的元素
-        getTarget(propName) {
-            return this.formEles.filter(e => e.name === propName);
-        }
+            if (propName) {
+                return eles.filter(e => e.name === propName);
+            }
 
-        // 用于验证的方法
-        // verify() {
-        // }
+            return eles;
+        }
     }
 
     // 从元素上获取表单数据
