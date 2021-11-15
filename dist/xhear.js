@@ -2776,6 +2776,7 @@ try{
                     callback: ({
                         val
                     }) => {
+                        propName = attrToProp(propName);
                         xEle[propName] = val;
                     }
                 });

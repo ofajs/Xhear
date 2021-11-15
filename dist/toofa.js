@@ -2766,6 +2766,7 @@ const renderTemp = ({
                 callback: ({
                     val
                 }) => {
+                    propName = attrToProp(propName);
                     xEle[propName] = val;
                 }
             });

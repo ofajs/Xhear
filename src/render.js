@@ -346,6 +346,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 xdata, host,
                 expr: propData[propName],
                 callback: ({ val }) => {
+                    propName = attrToProp(propName);
                     xEle[propName] = val;
                 }
             });
