@@ -347,7 +347,35 @@ const renderTemp = ({ host, xdata, content, temps }) => {
                 expr: propData[propName],
                 callback: ({ val }) => {
                     propName = attrToProp(propName);
-                    xEle[propName] = val;
+                    // if (!(propName in xEle)) {
+                    //     throw {
+                    //         target: ele,
+                    //         host: host.ele,
+                    //         desc: `this element doesn't have the property ${propName} (:${propName}), did you want to use attr:${propName}?`,
+                    //     };
+                    // } else {
+                    //     try {
+                    //         xEle[propName] = val;
+                    //     } catch (err) {
+                    //         throw {
+                    //             target: ele,
+                    //             host: host.ele,
+                    //             desc: `Failed to set property ${propName} (:${propName})`,
+                    //             error: err
+                    //         };
+                    //     }
+                    // }
+
+                    try {
+                        xEle[propName] = val;
+                    } catch (error) {
+                        throw {
+                            target: ele,
+                            host: host.ele,
+                            desc: `failed to set property ${propName} (:${propName} or prop:${propName}), did you want to use attr:${propName}?`,
+                            error
+                        };
+                    }
                 }
             });
 
