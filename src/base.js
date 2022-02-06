@@ -24,7 +24,7 @@
             if (!/\<.+\>/.test(expr)) {
                 ele = document.querySelector(expr);
             } else {
-                ele = parseStringToDom(expr)[0]
+                ele = parseStringToDom(expr)[0];
             }
         } else if (exprType == "object") {
             ele = parseDataToDom(expr);
@@ -41,15 +41,17 @@
 
     Object.assign($, {
         all(expr) {
-            return Array.from(document.querySelectorAll(expr)).map(e => createXEle(e));
+            return Array.from(document.querySelectorAll(expr)).map((e) =>
+                createXEle(e)
+            );
         },
         register,
         xdata: (obj) => createXData(obj),
         nextTick,
         fn: XEle.prototype,
-        tag: getComp
+        tag: getComp,
     });
     //<o:end--toofa.js-->
 
-    glo.$ = $
+    glo.$ = $;
 })(window);

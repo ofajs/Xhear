@@ -7,16 +7,16 @@ const renderInput = (xele) => {
     let d_opts = {
         type: {
             enumerable: true,
-            get: () => type
+            get: () => type,
         },
         name: {
             enumerable: true,
-            get: () => ele.name
+            get: () => ele.name,
         },
         value: {
             enumerable: true,
             get() {
-                return ele.hasOwnProperty('__value') ? ele.__value : ele.value;
+                return ele.hasOwnProperty("__value") ? ele.__value : ele.value;
             },
             set(val) {
                 // 针对可能输入的是数字被动转成字符
@@ -25,9 +25,9 @@ const renderInput = (xele) => {
                 emitUpdate(xele, {
                     xid: xele.xid,
                     name: "setData",
-                    args: ["value", val]
+                    args: ["value", val],
                 });
-            }
+            },
         },
         disabled: {
             enumerable: true,
@@ -36,16 +36,16 @@ const renderInput = (xele) => {
             },
             set(val) {
                 ele.disabled = val;
-            }
+            },
         },
         // 错误信息
         msg: {
             writable: true,
-            value: null
+            value: null,
         },
         [CANSETKEYS]: {
-            value: new Set(["value", "disabled", "msg", ...xEleDefaultSetKeys])
-        }
+            value: new Set(["value", "disabled", "msg", ...xEleDefaultSetKeys]),
+        },
     };
 
     // 根据类型进行设置
@@ -60,24 +60,24 @@ const renderInput = (xele) => {
                     },
                     set(val) {
                         ele.checked = val;
-                    }
+                    },
                 },
                 name: {
                     enumerable: true,
                     get() {
                         return ele.name;
-                    }
-                }
+                    },
+                },
             });
 
             // 不赋予这个字段
             delete d_opts.msg;
 
-            xele.on("change", e => {
+            xele.on("change", (e) => {
                 emitUpdate(xele, {
                     xid: xele.xid,
                     name: "setData",
-                    args: ["checked", ele.checked]
+                    args: ["checked", ele.checked],
                 });
             });
 
@@ -89,27 +89,27 @@ const renderInput = (xele) => {
                     enumerable: true,
                     get() {
                         return ele.accept;
-                    }
-                }
+                    },
+                },
             });
             break;
         case "text":
         default:
-            xele.on("input", e => {
+            xele.on("input", (e) => {
                 delete ele.__value;
 
                 // 改动冒泡
                 emitUpdate(xele, {
                     xid: xele.xid,
                     name: "setData",
-                    args: ["value", ele.value]
+                    args: ["value", ele.value],
                 });
             });
             break;
     }
 
     defineProperties(xele, d_opts);
-}
+};
 
 class FromXData extends XData {
     constructor(obj, { selector, delay, _target }) {
@@ -128,11 +128,13 @@ class FromXData extends XData {
             const obj = getFromEleData(eles, this);
 
             const objKeys = Object.keys(obj);
-            Object.keys(this).filter(e => {
-                return !objKeys.includes(e);
-            }).forEach(k => {
-                delete this[k];
-            });
+            Object.keys(this)
+                .filter((e) => {
+                    return !objKeys.includes(e);
+                })
+                .forEach((k) => {
+                    delete this[k];
+                });
 
             Object.assign(this, obj);
 
@@ -143,7 +145,7 @@ class FromXData extends XData {
             }
 
             verifyFormEle(eles);
-        }
+        };
 
         let timer;
         this._wid = _target.watch(() => {
@@ -159,17 +161,22 @@ class FromXData extends XData {
         isInit = 1;
 
         // 反向数据绑定
-        this.watchTick(e => {
+        this.watchTick((e) => {
             let data = this.toJSON();
 
             Object.entries(data).forEach(([k, value]) => {
                 let oldVal = backupData[k];
 
-                if (value !== oldVal || (typeof value == "object" && typeof oldVal == "object" && JSON.stringify(value) !== JSON.stringify(oldVal))) {
+                if (
+                    value !== oldVal ||
+                    (typeof value == "object" &&
+                        typeof oldVal == "object" &&
+                        JSON.stringify(value) !== JSON.stringify(oldVal))
+                ) {
                     // 相应的元素
                     let targetEles = this.eles(k);
 
-                    targetEles.forEach(ele => {
+                    targetEles.forEach((ele) => {
                         switch (ele.type) {
                             case "checkbox":
                                 if (value.includes(ele.value)) {
@@ -200,10 +207,10 @@ class FromXData extends XData {
     }
 
     eles(propName) {
-        let eles = this._target.all(this._selector)
+        let eles = this._target.all(this._selector);
 
         if (propName) {
-            return eles.filter(e => e.name === propName);
+            return eles.filter((e) => e.name === propName);
         }
 
         return eles;
@@ -214,7 +221,7 @@ class FromXData extends XData {
 const getFromEleData = (eles, oldData) => {
     const obj = {};
 
-    eles.forEach(ele => {
+    eles.forEach((ele) => {
         const { name, type, value } = ele;
 
         switch (type) {
@@ -224,7 +231,10 @@ const getFromEleData = (eles, oldData) => {
                 }
                 break;
             case "checkbox":
-                let tar_arr = obj[name] || ((obj[name] = oldData[name]) || (obj[name] = []));
+                let tar_arr =
+                    obj[name] ||
+                    (obj[name] = oldData[name]) ||
+                    (obj[name] = []);
                 if (ele.checked) {
                     if (!tar_arr.includes(ele.value)) {
                         tar_arr.push(value);
@@ -241,14 +251,14 @@ const getFromEleData = (eles, oldData) => {
     });
 
     return obj;
-}
+};
 
 // 验证表单元素
 const verifyFormEle = (eles) => {
     // 重新跑一次验证
-    eles.forEach(e => {
+    eles.forEach((e) => {
         const event = new CustomEvent("verify", {
-            bubbles: false
+            bubbles: false,
         });
         event.msg = "";
         event.formData = this;
@@ -274,11 +284,11 @@ const verifyFormEle = (eles) => {
             console.warn({
                 target: e,
                 msg,
-                desc: `msg can only be Error or String`
+                desc: `msg can only be Error or String`,
             });
         }
     });
-}
+};
 
 extend(XEle.prototype, {
     // 专门用于表单的插件
@@ -286,7 +296,7 @@ extend(XEle.prototype, {
         const defs = {
             // 对表单元素进行修正
             selector: "input,textarea,select",
-            delay: 100
+            delay: 100,
         };
 
         if (getType(opts) === "string") {
@@ -296,12 +306,15 @@ extend(XEle.prototype, {
         }
 
         // 主体返回对象
-        const formdata = new FromXData({}, {
-            selector: defs.selector,
-            delay: defs.delay,
-            _target: this
-        });
+        const formdata = new FromXData(
+            {},
+            {
+                selector: defs.selector,
+                delay: defs.delay,
+                _target: this,
+            }
+        );
 
         return formdata;
-    }
+    },
 });

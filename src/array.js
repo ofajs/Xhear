@@ -1,11 +1,28 @@
 // 重造数组方法
-['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
+[
+    "concat",
+    "every",
+    "filter",
+    "find",
+    "findIndex",
+    "forEach",
+    "map",
+    "slice",
+    "some",
+    "indexOf",
+    "lastIndexOf",
+    "includes",
+    "join",
+].forEach((methodName) => {
     const arrayFnFunc = Array.prototype[methodName];
     if (arrayFnFunc) {
         Object.defineProperty(XEle.prototype, methodName, {
             value(...args) {
-                return arrayFnFunc.apply(Array.from(this.ele.children).map(createXEle), args);
-            }
+                return arrayFnFunc.apply(
+                    Array.from(this.ele.children).map(createXEle),
+                    args
+                );
+            },
         });
     }
 });
@@ -19,7 +36,8 @@ extend(XEle.prototype, {
         // 删除相应元素
         const removes = [];
         let b_index = index;
-        let b_howmany = getType(howmany) == 'number' ? howmany : (this.length - index);
+        let b_howmany =
+            getType(howmany) == "number" ? howmany : this.length - index;
         let target = children[b_index];
         while (target && b_howmany > 0) {
             removes.push(target);
@@ -32,7 +50,7 @@ extend(XEle.prototype, {
         // 新增元素
         if (items.length) {
             let fragEle = document.createDocumentFragment();
-            items.forEach(e => {
+            items.forEach((e) => {
                 if (e instanceof Element) {
                     fragEle.appendChild(e);
                     return;
@@ -46,7 +64,7 @@ extend(XEle.prototype, {
                 let type = getType(e);
 
                 if (type == "string") {
-                    parseStringToDom(e).forEach(e2 => {
+                    parseStringToDom(e).forEach((e2) => {
                         fragEle.appendChild(e2);
                     });
                 } else if (type == "object") {
@@ -67,20 +85,22 @@ extend(XEle.prototype, {
         emitUpdate(this, {
             xid: this.xid,
             name: "splice",
-            args: [index, howmany, ...items]
+            args: [index, howmany, ...items],
         });
 
         return removes;
     },
     sort(sortCall) {
         const selfEle = this.ele;
-        const childs = Array.from(selfEle.children).map(createXEle).sort(sortCall);
+        const childs = Array.from(selfEle.children)
+            .map(createXEle)
+            .sort(sortCall);
 
         rebuildXEleArray(selfEle, childs);
 
         emitUpdate(this, {
             xid: this.xid,
-            name: "sort"
+            name: "sort",
         });
         return this;
     },
@@ -90,11 +110,11 @@ extend(XEle.prototype, {
         rebuildXEleArray(selfEle, childs);
         emitUpdate(this, {
             xid: this.xid,
-            name: "reverse"
+            name: "reverse",
         });
 
         return this;
-    }
+    },
 });
 
 // 根据先后顺序数组进行元素排序
@@ -113,4 +133,4 @@ const rebuildXEleArray = (container, rearray) => {
             container.insertBefore(ele, targetChild);
         }
     });
-}
+};

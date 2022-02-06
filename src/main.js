@@ -1,7 +1,7 @@
 // 最基础对象功能
 const XEleHandler = {
     get(target, key, receiver) {
-        if (typeof key === 'string' && !/\D/.test(key)) {
+        if (typeof key === "string" && !/\D/.test(key)) {
             return createXEle(target.ele.children[key]);
         }
         return Reflect.get(target, key, receiver);
@@ -15,14 +15,14 @@ const XEleHandler = {
         return keys;
     },
     getOwnPropertyDescriptor(target, key) {
-        if (typeof key === 'string' && !/\D/.test(key)) {
+        if (typeof key === "string" && !/\D/.test(key)) {
             return {
                 enumerable: true,
                 configurable: true,
-            }
+            };
         }
         return Reflect.getOwnPropertyDescriptor(target, key);
-    }
+    },
 };
 
 const EVENTS = Symbol("events");
@@ -39,7 +39,7 @@ class XEle extends XData {
 
         const self = this[XDATASELF];
 
-        self.tag = ele.tagName ? ele.tagName.toLowerCase() : '';
+        self.tag = ele.tagName ? ele.tagName.toLowerCase() : "";
 
         // self.owner = new WeakSet();
         // XEle不允许拥有owner
@@ -51,17 +51,17 @@ class XEle extends XData {
                     let par = ele.parentNode;
 
                     return par ? [createXEle(par)] : [];
-                }
-            }
+                },
+            },
         });
 
         defineProperties(self, {
             ele: {
-                get: () => ele
+                get: () => ele,
             },
             [EVENTS]: {
                 writable: true,
-                value: ""
+                value: "",
             },
             // 允许被设置的key值
             // [CANSETKEYS]: {
@@ -72,7 +72,11 @@ class XEle extends XData {
         delete self.length;
 
         // if (self.tag == "input" || self.tag == "textarea" || self.tag == "select" || (ele.contentEditable == "true")) { // contentEditable可以随时被修改
-        if (self.tag == "input" || self.tag == "textarea" || self.tag == "select") {
+        if (
+            self.tag == "input" ||
+            self.tag == "textarea" ||
+            self.tag == "select"
+        ) {
             renderInput(self);
         }
     }
@@ -99,7 +103,9 @@ class XEle extends XData {
 
     get parent() {
         let { parentNode } = this.ele;
-        return (!parentNode || parentNode === document) ? null : createXEle(parentNode);
+        return !parentNode || parentNode === document
+            ? null
+            : createXEle(parentNode);
     }
 
     get index() {
@@ -154,16 +160,14 @@ class XEle extends XData {
             return;
         }
 
-        let {
-            style
-        } = this;
+        let { style } = this;
 
         // 覆盖旧的样式
         let hasKeys = Array.from(style);
         let nextKeys = Object.keys(d);
 
         // 清空不用设置的key
-        hasKeys.forEach(k => {
+        hasKeys.forEach((k) => {
             if (!nextKeys.includes(k)) {
                 style[k] = "";
             }
@@ -187,21 +191,21 @@ class XEle extends XData {
     get position() {
         return {
             top: this.ele.offsetTop,
-            left: this.ele.offsetLeft
+            left: this.ele.offsetLeft,
         };
     }
 
     get offset() {
         let reobj = {
             top: 0,
-            left: 0
+            left: 0,
         };
 
         let tar = this.ele;
         while (tar && tar !== document) {
             reobj.top += tar.offsetTop;
             reobj.left += tar.offsetLeft;
-            tar = tar.offsetParent
+            tar = tar.offsetParent;
         }
         return reobj;
     }
@@ -232,12 +236,20 @@ class XEle extends XData {
 
     get outerWidth() {
         let computedStyle = getComputedStyle(this.ele);
-        return this.ele.offsetWidth + parseInt(computedStyle['margin-left']) + parseInt(computedStyle['margin-right']);
+        return (
+            this.ele.offsetWidth +
+            parseInt(computedStyle["margin-left"]) +
+            parseInt(computedStyle["margin-right"])
+        );
     }
 
     get outerHeight() {
         let computedStyle = getComputedStyle(this.ele);
-        return this.ele.offsetHeight + parseInt(computedStyle['margin-top']) + parseInt(computedStyle['margin-bottom']);
+        return (
+            this.ele.offsetHeight +
+            parseInt(computedStyle["margin-top"]) +
+            parseInt(computedStyle["margin-bottom"])
+        );
     }
 
     get next() {
@@ -256,13 +268,13 @@ class XEle extends XData {
     }
 
     all(expr) {
-        return Array.from(this.ele.querySelectorAll(expr)).map(e => {
+        return Array.from(this.ele.querySelectorAll(expr)).map((e) => {
             return createXEle(e);
-        })
+        });
     }
 
     is(expr) {
-        return meetsEle(this.ele, expr)
+        return meetsEle(this.ele, expr);
     }
 
     attr(...args) {
@@ -272,7 +284,7 @@ class XEle extends XData {
 
         if (args.length == 1) {
             if (key instanceof Object) {
-                Object.keys(key).forEach(k => {
+                Object.keys(key).forEach((k) => {
                     ele.setAttribute(k, key[k]);
                 });
             }
@@ -296,14 +308,14 @@ class XEle extends XData {
 
         // 删除不符合规定的
         if (expr) {
-            parChilds = parChilds.filter(e => {
+            parChilds = parChilds.filter((e) => {
                 if (meetsEle(e, expr)) {
                     return true;
                 }
             });
         }
 
-        return parChilds.map(e => createXEle(e));
+        return parChilds.map((e) => createXEle(e));
     }
 
     parents(expr, until) {
@@ -329,7 +341,7 @@ class XEle extends XData {
         if (until) {
             if (until instanceof XEle) {
                 let newPars = [];
-                pars.some(e => {
+                pars.some((e) => {
                     if (e === until) {
                         return true;
                     }
@@ -338,7 +350,7 @@ class XEle extends XData {
                 pars = newPars;
             } else if (getType(until) == "string") {
                 let newPars = [];
-                pars.some(e => {
+                pars.some((e) => {
                     if (e.is(until)) {
                         return true;
                     }
@@ -355,7 +367,7 @@ class XEle extends XData {
         let cloneEle = createXEle(this.ele.cloneNode(true));
 
         // 数据重新设置
-        Object.keys(this).forEach(key => {
+        Object.keys(this).forEach((key) => {
             if (key !== "tag") {
                 cloneEle[key] = this[key];
             }
@@ -381,7 +393,7 @@ class XEle extends XData {
             }
         });
         extend(this, proto, {
-            configurable: true
+            configurable: true,
         });
     }
 
@@ -390,7 +402,7 @@ class XEle extends XData {
         if (this._initedSizeObs) {
             console.warn({
                 target: this.ele,
-                desc: "initRect is runned"
+                desc: "initRect is runned",
             });
             return;
         }
@@ -403,30 +415,38 @@ class XEle extends XData {
 
             setTimeout(() => {
                 // 尺寸时间监听
-                emitUpdate(this, {
-                    xid: this.xid,
-                    name: "sizeUpdate"
-                }, undefined, false);
+                emitUpdate(
+                    this,
+                    {
+                        xid: this.xid,
+                        name: "sizeUpdate",
+                    },
+                    undefined,
+                    false
+                );
             }, time);
-        }
+        };
         fixSize();
         if (window.ResizeObserver) {
-            const resizeObserver = new ResizeObserver(entries => {
+            const resizeObserver = new ResizeObserver((entries) => {
                 fixSize();
             });
             resizeObserver.observe(this.ele);
 
             return () => {
                 resizeObserver.disconnect();
-            }
+            };
         } else {
             let f;
-            window.addEventListener("resize", f = e => {
-                fixSize();
-            });
+            window.addEventListener(
+                "resize",
+                (f = (e) => {
+                    fixSize();
+                })
+            );
             return () => {
                 window.removeEventListener("resize", f);
-            }
+            };
         }
     }
 }
@@ -435,6 +455,6 @@ class XEle extends XData {
 defineProperties(XEle.prototype, {
     [CANSETKEYS]: {
         // writable: true,
-        value: new Set(xEleDefaultSetKeys)
-    }
+        value: new Set(xEleDefaultSetKeys),
+    },
 });
