@@ -4,12 +4,16 @@ const getRandomId = () => Math.random().toString(32).substr(2);
 //     return Array.from(crypto.getRandomValues(new Uint8Array(len / 2)), dec => ('0' + dec.toString(16)).substr(-2)).join('');
 // }
 var objectToString = Object.prototype.toString;
-var getType = value => objectToString.call(value).toLowerCase().replace(/(\[object )|(])/g, '');
-const isFunction = d => getType(d).search('function') > -1;
-var isEmptyObj = obj => !Object.keys(obj).length;
+var getType = (value) =>
+    objectToString
+    .call(value)
+    .toLowerCase()
+    .replace(/(\[object )|(])/g, "");
+const isFunction = (d) => getType(d).search("function") > -1;
+var isEmptyObj = (obj) => !Object.keys(obj).length;
 const defineProperties = Object.defineProperties;
 const getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-const isxdata = obj => obj instanceof XData;
+const isxdata = (obj) => obj instanceof XData;
 
 const isDebug = document.currentScript.getAttribute("debug") !== null;
 
@@ -24,17 +28,20 @@ const nextTick = (() => {
 
             let timer = nMap.get(key);
             clearTimeout(timer);
-            nMap.set(key, setTimeout(() => {
-                fun();
-                nMap.delete(key);
-            }));
+            nMap.set(
+                key,
+                setTimeout(() => {
+                    fun();
+                    nMap.delete(key);
+                })
+            );
         };
     }
 
     // 定位对象寄存器
     let nextTickMap = new Map();
 
-    let pnext = (func) => Promise.resolve().then(() => func())
+    let pnext = (func) => Promise.resolve().then(() => func());
 
     if (typeof process === "object" && process.nextTick) {
         pnext = process.nextTick;
@@ -48,7 +55,7 @@ const nextTick = (() => {
 
         nextTickMap.set(key, {
             key,
-            fun
+            fun,
         });
 
         if (inTick) {
@@ -82,7 +89,7 @@ const nextTick = (() => {
 const collect = (func, time) => {
     let arr = [];
     let timer;
-    const reFunc = e => {
+    const reFunc = (e) => {
         arr.push(Object.assign({}, e));
         if (time) {
             clearTimeout(timer);
@@ -96,14 +103,14 @@ const collect = (func, time) => {
                 arr.length = 0;
             }, reFunc);
         }
-    }
+    };
 
     return reFunc;
-}
+};
 
 // 扩展对象
 const extend = (_this, proto, descriptor = {}) => {
-    Object.keys(proto).forEach(k => {
+    Object.keys(proto).forEach((k) => {
         // 获取描述
         let {
             get,
@@ -128,7 +135,7 @@ const extend = (_this, proto, descriptor = {}) => {
             });
         }
     });
-}
+};
 
 const startTime = Date.now();
 // 获取高精度的当前时间
@@ -157,19 +164,21 @@ const emitUpdate = (target, opts, path, unupdate) => {
     }
 
     // 触发callback
-    target[WATCHS].forEach(f => f(opts));
+    target[WATCHS].forEach((f) => f(opts));
 
     if (unupdate || target._unupdate) {
         return;
     }
 
     // 向上冒泡
-    target.owner && target.owner.forEach(parent => emitUpdate(parent, opts, new_path.slice()));
-}
+    target.owner &&
+        target.owner.forEach((parent) =>
+            emitUpdate(parent, opts, new_path.slice())
+        );
+};
 
 class XData {
     constructor(obj, status) {
-
         let proxy_self;
 
         if (obj.get) {
@@ -193,14 +202,14 @@ class XData {
         // 每个对象的专属id
         defineProperties(this, {
             [XDATASELF]: {
-                value: this
+                value: this,
             },
             [PROXYSELF]: {
-                value: proxy_self
+                value: proxy_self,
             },
             // 每个对象必有的id
             xid: {
-                value: "x_" + getRandomId()
+                value: "x_" + getRandomId(),
             },
             // 当前所处的状态
             _xtatus: {
@@ -211,7 +220,7 @@ class XData {
                     if (!cansetXtatus.has(val)) {
                         throw {
                             target: proxy_self,
-                            desc: `xtatus not allowed to be set ${val}`
+                            desc: `xtatus not allowed to be set ${val}`,
                         };
                     }
                     const size = this.owner.size;
@@ -219,7 +228,7 @@ class XData {
                     if (val === "revoke" && size) {
                         throw {
                             target: proxy_self,
-                            desc: "the owner is not empty"
+                            desc: "the owner is not empty",
                         };
                     } else if (xtatus === "revoke" && val !== "revoke") {
                         if (!size) {
@@ -228,37 +237,37 @@ class XData {
                     } else if (xtatus === "sub" && val === "root") {
                         throw {
                             target: proxy_self,
-                            desc: "cannot modify sub to root"
+                            desc: "cannot modify sub to root",
                         };
                     }
                     xtatus = val;
-                }
+                },
             },
             // 所有父层对象存储的位置
             // 拥有者对象
             owner: {
                 configurable: true,
                 writable: true,
-                value: new Set()
+                value: new Set(),
             },
             // 数组对象
             length: {
                 configurable: true,
                 writable: true,
-                value: 0
+                value: 0,
             },
             // 监听函数
             [WATCHS]: {
-                value: new Map()
+                value: new Map(),
             },
             [CANUPDATE]: {
                 writable: true,
-                value: 0
-            }
+                value: 0,
+            },
         });
 
         let maxNum = -1;
-        Object.keys(obj).forEach(key => {
+        Object.keys(obj).forEach((key) => {
             let descObj = getOwnPropertyDescriptor(obj, key);
             let {
                 value,
@@ -278,7 +287,7 @@ class XData {
             if (get || set) {
                 // 通过get set 函数设置
                 defineProperties(this, {
-                    [key]: descObj
+                    [key]: descObj,
                 });
             } else {
                 // 直接设置函数
@@ -343,7 +352,7 @@ class XData {
             emitUpdate(this, {
                 xid: this.xid,
                 name: "setData",
-                args: [key, value]
+                args: [key, value],
             });
         }
 
@@ -353,12 +362,15 @@ class XData {
     }
 
     // 主动触发更新事件
-    // 方便 get 类型数据触发 watch 
+    // 方便 get 类型数据触发 watch
     update(opts = {}) {
-        emitUpdate(this, Object.assign({}, opts, {
-            xid: this.xid,
-            isCustom: true
-        }));
+        emitUpdate(
+            this,
+            Object.assign({}, opts, {
+                xid: this.xid,
+                isCustom: true,
+            })
+        );
     }
 
     delete(key) {
@@ -385,7 +397,7 @@ class XData {
         emitUpdate(this, {
             xid: this.xid,
             name: "delete",
-            args: [key]
+            args: [key],
         });
 
         return reval;
@@ -406,9 +418,9 @@ const xdataHandler = {
                     [key]: {
                         writable: true,
                         configurable: true,
-                        value
-                    }
-                })
+                        value,
+                    },
+                });
             } else {
                 Reflect.set(target, key, value, receiver);
             }
@@ -422,14 +434,14 @@ const xdataHandler = {
                 desc: `failed to set ${key}`,
                 key,
                 value,
-                target: receiver
+                target: receiver,
             };
         }
     },
     deleteProperty: function(target, key) {
         return target.delete(key);
-    }
-}
+    },
+};
 
 // 清除xdata的owner数据
 const clearXDataOwner = (xdata, parent) => {
@@ -444,17 +456,17 @@ const clearXDataOwner = (xdata, parent) => {
 
     if (!owner.size) {
         xdata._xtatus = "revoke";
-        Object.values(xdata).forEach(child => {
+        Object.values(xdata).forEach((child) => {
             clearXDataOwner(child, xdata[XDATASELF]);
         });
     }
-}
+};
 
 // 修正xdata的owner数据
 const fixXDataOwner = (xdata) => {
     if (xdata._xtatus === "revoke") {
         // 重新修复状态
-        Object.values(xdata).forEach(e => {
+        Object.values(xdata).forEach((e) => {
             if (isxdata(e)) {
                 fixXDataOwner(e);
                 e.owner.add(xdata);
@@ -462,7 +474,7 @@ const fixXDataOwner = (xdata) => {
             }
         });
     }
-}
+};
 
 const createXData = (obj, status = "root") => {
     if (isxdata(obj)) {
@@ -472,13 +484,14 @@ const createXData = (obj, status = "root") => {
     return new XData(obj, status);
 };
 
+
 extend(XData.prototype, {
     seek(expr) {
         let arr = [];
 
         if (!isFunction(expr)) {
-            let f = new Function(`with(this){return ${expr}}`)
-            expr = _this => {
+            let f = new Function(`with(this){return ${expr}}`);
+            expr = (_this) => {
                 try {
                     return f.call(_this, _this);
                 } catch (e) {}
@@ -489,7 +502,7 @@ extend(XData.prototype, {
             arr.push(this);
         }
 
-        Object.values(this).forEach(e => {
+        Object.values(this).forEach((e) => {
             if (isxdata(e)) {
                 arr.push(...e.seek(expr));
             }
@@ -505,69 +518,75 @@ extend(XData.prototype, {
     watchUntil(expr) {
         let isFunc = isFunction(expr);
         if (!isFunc && /[^=><]=[^=]/.test(expr)) {
-            throw 'cannot use single =';
+            throw "cannot use single =";
         }
 
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             // 忽略错误
-            let exprFun = isFunc ? expr.bind(this) : new Function(`
+            let exprFun = isFunc ?
+                expr.bind(this) :
+                new Function(`
         try{with(this){
             return ${expr}
         }}catch(e){}`).bind(this);
 
             let f;
-            const wid = this.watchTick(f = () => {
-                let reVal = exprFun();
-                if (reVal) {
-                    this.unwatch(wid);
-                    resolve(reVal);
-                }
-            });
+            const wid = this.watchTick(
+                (f = () => {
+                    let reVal = exprFun();
+                    if (reVal) {
+                        this.unwatch(wid);
+                        resolve(reVal);
+                    }
+                })
+            );
             f();
         });
     },
     // 监听相应key
     watchKey(obj, immediately) {
         if (immediately) {
-            Object.keys(obj).forEach(key => obj[key].call(this, this[key]));
+            Object.keys(obj).forEach((key) => obj[key].call(this, this[key]));
         }
 
         let oldVal = {};
-        Object.keys(obj).forEach(key => {
+        Object.keys(obj).forEach((key) => {
             oldVal[key] = this[key];
         });
         // Object.entries(this).forEach(([k, v]) => {
         //     oldVal[k] = v;
         // });
-        return this.watch(collect((arr) => {
-            Object.keys(obj).forEach(key => {
-                // 当前值
-                let val = this[key];
-                let old = oldVal[key];
+        return this.watch(
+            collect((arr) => {
+                Object.keys(obj).forEach((key) => {
+                    // 当前值
+                    let val = this[key];
+                    let old = oldVal[key];
 
-                if (old !== val) {
-                    obj[key].call(this, val, {
-                        old
-                    });
-                } else if (isxdata(val)) {
-                    // 判断改动arr内是否有当前key的改动
-                    let hasChange = arr.some(e => {
-                        let p = e.path[1];
-
-                        // if (p == oldVal[key]) {
-                        return p == val;
-                    });
-
-                    if (hasChange) {
+                    if (old !== val) {
                         obj[key].call(this, val, {
                             old
                         });
-                    }
-                }
+                    } else if (isxdata(val)) {
+                        // 判断改动arr内是否有当前key的改动
+                        let hasChange = arr.some((e) => {
+                            let p = e.path[1];
 
-                oldVal[key] = val;
-            });
-        }));
+                            // if (p == oldVal[key]) {
+                            return p == val;
+                        });
+
+                        if (hasChange) {
+                            obj[key].call(this, val, {
+                                old
+                            });
+                        }
+                    }
+
+                    oldVal[key] = val;
+                });
+            })
+        );
     },
     // 转换为json数据
     toJSON() {
@@ -576,7 +595,7 @@ extend(XData.prototype, {
         let isPureArray = true;
         let maxId = 0;
 
-        Object.keys(this).forEach(k => {
+        Object.keys(this).forEach((k) => {
             let val = this[k];
 
             if (!/\D/.test(k)) {
@@ -603,8 +622,8 @@ extend(XData.prototype, {
         const xid = this.xid;
         defineProperties(obj, {
             xid: {
-                get: () => xid
-            }
+                get: () => xid,
+            },
         });
 
         return obj;
@@ -612,17 +631,32 @@ extend(XData.prototype, {
     // 转为字符串
     toString() {
         return JSON.stringify(this.toJSON());
-    }
+    },
 });
 
+
 // 不影响数据原结构的方法，重新做钩子
-['concat', 'every', 'filter', 'find', 'findIndex', 'forEach', 'map', 'slice', 'some', 'indexOf', 'lastIndexOf', 'includes', 'join'].forEach(methodName => {
+[
+    "concat",
+    "every",
+    "filter",
+    "find",
+    "findIndex",
+    "forEach",
+    "map",
+    "slice",
+    "some",
+    "indexOf",
+    "lastIndexOf",
+    "includes",
+    "join",
+].forEach((methodName) => {
     let arrayFnFunc = Array.prototype[methodName];
     if (arrayFnFunc) {
         defineProperties(XData.prototype, {
             [methodName]: {
                 value: arrayFnFunc
-            }
+            },
         });
     }
 });
@@ -635,7 +669,7 @@ extend(XData.prototype, {
         let self = this[XDATASELF];
 
         // items修正
-        items = items.map(e => {
+        items = items.map((e) => {
             let valueType = getType(e);
             if (valueType == "array" || valueType == "object") {
                 e = createXData(e, "sub");
@@ -643,21 +677,22 @@ extend(XData.prototype, {
             }
 
             return e;
-        })
+        });
 
-        let b_howmany = getType(howmany) == 'number' ? howmany : (this.length - index);
+        let b_howmany =
+            getType(howmany) == "number" ? howmany : this.length - index;
 
         // 套入原生方法
         let rmArrs = arraySplice.call(self, index, b_howmany, ...items);
 
         // rmArrs.forEach(e => isxdata(e) && e.owner.delete(self));
-        rmArrs.forEach(e => clearXDataOwner(e, self));
+        rmArrs.forEach((e) => clearXDataOwner(e, self));
 
         // 改动冒泡
         emitUpdate(this, {
             xid: this.xid,
             name: "splice",
-            args: [index, howmany, ...items]
+            args: [index, howmany, ...items],
         });
 
         return rmArrs;
@@ -675,10 +710,10 @@ extend(XData.prototype, {
     },
     pop() {
         return this.splice(this.length - 1, 1)[0];
-    }
+    },
 });
 
-['sort', 'reverse'].forEach(methodName => {
+["sort", "reverse"].forEach((methodName) => {
     // 原来的数组方法
     const arrayFnFunc = Array.prototype[methodName];
 
@@ -686,16 +721,16 @@ extend(XData.prototype, {
         defineProperties(XData.prototype, {
             [methodName]: {
                 value(...args) {
-                    let reval = arrayFnFunc.apply(this[XDATASELF], args)
+                    let reval = arrayFnFunc.apply(this[XDATASELF], args);
 
                     emitUpdate(this, {
                         xid: this.xid,
-                        name: methodName
+                        name: methodName,
                     });
 
                     return reval;
-                }
-            }
+                },
+            },
         });
     }
 });
@@ -2053,13 +2088,13 @@ const register = (opts) => {
         constructor(...args) {
             super(...args);
 
-            let old_xele = this.__xEle__;
-            if (old_xele) {
-                console.warn({
-                    target: old_xele,
-                    desc: "please re-instantiate the object"
-                });
-            }
+            // let old_xele = this.__xEle__;
+            // if (old_xele) {
+            //     console.warn({
+            //         target: old_xele,
+            //         desc: "please re-instantiate the object"
+            //     });
+            // }
 
             this.__xEle__ = new CustomXEle(this);
 

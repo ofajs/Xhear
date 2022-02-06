@@ -204,13 +204,13 @@ const register = (opts) => {
         constructor(...args) {
             super(...args);
 
-            let old_xele = this.__xEle__;
-            if (old_xele) {
-                console.warn({
-                    target: old_xele,
-                    desc: "please re-instantiate the object"
-                });
-            }
+            // let old_xele = this.__xEle__;
+            // if (old_xele) {
+            //     console.warn({
+            //         target: old_xele,
+            //         desc: "please re-instantiate the object"
+            //     });
+            // }
 
             this.__xEle__ = new CustomXEle(this);
 
