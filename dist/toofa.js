@@ -17,7 +17,6 @@ const isxdata = (obj) => obj instanceof XData;
 
 const isDebug = document.currentScript.getAttribute("debug") !== null;
 
-// 改良异步方法
 const nextTick = (() => {
     if (isDebug) {
         let nMap = new Map();
@@ -38,7 +37,6 @@ const nextTick = (() => {
         };
     }
 
-    // 定位对象寄存器
     let nextTickMap = new Map();
 
     let pnext = (func) => Promise.resolve().then(() => func());
@@ -85,12 +83,14 @@ const nextTick = (() => {
     };
 })();
 
-// 在tick后运行收集的函数数据
+// Collects the data returned over a period of time and runs it once as a parameter after a period of time.
 const collect = (func, time) => {
     let arr = [];
     let timer;
     const reFunc = (e) => {
-        arr.push(Object.assign({}, e));
+        arr.push({
+            ...e
+        });
         if (time) {
             clearTimeout(timer);
             timer = setTimeout(() => {
@@ -108,10 +108,9 @@ const collect = (func, time) => {
     return reFunc;
 };
 
-// 扩展对象
+// Enhanced methods for extending objects
 const extend = (_this, proto, descriptor = {}) => {
     Object.keys(proto).forEach((k) => {
-        // 获取描述
         let {
             get,
             set,
@@ -137,12 +136,6 @@ const extend = (_this, proto, descriptor = {}) => {
     });
 };
 
-const startTime = Date.now();
-// 获取高精度的当前时间
-// const getTimeId = () => startTime + performance.now();
-// const getTimeId = () => Date.now().toString(32);
-// const getTimeId = () => performance.now().toString(32);
-
 
 const XDATASELF = Symbol("self");
 const PROXYSELF = Symbol("proxy");
@@ -153,7 +146,7 @@ const cansetXtatus = new Set(["root", "sub", "revoke"]);
 
 const emitUpdate = (target, opts, path, unupdate) => {
     if (path && path.includes(target[PROXYSELF])) {
-        // 防止循环引用
+        console.warn("Circular references appear");
         return;
     }
     let new_path;
@@ -163,14 +156,14 @@ const emitUpdate = (target, opts, path, unupdate) => {
         new_path = opts.path = [target[PROXYSELF], ...path];
     }
 
-    // 触发callback
+    // trigger watch callback
     target[WATCHS].forEach((f) => f(opts));
 
     if (unupdate || target._unupdate) {
         return;
     }
 
-    // 向上冒泡
+    // Bubbling change events to the parent object
     target.owner &&
         target.owner.forEach((parent) =>
             emitUpdate(parent, opts, new_path.slice())
@@ -196,10 +189,10 @@ class XData {
             proxy_self = new Proxy(this, xdataHandler);
         }
 
-        // 当前对象所处的状态
+        // status of the object
         let xtatus = status;
 
-        // 每个对象的专属id
+        // Attributes that are available for each instance
         defineProperties(this, {
             [XDATASELF]: {
                 value: this,
@@ -207,11 +200,10 @@ class XData {
             [PROXYSELF]: {
                 value: proxy_self,
             },
-            // 每个对象必有的id
+            // Each object must have an id
             xid: {
                 value: "x_" + getRandomId(),
             },
-            // 当前所处的状态
             _xtatus: {
                 get() {
                     return xtatus;
@@ -243,20 +235,18 @@ class XData {
                     xtatus = val;
                 },
             },
-            // 所有父层对象存储的位置
-            // 拥有者对象
+            // Save all parent objects
             owner: {
                 configurable: true,
                 writable: true,
                 value: new Set(),
             },
-            // 数组对象
             length: {
                 configurable: true,
                 writable: true,
                 value: 0,
             },
-            // 监听函数
+            // Save the object of the listener function
             [WATCHS]: {
                 value: new Map(),
             },
@@ -285,13 +275,11 @@ class XData {
                 }
             }
             if (get || set) {
-                // 通过get set 函数设置
                 defineProperties(this, {
                     [key]: descObj,
                 });
             } else {
-                // 直接设置函数
-                // this.setData(key, value);
+                // Set the function directly
                 proxy_self[key] = value;
             }
         });
@@ -322,7 +310,7 @@ class XData {
         if (valueType == "array" || valueType == "object") {
             value = createXData(value, "sub");
 
-            // 设置父层的key
+            // Adding a parent object to an object
             value.owner.add(this);
         }
 
@@ -330,7 +318,7 @@ class XData {
         const descObj = Object.getOwnPropertyDescriptor(this, key);
         const p_self = this[PROXYSELF];
         try {
-            // 为了只有 set 没有 get 的情况
+            // The case of only set but not get
             oldVal = p_self[key];
         } catch (err) {}
 
@@ -346,9 +334,8 @@ class XData {
             reval = Reflect.set(this, key, value);
         }
 
-        // if (this[CANUPDATE] || this._update === false) {
         if (this[CANUPDATE]) {
-            // 改动冒泡
+            // Need bubble processing after changing data
             emitUpdate(this, {
                 xid: this.xid,
                 name: "setData",
@@ -361,8 +348,8 @@ class XData {
         return reval;
     }
 
-    // 主动触发更新事件
-    // 方便 get 类型数据触发 watch
+    // Proactively trigger update events
+    // Convenient get type data trigger watch
     update(opts = {}) {
         emitUpdate(
             this,
@@ -374,7 +361,7 @@ class XData {
     }
 
     delete(key) {
-        // 确认key是隐藏属性
+        // The _ prefix or symbol can be deleted directly
         if (/^_/.test(key) || typeof key === "symbol") {
             return Reflect.deleteProperty(this, key);
         }
@@ -383,17 +370,16 @@ class XData {
             return false;
         }
 
-        // 无proxy自身
+        // Adjustment of internal data, not using proxy objects
         const _this = this[XDATASELF];
 
         let val = _this[key];
-        // 清除owner上的父层
-        // val.owner.delete(_this);
+        // Clear the parent on the owner
         clearXDataOwner(val, _this);
 
         let reval = Reflect.deleteProperty(_this, key);
 
-        // 改动冒泡
+        // Bubbling behavior after data changes
         emitUpdate(this, {
             xid: this.xid,
             name: "delete",
@@ -404,14 +390,14 @@ class XData {
     }
 }
 
-// 中转XBody的请求
+// Proxy Handler for relaying XData
 const xdataHandler = {
     set(target, key, value, receiver) {
         if (typeof key === "symbol") {
             return Reflect.set(target, key, value, receiver);
         }
 
-        // 确认key是隐藏属性
+        // Set properties with _ prefix directly
         if (/^_/.test(key)) {
             if (!target.hasOwnProperty(key)) {
                 defineProperties(target, {
@@ -443,7 +429,7 @@ const xdataHandler = {
     },
 };
 
-// 清除xdata的owner数据
+// Clear xdata's owner data
 const clearXDataOwner = (xdata, parent) => {
     if (!isxdata(xdata)) {
         return;
@@ -462,7 +448,7 @@ const clearXDataOwner = (xdata, parent) => {
     }
 };
 
-// 修正xdata的owner数据
+// Fix xdata's owner data
 const fixXDataOwner = (xdata) => {
     if (xdata._xtatus === "revoke") {
         // 重新修复状态
@@ -510,11 +496,11 @@ extend(XData.prototype, {
 
         return arr;
     },
-    // watch异步收集版本
+    // watch asynchronous collection version
     watchTick(func, time) {
         return this.watch(collect(func, time));
     },
-    // 监听直到表达式成功
+    // Listening until the expression succeeds
     watchUntil(expr) {
         let isFunc = isFunction(expr);
         if (!isFunc && /[^=><]=[^=]/.test(expr)) {
@@ -522,7 +508,7 @@ extend(XData.prototype, {
         }
 
         return new Promise((resolve) => {
-            // 忽略错误
+            // Ignore errors
             let exprFun = isFunc ?
                 expr.bind(this) :
                 new Function(`
@@ -543,7 +529,7 @@ extend(XData.prototype, {
             f();
         });
     },
-    // 监听相应key
+    // Listen to the corresponding key
     watchKey(obj, immediately) {
         if (immediately) {
             Object.keys(obj).forEach((key) => obj[key].call(this, this[key]));
@@ -553,13 +539,10 @@ extend(XData.prototype, {
         Object.keys(obj).forEach((key) => {
             oldVal[key] = this[key];
         });
-        // Object.entries(this).forEach(([k, v]) => {
-        //     oldVal[k] = v;
-        // });
+
         return this.watch(
             collect((arr) => {
                 Object.keys(obj).forEach((key) => {
-                    // 当前值
                     let val = this[key];
                     let old = oldVal[key];
 
@@ -568,11 +551,10 @@ extend(XData.prototype, {
                             old
                         });
                     } else if (isxdata(val)) {
-                        // 判断改动arr内是否有当前key的改动
+                        // Whether the current array has changes to this key
                         let hasChange = arr.some((e) => {
                             let p = e.path[1];
 
-                            // if (p == oldVal[key]) {
                             return p == val;
                         });
 
@@ -588,7 +570,6 @@ extend(XData.prototype, {
             })
         );
     },
-    // 转换为json数据
     toJSON() {
         let obj = {};
 
@@ -628,14 +609,13 @@ extend(XData.prototype, {
 
         return obj;
     },
-    // 转为字符串
     toString() {
         return JSON.stringify(this.toJSON());
     },
 });
 
 
-// 不影响数据原结构的方法，重新做钩子
+// Submerged hooks that do not affect the original structure of the data
 [
     "concat",
     "every",
@@ -661,14 +641,13 @@ extend(XData.prototype, {
     }
 });
 
-// 原生splice方法
 const arraySplice = Array.prototype.splice;
 
 extend(XData.prototype, {
     splice(index, howmany, ...items) {
         let self = this[XDATASELF];
 
-        // items修正
+        // Fix the properties of new objects
         items = items.map((e) => {
             let valueType = getType(e);
             if (valueType == "array" || valueType == "object") {
@@ -679,16 +658,14 @@ extend(XData.prototype, {
             return e;
         });
 
-        let b_howmany =
+        const b_howmany =
             getType(howmany) == "number" ? howmany : this.length - index;
 
-        // 套入原生方法
-        let rmArrs = arraySplice.call(self, index, b_howmany, ...items);
+        // Follow the native split method
+        const rmArrs = arraySplice.call(self, index, b_howmany, ...items);
 
-        // rmArrs.forEach(e => isxdata(e) && e.owner.delete(self));
         rmArrs.forEach((e) => clearXDataOwner(e, self));
 
-        // 改动冒泡
         emitUpdate(this, {
             xid: this.xid,
             name: "splice",
@@ -714,7 +691,6 @@ extend(XData.prototype, {
 });
 
 ["sort", "reverse"].forEach((methodName) => {
-    // 原来的数组方法
     const arrayFnFunc = Array.prototype[methodName];
 
     if (arrayFnFunc) {
@@ -734,8 +710,6 @@ extend(XData.prototype, {
         });
     }
 });
-// 公用方法文件
-// 创建xEle元素
 const createXEle = (ele) => {
     if (!ele) {
         return null;
@@ -743,7 +717,7 @@ const createXEle = (ele) => {
     return ele.__xEle__ ? ele.__xEle__ : (ele.__xEle__ = new XEle(ele));
 };
 
-// 判断元素是否符合条件
+// Determine if an element is eligible
 const meetTemp = document.createElement("template");
 const meetsEle = (ele, expr) => {
     if (!ele.tagName) {
@@ -756,14 +730,14 @@ const meetsEle = (ele, expr) => {
         return false;
     }
     meetTemp.innerHTML = `<${ele.tagName.toLowerCase()} ${Array.from(
-        ele.attributes
-    )
-        .map((e) => e.name + '="' + e.value + '"')
-        .join(" ")} />`;
+    ele.attributes
+  )
+    .map((e) => e.name + '="' + e.value + '"')
+    .join(" ")} />`;
     return !!meetTemp.content.querySelector(expr);
 };
 
-// 转换元素
+// Converting strings to elements
 const parseStringToDom = (str) => {
     const pstTemp = document.createElement("div");
     pstTemp.innerHTML = str;
@@ -774,34 +748,31 @@ const parseStringToDom = (str) => {
     });
 };
 
-// 将对象转为element
+// Converting objects to elements
 const parseDataToDom = (objData) => {
     if (!objData.tag) {
         console.error("this data need tag =>", objData);
         throw "";
     }
 
-    // 生成element
     let ele = document.createElement(objData.tag);
 
-    // 添加数据
+    // add data
     objData.class && ele.setAttribute("class", objData.class);
     objData.slot && ele.setAttribute("slot", objData.slot);
-    // objData.text && (ele.textContent = objData.text);
 
     const xele = createXEle(ele);
 
-    // 数据合并
+    // merge data
     xele[CANSETKEYS].forEach((k) => {
         if (objData[k]) {
             xele[k] = objData[k];
         }
     });
 
-    // 填充子元素
+    // append child elements
     let akey = 0;
     while (akey in objData) {
-        // 转换数据
         let childEle = parseDataToDom(objData[akey]);
         ele.appendChild(childEle);
         akey++;
@@ -810,13 +781,11 @@ const parseDataToDom = (objData) => {
     return ele;
 };
 
-// 将 element attribute 横杠转换为大小写模式
+//  Converts element attribute horizontal bar to case mode
 const attrToProp = (key) => {
-    // 判断是否有横线
+    // Determine if there is a horizontal line
     if (/\-/.test(key)) {
-        key = key.replace(/\-[\D]/g, (letter) =>
-            letter.substr(1).toUpperCase()
-        );
+        key = key.replace(/\-[\D]/g, (letter) => letter.substr(1).toUpperCase());
     }
     return key;
 };
@@ -827,7 +796,7 @@ const propToAttr = (key) => {
     return key;
 };
 
-// 对象获取值，优化对象多点key获取值
+// object to get the value, optimize the string with multiple '.'
 const getXData = (xdata, key) => {
     if (typeof key === "string" && key.includes(".")) {
         let tar = xdata;
@@ -840,7 +809,7 @@ const getXData = (xdata, key) => {
     }
 };
 
-// 对象设置值，优化对象多点key设置值
+// object to set the value, optimize the string with multiple '.'
 const setXData = (xdata, key, value) => {
     if (typeof key === "string" && key.includes(".")) {
         let tar = xdata,
@@ -861,7 +830,6 @@ const setXData = (xdata, key, value) => {
     }
 };
 
-// 最基础对象功能
 const XEleHandler = {
     get(target, key, receiver) {
         if (typeof key === "string" && !/\D/.test(key)) {
@@ -891,7 +859,7 @@ const XEleHandler = {
 const EVENTS = Symbol("events");
 const xSetData = XData.prototype.setData;
 
-// 可直接设置的Key
+// It can use the keys of set
 const xEleDefaultSetKeys = ["text", "html", "show", "style"];
 const CANSETKEYS = Symbol("cansetkeys");
 
@@ -905,7 +873,7 @@ class XEle extends XData {
         self.tag = ele.tagName ? ele.tagName.toLowerCase() : "";
 
         // self.owner = new WeakSet();
-        // XEle不允许拥有owner
+        // XEle is not allowed to have an owner
         // self.owner = null;
         // delete self.owner;
         defineProperties(self, {
@@ -926,20 +894,11 @@ class XEle extends XData {
                 writable: true,
                 value: "",
             },
-            // 允许被设置的key值
-            // [CANSETKEYS]: {
-            //     value: new Set(xEleDefaultSetKeys)
-            // }
         });
 
         delete self.length;
 
-        // if (self.tag == "input" || self.tag == "textarea" || self.tag == "select" || (ele.contentEditable == "true")) { // contentEditable可以随时被修改
-        if (
-            self.tag == "input" ||
-            self.tag == "textarea" ||
-            self.tag == "select"
-        ) {
+        if (self.tag == "input" || self.tag == "textarea" || self.tag == "select") {
             renderInput(self);
         }
     }
@@ -1033,11 +992,11 @@ class XEle extends XData {
             style
         } = this;
 
-        // 覆盖旧的样式
+        // Covering the old style
         let hasKeys = Array.from(style);
         let nextKeys = Object.keys(d);
 
-        // 清空不用设置的key
+        // Clear the unused key
         hasKeys.forEach((k) => {
             if (!nextKeys.includes(k)) {
                 style[k] = "";
@@ -1172,14 +1131,14 @@ class XEle extends XData {
     }
 
     siblings(expr) {
-        // 获取相邻元素
+        // Get adjacent elements
         let parChilds = Array.from(this.parent.ele.children);
 
-        // 删除自身
+        // delete self
         let tarId = parChilds.indexOf(this.ele);
         parChilds.splice(tarId, 1);
 
-        // 删除不符合规定的
+        // Delete the non-conforming
         if (expr) {
             parChilds = parChilds.filter((e) => {
                 if (meetsEle(e, expr)) {
@@ -1239,7 +1198,7 @@ class XEle extends XData {
     clone() {
         let cloneEle = createXEle(this.ele.cloneNode(true));
 
-        // 数据重新设置
+        // reset data
         Object.keys(this).forEach((key) => {
             if (key !== "tag") {
                 cloneEle[key] = this[key];
@@ -1254,16 +1213,14 @@ class XEle extends XData {
             parent
         } = this;
         parent.splice(parent.indexOf(this), 1);
-        // const { ele } = this;
-        // ele.parentNode.removeChild(ele);
     }
 
-    // 插件方法extend
+    // Plugin method extend
     extend(proto) {
         const descObj = Object.getOwnPropertyDescriptors(proto);
         Object.entries(descObj).forEach(([key, obj]) => {
             if (obj.set) {
-                // 扩展拥有set的可被写入
+                // The extension has set of writable
                 this[CANSETKEYS].add(key);
             }
         });
@@ -1272,60 +1229,62 @@ class XEle extends XData {
         });
     }
 
-    // 监听尺寸变动
-    initSizeObs(time = 300) {
-        if (this._initedSizeObs) {
-            console.warn({
-                target: this.ele,
-                desc: "initRect is runned",
-            });
-            return;
-        }
-        this._initedSizeObs = 1;
+    // This api is deprecated, please use CSS Container Query instead.
+    // Listening for size changes
+    //   initSizeObs(time = 300) {
+    //     if (this._initedSizeObs) {
+    //       console.warn({
+    //         target: this.ele,
+    //         desc: "initRect is runned",
+    //       });
+    //       return;
+    //     }
+    //     this._initedSizeObs = 1;
 
-        let resizeTimer;
-        // 元素尺寸修正
-        const fixSize = () => {
-            clearTimeout(resizeTimer);
+    //     let resizeTimer;
+    //     // Element Size Correction
+    //     const fixSize = () => {
+    //       clearTimeout(resizeTimer);
 
-            setTimeout(() => {
-                // 尺寸时间监听
-                emitUpdate(
-                    this, {
-                        xid: this.xid,
-                        name: "sizeUpdate",
-                    },
-                    undefined,
-                    false
-                );
-            }, time);
-        };
-        fixSize();
-        if (window.ResizeObserver) {
-            const resizeObserver = new ResizeObserver((entries) => {
-                fixSize();
-            });
-            resizeObserver.observe(this.ele);
+    //       setTimeout(() => {
+    //         // 尺寸时间监听
+    //         emitUpdate(
+    //           this,
+    //           {
+    //             xid: this.xid,
+    //             name: "sizeUpdate",
+    //           },
+    //           undefined,
+    //           false
+    //         );
+    //       }, time);
+    //     };
+    //     fixSize();
+    //     if (window.ResizeObserver) {
+    //       const resizeObserver = new ResizeObserver((entries) => {
+    //         fixSize();
+    //       });
+    //       resizeObserver.observe(this.ele);
 
-            return () => {
-                resizeObserver.disconnect();
-            };
-        } else {
-            let f;
-            window.addEventListener(
-                "resize",
-                (f = (e) => {
-                    fixSize();
-                })
-            );
-            return () => {
-                window.removeEventListener("resize", f);
-            };
-        }
-    }
+    //       return () => {
+    //         resizeObserver.disconnect();
+    //       };
+    //     } else {
+    //       let f;
+    //       window.addEventListener(
+    //         "resize",
+    //         (f = (e) => {
+    //           fixSize();
+    //         })
+    //       );
+    //       return () => {
+    //         window.removeEventListener("resize", f);
+    //       };
+    //     }
+    //   }
 }
 
-// 允许被设置的key值
+// Allowed key values to be set
 defineProperties(XEle.prototype, {
     [CANSETKEYS]: {
         // writable: true,
@@ -1333,8 +1292,8 @@ defineProperties(XEle.prototype, {
     },
 });
 
-// 因为表单太常用了，将表单组件进行规范
-// 渲染表单元素的方法
+// Normalize the form component because forms are so commonly used
+// Methods for rendering form elements
 const renderInput = (xele) => {
     let type = xele.attr("type") || "text";
     const {
@@ -1356,7 +1315,7 @@ const renderInput = (xele) => {
                 return ele.hasOwnProperty("__value") ? ele.__value : ele.value;
             },
             set(val) {
-                // 针对可能输入的是数字被动转成字符
+                // Conversion of input numbers to characters
                 ele.value = ele.__value = val;
 
                 emitUpdate(xele, {
@@ -1375,7 +1334,7 @@ const renderInput = (xele) => {
                 ele.disabled = val;
             },
         },
-        // 错误信息
+        // error message
         msg: {
             writable: true,
             value: null,
@@ -1407,7 +1366,7 @@ const renderInput = (xele) => {
                 },
             });
 
-            // 不赋予这个字段
+            // radio or checkbox does not have the property msg
             delete d_opts.msg;
 
             xele.on("change", (e) => {
@@ -1435,7 +1394,6 @@ const renderInput = (xele) => {
             xele.on("input", (e) => {
                 delete ele.__value;
 
-                // 改动冒泡
                 emitUpdate(xele, {
                     xid: xele.xid,
                     name: "setData",
@@ -1496,12 +1454,12 @@ class FromXData extends XData {
             }, this._delay);
         });
 
-        // 数据初始化
+        // Data initialization
         watchFun();
 
         isInit = 1;
 
-        // 反向数据绑定
+        // Reverse data binding
         this.watchTick((e) => {
             let data = this.toJSON();
 
@@ -1514,10 +1472,7 @@ class FromXData extends XData {
                         typeof oldVal == "object" &&
                         JSON.stringify(value) !== JSON.stringify(oldVal))
                 ) {
-                    // 相应的元素
-                    let targetEles = this.eles(k);
-
-                    targetEles.forEach((ele) => {
+                    this.eles(k).forEach((ele) => {
                         switch (ele.type) {
                             case "checkbox":
                                 if (value.includes(ele.value)) {
@@ -1542,11 +1497,11 @@ class FromXData extends XData {
                 }
             });
 
-            // 备份数据
             backupData = data;
         });
     }
 
+    // Get form elements
     eles(propName) {
         let eles = this._target.all(this._selector);
 
@@ -1558,7 +1513,7 @@ class FromXData extends XData {
     }
 }
 
-// 从元素上获取表单数据
+// Get form data from an elements
 const getFromEleData = (eles, oldData) => {
     const obj = {};
 
@@ -1577,15 +1532,13 @@ const getFromEleData = (eles, oldData) => {
                 break;
             case "checkbox":
                 let tar_arr =
-                    obj[name] ||
-                    (obj[name] = oldData[name]) ||
-                    (obj[name] = []);
+                    obj[name] || (obj[name] = oldData[name]) || (obj[name] = []);
                 if (ele.checked) {
                     if (!tar_arr.includes(ele.value)) {
                         tar_arr.push(value);
                     }
                 } else if (tar_arr.includes(ele.value)) {
-                    // 包含就删除
+                    // Delete if included
                     tar_arr.splice(tar_arr.indexOf(ele.value), 1);
                 }
                 break;
@@ -1598,9 +1551,8 @@ const getFromEleData = (eles, oldData) => {
     return obj;
 };
 
-// 验证表单元素
 const verifyFormEle = (eles) => {
-    // 重新跑一次验证
+    // Re-run the verification
     eles.forEach((e) => {
         const event = new CustomEvent("verify", {
             bubbles: false,
@@ -1620,7 +1572,7 @@ const verifyFormEle = (eles) => {
         } = event;
         const msg_type = getType(msg);
 
-        // msg只能是Error或字符串
+        // msg can only be Error or a string
         if (msg_type == "string") {
             e.msg = msg || null;
         } else if (msg_type == "error") {
@@ -1638,10 +1590,9 @@ const verifyFormEle = (eles) => {
 };
 
 extend(XEle.prototype, {
-    // 专门用于表单的插件
+    // Plug-in methods specifically for forms
     form(opts) {
         const defs = {
-            // 对表单元素进行修正
             selector: "input,textarea,select",
             delay: 100,
         };
@@ -1652,7 +1603,7 @@ extend(XEle.prototype, {
             Object.assign(defs, opts);
         }
 
-        // 主体返回对象
+        // Returned object data
         const formdata = new FromXData({}, {
             selector: defs.selector,
             delay: defs.delay,
@@ -1663,7 +1614,7 @@ extend(XEle.prototype, {
     },
 });
 
-// 重造数组方法
+// rebuild array methods
 [
     "concat",
     "every",
@@ -1693,14 +1644,13 @@ extend(XEle.prototype, {
 });
 
 extend(XEle.prototype, {
-    // 最基础的
     splice(index, howmany, ...items) {
         const {
             ele
         } = this;
         const children = Array.from(ele.children);
 
-        // 删除相应元素
+        // Delete the corresponding element
         const removes = [];
         let b_index = index;
         let b_howmany =
@@ -1714,7 +1664,7 @@ extend(XEle.prototype, {
             target = children[b_index];
         }
 
-        // 新增元素
+        // add new elements
         if (items.length) {
             let fragEle = document.createDocumentFragment();
             items.forEach((e) => {
@@ -1740,15 +1690,15 @@ extend(XEle.prototype, {
             });
 
             if (index >= this.length) {
-                // 在末尾添加元素
+                // push element at the end
                 ele.appendChild(fragEle);
             } else {
-                // 指定index插入
+                // Index to insert
                 ele.insertBefore(fragEle, ele.children[index]);
             }
         }
 
-        // 改动冒泡
+        // Bubbling behavior after data changes
         emitUpdate(this, {
             xid: this.xid,
             name: "splice",
@@ -1759,9 +1709,7 @@ extend(XEle.prototype, {
     },
     sort(sortCall) {
         const selfEle = this.ele;
-        const childs = Array.from(selfEle.children)
-            .map(createXEle)
-            .sort(sortCall);
+        const childs = Array.from(selfEle.children).map(createXEle).sort(sortCall);
 
         rebuildXEleArray(selfEle, childs);
 
@@ -1784,7 +1732,7 @@ extend(XEle.prototype, {
     },
 });
 
-// 根据先后顺序数组进行元素排序
+// Sorting elements according to sequential arrays
 const rebuildXEleArray = (container, rearray) => {
     const {
         children
@@ -1804,7 +1752,6 @@ const rebuildXEleArray = (container, rearray) => {
     });
 };
 
-// DOM自带事件，何必舍近求远
 const getEventsMap = (target) => {
     return target[EVENTS] ? target[EVENTS] : (target[EVENTS] = new Map());
 };
@@ -1812,7 +1759,6 @@ const getEventsMap = (target) => {
 const MOUSEEVENT = glo.MouseEvent || Event;
 const TOUCHEVENT = glo.TouchEvent || Event;
 
-// 修正 Event Class 用的数据表
 const EventMap = new Map([
     ["click", MOUSEEVENT],
     ["mousedown", MOUSEEVENT],
@@ -1825,7 +1771,7 @@ const EventMap = new Map([
     ["touchmove", TOUCHEVENT],
 ]);
 
-// 触发原生事件
+// Trigger native events
 const triggerEvenet = (_this, name, data, bubbles = true) => {
     let TargeEvent = EventMap.get(name) || CustomEvent;
 
@@ -1839,7 +1785,6 @@ const triggerEvenet = (_this, name, data, bubbles = true) => {
 
     event.data = data;
 
-    // 触发事件
     return _this.ele.dispatchEvent(event);
 };
 
@@ -1926,7 +1871,7 @@ extend(XEle.prototype, {
     },
 });
 
-// 常用事件封装
+// Wrapping common events
 ["click", "focus", "blur"].forEach((name) => {
     extend(XEle.prototype, {
         [name](callback) {
@@ -1940,11 +1885,11 @@ extend(XEle.prototype, {
     });
 });
 
-// 所有注册的组件
+// All registered components
 const Components = {};
 const ComponentResolves = {};
 
-// 获取组件
+// get component
 const getComp = (name) => {
     name = attrToProp(name);
 
@@ -1953,7 +1898,7 @@ const getComp = (name) => {
         return Components[name];
     }
 
-    // 创建挂载组件
+    // Creating Mounted Components
     let pms = new Promise((res) => {
         ComponentResolves[name] = res;
     });
@@ -1962,7 +1907,7 @@ const getComp = (name) => {
     return pms;
 };
 
-// 渲染元素
+// render elements
 const renderXEle = async ({
     xele,
     defs,
@@ -1974,14 +1919,14 @@ const renderXEle = async ({
     defs.created && defs.created.call(xele);
 
     if (defs.temp) {
-        // 添加shadow root
+        // Add shadow root
         const sroot = _this.attachShadow({
             mode: "open"
         });
 
         sroot.innerHTML = defs.temp;
 
-        // 渲染元素
+        // Rendering elements
         renderTemp({
             host: xele,
             xdata: xele,
@@ -1989,7 +1934,7 @@ const renderXEle = async ({
             temps,
         });
 
-        // 子元素有改动，触发元素渲染
+        // Child elements have changes that trigger element rendering
         xele.shadow &&
             xele.shadow.watchTick((e) => {
                 if (e.some((e2) => e2.path.length > 1)) {
@@ -2000,9 +1945,8 @@ const renderXEle = async ({
                 }
             }, 10);
 
-        // 缓冲link
-        let links = sroot.querySelectorAll("link");
-        if (links.length) {
+        const links = sroot.querySelectorAll("link");
+        if (links && links.length) {
             await Promise.all(
                 Array.from(links).map((linkEle) => {
                     return new Promise((resolve, reject) => {
@@ -2013,28 +1957,16 @@ const renderXEle = async ({
                             linkEle.addEventListener(
                                 "load",
                                 (succeedCall = (e) => {
-                                    linkEle.removeEventListener(
-                                        "load",
-                                        succeedCall
-                                    );
-                                    linkEle.removeEventListener(
-                                        "error",
-                                        errCall
-                                    );
+                                    linkEle.removeEventListener("load", succeedCall);
+                                    linkEle.removeEventListener("error", errCall);
                                     resolve();
                                 })
                             );
                             linkEle.addEventListener(
                                 "error",
                                 (errCall = (e) => {
-                                    linkEle.removeEventListener(
-                                        "load",
-                                        succeedCall
-                                    );
-                                    linkEle.removeEventListener(
-                                        "error",
-                                        errCall
-                                    );
+                                    linkEle.removeEventListener("load", succeedCall);
+                                    linkEle.removeEventListener("error", errCall);
                                     reject({
                                         desc: "link load error",
                                         ele: linkEle,
@@ -2051,12 +1983,12 @@ const renderXEle = async ({
 
     defs.ready && defs.ready.call(xele);
 
-    // attrs监听
+    // atributes listening
     if (!isEmptyObj(defs.attrs)) {
         const {
             ele
         } = xele;
-        // 先判断是否有值可获取
+        // First determine if there is a value to get
         Object.keys(defs.attrs).forEach((k) => {
             if (ele.hasAttribute(k)) {
                 xele[k] = ele.getAttribute(k);
@@ -2077,40 +2009,40 @@ const renderXEle = async ({
         });
     }
 
-    // watch函数触发
+    // The watch function triggers
     let d_watch = defs.watch;
     if (!isEmptyObj(d_watch)) {
         xele.watchKey(d_watch, true);
     }
 };
 
-// 已经运行revoke函数
+// The revoke function has been run
 const RUNNDEDREVOKE = Symbol("runned_revoke");
 
 // 注册组件的主要逻辑
 const register = (opts) => {
     const defs = {
-        // 注册的组件名
+        // Registered component name
         tag: "",
-        // 正文内容字符串
+        // Body content string
         temp: "",
-        // 和attributes绑定的keys
+        // Keys bound to attributes
         attrs: {},
-        // 默认数据
+        // Initialization data after element creation
         data: {},
-        // 根据属性直接设置值
+        // The listener function for the element
         watch: {},
-        // 合并到原型链上的方法
+        // Methods merged into the prototype
         proto: {},
-        // // 组件被创建时触发的函数（数据初始化完成）
+        // Function triggered when the component is created (data initialization complete)
         // created() { },
-        // // 组件数据初始化完成后触发的函数（初次渲染完毕）
+        // Function triggered after component data initialization is complete (initial rendering completed)
         // ready() { },
-        // // 被添加到document触发的函数
+        // Functions that are added to the document trigger
         // attached() { },
-        // // 被移出document触发的函数
+        // Functions triggered by moving out of the document
         // detached() { },
-        // // 容器元素发生改变
+        // The container element is changed
         // slotchange() { }
     };
 
@@ -2124,8 +2056,9 @@ const register = (opts) => {
         temps = d.temps;
     }
 
-    // 生成新的XEle class
+    // Generate a new XEle class
     let compName = attrToProp(opts.tag);
+
     // const CustomXEle = Components[compName] = class extends XEle {
     const CustomXEle = class extends XEle {
         constructor(ele) {
@@ -2134,15 +2067,14 @@ const register = (opts) => {
             ele.isCustom = true;
         }
 
-        // 强制刷新视图
+        // Forced view refresh
         forceUpdate() {
-            // 改动冒泡
             emitUpdate(this, {
                 xid: this.xid,
                 name: "forceUpdate",
             });
         }
-        // 回收元素内所有的数据（防止垃圾回收失败）
+        // Recycle all data within the element (prevent garbage collection failure)
         revoke() {
             if (this[RUNNDEDREVOKE]) {
                 return;
@@ -2158,12 +2090,11 @@ const register = (opts) => {
         }
     };
 
-    // 扩展原型
     extend(CustomXEle.prototype, defs.proto);
 
     const cansetKeys = getCansetKeys(defs);
 
-    // 扩展CANSETKEYS
+    // Extending CANSETKEYS
     defineProperties(CustomXEle.prototype, {
         [CANSETKEYS]: {
             writable: true,
@@ -2171,18 +2102,10 @@ const register = (opts) => {
         },
     });
 
-    // 注册原生组件
+    // Registering native components
     const XhearElement = class extends HTMLElement {
         constructor(...args) {
             super(...args);
-
-            // let old_xele = this.__xEle__;
-            // if (old_xele) {
-            //     console.warn({
-            //         target: old_xele,
-            //         desc: "please re-instantiate the object"
-            //     });
-            // }
 
             this.__xEle__ = new CustomXEle(this);
 
@@ -2248,7 +2171,7 @@ const register = (opts) => {
 
     customElements.define(defs.tag, XhearElement);
 
-    // 设置注册完成
+    // Setup registration complete
     if (ComponentResolves[compName]) {
         ComponentResolves[compName](CustomXEle);
         delete ComponentResolves[compName];
@@ -2257,7 +2180,7 @@ const register = (opts) => {
     }
 };
 
-// 根据 defaults 获取可设置的keys
+// Get the settable keys according to defaults
 const getCansetKeys = (defs) => {
     const {
         attrs,
@@ -2286,38 +2209,33 @@ const getCansetKeys = (defs) => {
     return keys;
 };
 
-// 将temp转化为可渲染的模板
+// Convert temp into a renderable template
 const transTemp = (temp, regTagName) => {
-    // 去除注释代码
+    // Removing commented code
     temp = temp.replace(/<!--.+?-->/g, "");
 
-    // 自定义字符串转换
+    // Custom String Conversion
     var textDataArr = temp.match(/{{.+?}}/g);
     textDataArr &&
         textDataArr.forEach((e) => {
             var key = /{{(.+?)}}/.exec(e);
             if (key) {
                 // temp = temp.replace(e, `<span :text="${key[1]}"></span>`);
-                temp = temp.replace(
-                    e,
-                    `<x-span prop="${encodeURI(key[1])}"></x-span>`
-                );
+                temp = temp.replace(e, `<x-span prop="${encodeURI(key[1])}"></x-span>`);
             }
         });
 
-    // 再转换
     const tsTemp = document.createElement("template");
     tsTemp.innerHTML = temp;
 
-    // 原生元素上修正 temp:xxx模板
+    // Fix temp:xxx template on native elements
     let addTemps = [],
         removeRegEles = [];
 
     Array.from(tsTemp.content.querySelectorAll("*")).forEach((ele) => {
-        // 绑定对象
         const bindData = {};
 
-        // 需要被删除的属性
+        // Properties that need to be removed
         const needRemoveAttrs = [];
 
         Array.from(ele.attributes).forEach((attrObj) => {
@@ -2326,7 +2244,7 @@ const transTemp = (temp, regTagName) => {
                 value
             } = attrObj;
 
-            // 模板抽离
+            // Template Extraction
             let tempMatch = /^temp:(.+)/.exec(name);
             if (tempMatch) {
                 let [, tempName] = tempMatch;
@@ -2339,9 +2257,7 @@ const transTemp = (temp, regTagName) => {
                 return true;
             }
 
-            // 指令
             let command;
-            // 目标
             let target;
 
             if (/^#/.test(name)) {
@@ -2351,20 +2267,20 @@ const transTemp = (temp, regTagName) => {
                 command = "on";
                 target = name.replace(/^@/, "");
             } else if (name.includes(":")) {
-                // 带有指令分隔符的，进行之类修正
+                // Fixed with command separator
                 let m_arr = name.split(":");
 
                 if (m_arr.length == 2) {
-                    // 模板正确，进行赋值
+                    // Assign values if the template is correct
                     command = m_arr[0];
                     target = m_arr[1];
 
                     if (command === "") {
-                        // 属性绑定修正
+                        // Fix Attribute Binding
                         command = "prop";
                     }
                 } else {
-                    // 绑定标识出错
+                    // Error in binding identification
                     throw {
                         desc: "template binding mark error",
                         target: ele,
@@ -2390,7 +2306,7 @@ const transTemp = (temp, regTagName) => {
             // ele.setAttribute("bind-data", JSON.stringify(bindData));
             // ele.setAttribute('bind-keys', Object.keys(bindData).join(" "));
 
-            // 原属性还原
+            // Restore original properties
             Object.keys(bindData).forEach((bName) => {
                 let data = bindData[bName];
                 if (bName == "cmd") {
@@ -2415,28 +2331,26 @@ const transTemp = (temp, regTagName) => {
         });
     }
 
-    // 将 template 内的页进行转换
+    // Convert template data
     Array.from(tsTemp.content.querySelectorAll("template")).forEach((e) => {
         e.innerHTML = transTemp(e.innerHTML).html;
     });
 
-    // 修正 x-cmd-if 元素
+    // fix x-cmd-if elements
     wrapIfTemp(tsTemp);
 
-    // 获取模板
+    // get templates
     let temps = new Map();
 
-    Array.from(tsTemp.content.querySelectorAll(`template[name]`)).forEach(
-        (e) => {
-            temps.set(e.getAttribute("name"), {
-                ele: e,
-                code: e.content.children[0].outerHTML,
-            });
-            e.parentNode.removeChild(e);
-        }
-    );
+    Array.from(tsTemp.content.querySelectorAll(`template[name]`)).forEach((e) => {
+        temps.set(e.getAttribute("name"), {
+            ele: e,
+            code: e.content.children[0].outerHTML,
+        });
+        e.parentNode.removeChild(e);
+    });
 
-    // 对temp进行检测
+    // Inspection of the template
     if (temps.size) {
         for (let [key, e] of temps.entries()) {
             const {
@@ -2462,14 +2376,13 @@ const transTemp = (temp, regTagName) => {
         }
     }
 
-    // 返回最终结果
     return {
         temps,
         html: tsTemp.innerHTML,
     };
 };
 
-// 给 x-cmd-if 元素包裹 template
+// Wrap the template around the x-cmd-if element
 const wrapIfTemp = (tempEle) => {
     let iEles = tempEle.content.querySelectorAll(
         "[x-cmd-if],[x-cmd-else-if],[x-cmd-else],[x-cmd-await],[x-cmd-then],[x-cmd-catch]"
@@ -2503,13 +2416,11 @@ const wrapIfTemp = (tempEle) => {
         ifTempEle.content.appendChild(ele);
     });
 
-    // 内部 template 也进行包裹
-    Array.from(tempEle.content.querySelectorAll("template")).forEach(
-        wrapIfTemp
-    );
+    // The internal template is also wrapped
+    Array.from(tempEle.content.querySelectorAll("template")).forEach(wrapIfTemp);
 };
 
-// 获取所有符合表达式的可渲染的元素
+// Get all renderable elements that match the expression
 const getCanRenderEles = (root, expr) => {
     let arr = Array.from(root.querySelectorAll(expr));
     if (root instanceof Element && meetsEle(root, expr)) {
@@ -2518,9 +2429,8 @@ const getCanRenderEles = (root, expr) => {
     return arr;
 };
 
-// 去除原元素并添加定位元素
+// Remove the original element and add a positioning element
 const postionNode = (e) => {
-    // let textnode = document.createTextNode("");
     let marker = new Comment("x-marker");
 
     let parent = e.parentNode;
@@ -2533,7 +2443,7 @@ const postionNode = (e) => {
     };
 };
 
-// 将表达式转换为函数
+// Converting expressions to functions
 const exprToFunc = (expr) => {
     return new Function(
         "...$args",
@@ -2555,21 +2465,22 @@ try{
     );
 };
 
-// 清除表达式属性并将数据添加到元素对象内
+// Clear the expression property and add the data to the element object
 const moveAttrExpr = (ele, exprName, propData) => {
     ele.removeAttribute(exprName);
 
     let renderedData = ele.__renderData;
     if (!renderedData) {
         renderedData = ele.__renderData = {};
-        // 增加渲染过后的数据
+
+        // Adding rendered data
         ele.setAttribute("x-rendered", "");
     }
 
     renderedData[exprName] = propData;
 };
 
-// 绑定函数监听，添加到记录数组
+// Binding function listener, added to the record array
 const bindWatch = (data, func, bindings) => {
     let eid = data.watchTick(func);
     bindings.push({
@@ -2578,39 +2489,35 @@ const bindWatch = (data, func, bindings) => {
     });
 };
 
-// 获取目标数据get函数
+// Get the target data get function
 const renderXdataGetFunc = (expr, xdata) => {
     let runFunc;
 
     if (regIsFuncExpr.test(expr)) {
-        // 属于函数
         runFunc = exprToFunc("return " + expr).bind(xdata);
     } else {
-        // 值变动
-        // runFunc = () => xdata[expr];
         runFunc = () => getXData(xdata, expr);
     }
 
     return runFunc;
 };
 
-// 渲染器上的watch函数绑定
-// expr用作判断xdata或host的依据，不做执行
+// Watch function binding on the renderer
+// 'expr' is used as the basis for determining xdata or host, not for execution
 const renderInWatch = ({
     xdata,
     host,
     expr,
     watchFun
 }) => {
-    // 已绑定的数据
     const bindings = [];
 
     // if (host !== xdata) {
     if (!(xdata instanceof XEle)) {
-        // fill内的再填充渲染
-        // xdata负责监听$index
-        // xdata.$data为item数据本身
-        // $host为组件数据
+        // Refill rendering within fill
+        // xdata is responsible for listening to $index
+        // xdata.$data is the item data itself
+        // $host is the component data
         if (expr.includes("$host")) {
             if (expr.includes("$index")) {
                 bindWatch(xdata, watchFun, bindings);
@@ -2630,14 +2537,14 @@ const renderInWatch = ({
         //     };
         // }
     } else {
-        // host数据绑定
+        // host data binding
         bindWatch(xdata, watchFun, bindings);
     }
 
     return bindings;
 };
 
-// 表达式到值的设置
+// Expression to value setting
 const exprToSet = ({
     xdata,
     host,
@@ -2645,19 +2552,19 @@ const exprToSet = ({
     callback,
     isArray
 }) => {
-    // 即时运行的判断函数
+    // Instant-running judgment functions
     let runFunc = renderXdataGetFunc(expr, xdata);
 
-    // 备份比较用的数据
+    // Backing up data for comparison
     let backup_val, backup_ids, backup_objstr;
 
-    // 直接运行的渲染函数
+    // Rendering functions that run directly
     const watchFun = (modifys) => {
         const val = runFunc();
 
         if (isxdata(val)) {
             if (isArray) {
-                // 对象只监听数组变动
+                // If it is an array, only listen to the array changes
                 let ids = val.map((e) => (e && e.xid ? e.xid : e)).join(",");
                 if (backup_ids !== ids) {
                     callback({
@@ -2667,7 +2574,7 @@ const exprToSet = ({
                     backup_ids = ids;
                 }
             } else {
-                // 对象监听
+                // Object Listening
                 let obj_str = val.toJSON();
 
                 if (backup_val !== val || obj_str !== backup_objstr) {
@@ -2688,7 +2595,7 @@ const exprToSet = ({
         backup_val = val;
     };
 
-    // 先执行一次
+    // First execute once
     watchFun();
 
     return renderInWatch({
@@ -2699,7 +2606,7 @@ const exprToSet = ({
     });
 };
 
-// 添加监听数据
+// Add listening data
 const addBindingData = (target, bindings) => {
     let _binds = target.__bindings || (target.__bindings = []);
     _binds.push(...bindings);
@@ -2707,9 +2614,8 @@ const addBindingData = (target, bindings) => {
 
 const regIsFuncExpr = /[\(\)\;\=\>\<\|\!\?\+\-\*\/\&\|\{\}`]/;
 
-// 元素深度循环函数
+// Element depth loop function
 const elementDeepEach = (ele, callback) => {
-    // callback(ele);
     Array.from(ele.childNodes).forEach((target) => {
         callback(target);
 
@@ -2719,7 +2625,7 @@ const elementDeepEach = (ele, callback) => {
     });
 };
 
-// 根据 if 语句，去除数据绑定关系
+// Remove data binding relationships based on if statements
 const removeElementBind = (target) => {
     elementDeepEach(target, (ele) => {
         if (ele.isCustom) {
@@ -2738,7 +2644,7 @@ const removeElementBind = (target) => {
     });
 };
 
-// 添加渲染模板item内的元素
+// Adding elements inside a rendered template item
 const addTempItemEle = ({
     temp,
     temps,
@@ -2747,7 +2653,7 @@ const addTempItemEle = ({
     host,
     xdata
 }) => {
-    // 添加元素
+    // add elements
     let targets = parseStringToDom(temp.innerHTML);
     targets.forEach((ele) => {
         parent.insertBefore(ele, marker);
@@ -2761,28 +2667,27 @@ const addTempItemEle = ({
     return targets;
 };
 
-// 删除渲染模板item内的元素
+// Delete the elements inside the rendered template item
 const removeTempItemEle = (arr) => {
     arr.forEach((item) => {
-        // 去除数据绑定
+        // Removing data binding
         removeElementBind(item);
 
-        // 删除元素
         item.parentNode.removeChild(item);
     });
 };
 
-// 渲染组件的逻辑
-// host 主体组件元素；存放方法的主体
-// xdata 渲染目标数据；单层渲染下是host，x-fill模式下是具体的数据
-// content 渲染目标元素
+// Logic for rendering components
+// host :body component element; holds the body of the method
+// xdata: rendering target data; host in single-level rendering, concrete data in x-fill mode
+// content: rendering target element
 const renderTemp = ({
     host,
     xdata,
     content,
     temps
 }) => {
-    // 事件绑定
+    // Event Binding
     getCanRenderEles(content, "[x-on]").forEach((target) => {
         let eventInfo = JSON.parse(target.getAttribute("x-on"));
 
@@ -2797,28 +2702,19 @@ const renderTemp = ({
 
             let eid;
 
-            // 判断是否函数
+            // Determine if the function
             if (regIsFuncExpr.test(name)) {
-                // 函数绑定
+                // Function Binding
                 const func = exprToFunc(name);
                 eid = $tar.on(eventName, (event) => {
                     func.call(xdata, event, $tar);
-                    // func.call(host, event, $tar);
                 });
             } else {
-                // 函数名绑定
+                // Function name binding
                 eid = $tar.on(eventName, (event) => {
-                    // if (name.includes(".")) {
-                    //     throw {
-                    //         desc: "don't use dotted keys function"
-                    //     };
-                    // }
-                    // const func = xdata[name];
-                    // const func = host[name];
                     const func = getXData(xdata, name);
                     if (func) {
                         if (isFunction(func)) {
-                            // func.call(xdata, event);
                             func.call(host, event);
                         } else {
                             console.error({
@@ -2846,7 +2742,7 @@ const renderTemp = ({
         moveAttrExpr(target, "x-on", eventInfo);
     });
 
-    // 属性绑定
+    // Attribute Binding
     getCanRenderEles(content, "[x-attr]").forEach((ele) => {
         const attrData = JSON.parse(ele.getAttribute("x-attr"));
 
@@ -2872,7 +2768,7 @@ const renderTemp = ({
         });
     });
 
-    // class绑定
+    // class binding
     getCanRenderEles(content, "[x-class]").forEach((ele) => {
         const classListData = JSON.parse(ele.getAttribute("x-class"));
 
@@ -2899,6 +2795,7 @@ const renderTemp = ({
         });
     });
 
+    // Property Binding
     getCanRenderEles(content, "[x-prop]").forEach((ele) => {
         const propData = JSON.parse(ele.getAttribute("x-prop"));
         const xEle = createXEle(ele);
@@ -2914,24 +2811,6 @@ const renderTemp = ({
                     val
                 }) => {
                     propName = attrToProp(propName);
-                    // if (!(propName in xEle)) {
-                    //     throw {
-                    //         target: ele,
-                    //         host: host.ele,
-                    //         desc: `this element doesn't have the property ${propName} (:${propName}), did you want to use attr:${propName}?`,
-                    //     };
-                    // } else {
-                    //     try {
-                    //         xEle[propName] = val;
-                    //     } catch (err) {
-                    //         throw {
-                    //             target: ele,
-                    //             host: host.ele,
-                    //             desc: `Failed to set property ${propName} (:${propName})`,
-                    //             error: err
-                    //         };
-                    //     }
-                    // }
 
                     try {
                         xEle[propName] = val;
@@ -2950,7 +2829,7 @@ const renderTemp = ({
         });
     });
 
-    // 数据双向绑定
+    // Two-way data binding
     getCanRenderEles(content, "[x-sync]").forEach((ele) => {
         const propData = JSON.parse(ele.getAttribute("x-sync"));
         const xEle = createXEle(ele);
@@ -2998,11 +2877,11 @@ const renderTemp = ({
             parent
         } = postionNode(ele);
 
-        // 改为textNode
+        // Changing markup elements to textNode
         const textnode = document.createTextNode("");
         parent.replaceChild(textnode, marker);
 
-        // 数据绑定
+        // Data Binding
         const bindings = exprToSet({
             xdata,
             host,
@@ -3017,10 +2896,10 @@ const renderTemp = ({
         addBindingData(textnode, bindings);
     });
 
-    // if元素渲染
+    // Conditional expression element rendering
     getCanRenderEles(content, "[x-cmd-if]").forEach((ele) => {
         const conditionEles = [ele];
-        // 将后续的else-if和else都拿起来
+        // Pick up the subsequent else-if and else
         let {
             nextElementSibling
         } = ele;
@@ -3036,7 +2915,7 @@ const renderTemp = ({
 
         let all_expr = "";
 
-        // 将连在一起的 if else 都组成一个数组，并转化成条件函数
+        // Converting concatenated conditional elements into conditional functions
         const conditions = conditionEles.map((e, index) => {
             let callback;
 
@@ -3054,16 +2933,15 @@ const renderTemp = ({
             };
         });
 
-        // 定位文本元素
+        // Positioning text elements
         let {
             marker,
             parent
         } = postionNode(ele);
 
-        // 生成的目标元素
+        // Generated target elements
         let oldTargetEle = null;
         let oldConditionId = -1;
-        // let oldConditionValue;
 
         const watchFun = (modifys) => {
             let tempEle,
@@ -3079,39 +2957,32 @@ const renderTemp = ({
                         return true;
                     }
                 } else {
-                    // 最后的else
+                    // The final else condition
                     tempEle = e.tempEle;
                     conditionId = index;
-                    // conditionVal = true;
                 }
             });
 
-            // 值或序号不一样，都能进入修正的环节
-            // if (oldConditionId !== conditionId || conditionVal !== oldConditionValue) {
+            // The value or serial number is different, both can enter the corrected link
             if (oldConditionId !== conditionId) {
-                // 旧模板销毁
+                // Old template destruction
                 if (oldTargetEle) {
-                    // debugger
-                    // 去除数据绑定
                     removeElementBind(oldTargetEle);
 
-                    // 删除元素
                     oldTargetEle.parentNode.removeChild(oldTargetEle);
-                    // parent.replaceChild(marker, oldTargetEle);
                     oldTargetEle = null;
                 }
 
-                // 确定可添加模板
-                // if (conditionVal && tempEle) {
+                // Confirm that templates can be added
                 if (tempEle) {
-                    // 添加元素
+                    // add element
                     oldTargetEle = parseStringToDom(
                         tempEle.content.children[0].outerHTML
                     )[0];
 
                     parent.insertBefore(oldTargetEle, marker);
 
-                    // 重新渲染
+                    // Rerendering
                     renderTemp({
                         host,
                         xdata,
@@ -3121,11 +2992,10 @@ const renderTemp = ({
                 }
             }
 
-            // oldConditionValue = conditionVal;
             oldConditionId = conditionId;
         };
 
-        // 先执行一次
+        // First execute once
         watchFun();
 
         addBindingData(
@@ -3139,12 +3009,12 @@ const renderTemp = ({
         );
     });
 
-    // await元素渲染
+    // await element rendering
     getCanRenderEles(content, "[x-cmd-await]").forEach((ele) => {
         let awaitTemp = ele,
             thenTemp,
             catchTemp;
-        // 将后续的else-if和else都拿起来
+        // Pick up the subsequent else-if and else
         let {
             nextElementSibling
         } = ele;
@@ -3162,7 +3032,7 @@ const renderTemp = ({
             nextElementSibling = ele.nextElementSibling;
         }
 
-        // 添加定位
+        // Add Location
         let {
             marker,
             parent
@@ -3184,7 +3054,7 @@ const renderTemp = ({
                     beforeTargets = null;
                 }
 
-                // 添加元素
+                // add elements
                 beforeTargets = addTempItemEle({
                     temp: awaitTemp,
                     temps,
@@ -3196,52 +3066,54 @@ const renderTemp = ({
 
                 beforePms = val;
 
-                val.then((e) => {
-                    if (beforePms !== val) {
-                        return;
-                    }
-                    removeTempItemEle(beforeTargets);
-                    beforeTargets = null;
-                    if (thenTemp) {
-                        beforeTargets = addTempItemEle({
-                            temp: thenTemp,
-                            temps,
-                            marker,
-                            parent,
-                            host,
-                            xdata: {
-                                [thenTemp.getAttribute("x-cmd-then")]: e,
-                                $host: host,
-                            },
-                        });
-                    }
-                }).catch((err) => {
-                    if (beforePms !== val) {
-                        return;
-                    }
-                    removeTempItemEle(beforeTargets);
-                    beforeTargets = null;
-                    if (catchTemp) {
-                        beforeTargets = addTempItemEle({
-                            temp: catchTemp,
-                            temps,
-                            marker,
-                            parent,
-                            host,
-                            xdata: {
-                                [catchTemp.getAttribute("x-cmd-catch")]: err,
-                                $host: host,
-                            },
-                        });
-                    }
-                });
+                val
+                    .then((e) => {
+                        if (beforePms !== val) {
+                            return;
+                        }
+                        removeTempItemEle(beforeTargets);
+                        beforeTargets = null;
+                        if (thenTemp) {
+                            beforeTargets = addTempItemEle({
+                                temp: thenTemp,
+                                temps,
+                                marker,
+                                parent,
+                                host,
+                                xdata: {
+                                    [thenTemp.getAttribute("x-cmd-then")]: e,
+                                    $host: host,
+                                },
+                            });
+                        }
+                    })
+                    .catch((err) => {
+                        if (beforePms !== val) {
+                            return;
+                        }
+                        removeTempItemEle(beforeTargets);
+                        beforeTargets = null;
+                        if (catchTemp) {
+                            beforeTargets = addTempItemEle({
+                                temp: catchTemp,
+                                temps,
+                                marker,
+                                parent,
+                                host,
+                                xdata: {
+                                    [catchTemp.getAttribute("x-cmd-catch")]: err,
+                                    $host: host,
+                                },
+                            });
+                        }
+                    });
             },
         });
 
         addBindingData(marker, bindings);
     });
 
-    // 填充绑定
+    // Fill Binding
     getCanRenderEles(content, "[x-fill]").forEach((ele) => {
         const fillData = JSON.parse(ele.getAttribute("x-fill"));
         let fillKeys = ele.getAttribute("x-item");
@@ -3255,7 +3127,7 @@ const renderTemp = ({
 
         let old_xid;
 
-        // 提前把 x-fill 属性去掉，防止重复渲染
+        // Remove the x-fill attribute in advance to prevent double rendering
         moveAttrExpr(ele, "x-fill", fillData);
         moveAttrExpr(ele, "x-item", fillKeys);
 
@@ -3267,7 +3139,7 @@ const renderTemp = ({
             callback: (d) => {
                 const targetArr = d.val;
 
-                // 获取模板
+                // Get Template
                 let tempData = temps.get(tempName);
 
                 if (!tempData) {
@@ -3279,7 +3151,7 @@ const renderTemp = ({
                 }
 
                 if (!old_xid) {
-                    // 完全填充
+                    // Completely filled
                     targetArr.forEach((data, index) => {
                         const itemEle = createFillItem({
                             host,
@@ -3293,7 +3165,7 @@ const renderTemp = ({
                             initKeyToItem(itemEle, fillKeys, xdata, host);
                         }
 
-                        // 添加到容器内
+                        // Add to container
                         container.appendChild(itemEle.ele);
                     });
 
@@ -3308,7 +3180,6 @@ const renderTemp = ({
                     targetArr.forEach((e, index) => {
                         let oldIndex = oldArr.indexOf(e);
                         if (oldIndex === -1) {
-                            // 属于新增
                             let newItem = createFillItem({
                                 host,
                                 data: e,
@@ -3323,21 +3194,20 @@ const renderTemp = ({
 
                             afterChilds.push(newItem.ele);
                         } else {
-                            // 属于位移
+                            // belongs to the element displacement
                             let targetEle = childs[oldIndex];
-                            // 更新index
+                            // update index
                             targetEle.__fill_item.$index = index;
                             afterChilds.push(targetEle);
 
-                            // 标识已用
                             oldArr[oldIndex] = holder;
                         }
                     });
 
-                    // 需要被清除数据的
+                    // that need to be cleared of data
                     const needRemoves = [];
 
-                    // 删除不在数据内的元素
+                    // Delete elements that are not in the data
                     oldArr.forEach((e, i) => {
                         if (e !== holder) {
                             let e2 = childs[i];
@@ -3346,10 +3216,10 @@ const renderTemp = ({
                         }
                     });
 
-                    // 去除数据绑定
+                    // Removing data binding
                     needRemoves.forEach((e) => removeElementBind(e));
 
-                    // 重构数组
+                    // Reconstructing arrays
                     rebuildXEleArray(container, afterChilds);
                 }
             },
@@ -3380,8 +3250,6 @@ const initKeyToItem = (itemEle, fillKeys, xdata, host) => {
     });
 };
 
-// 生成fillItem元素
-// fillKeys 传递的Key
 const createFillItem = ({
     host,
     data,
@@ -3401,7 +3269,7 @@ const createFillItem = ({
             return data;
         },
         get $item() {
-            // 获取自身
+            // get self
             return itemData;
         },
         // get $index() {
@@ -3439,7 +3307,7 @@ function $(expr) {
 
     const exprType = getType(expr);
 
-    // 目标元素
+    // The final element to be returned
     let ele;
 
     if (exprType == "string") {

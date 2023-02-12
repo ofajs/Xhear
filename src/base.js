@@ -1,57 +1,57 @@
 ((glo) => {
-    "use strict";
-    //<o:start--toofa.js-->
-    //<!--../stanz/dist/xdata-->
-    //<!--public-->
-    //<!--main-->
-    //<!--form-->
-    //<!--array-->
-    //<!--event-->
-    //<!--register-->
-    //<!--render-->
+  "use strict";
+  //<o:start--toofa.js-->
+  //<!--../stanz/dist/xdata-->
+  //<!--public-->
+  //<!--main-->
+  //<!--form-->
+  //<!--array-->
+  //<!--event-->
+  //<!--register-->
+  //<!--render-->
 
-    function $(expr) {
-        if (expr instanceof Element) {
-            return createXEle(expr);
-        }
-
-        const exprType = getType(expr);
-
-        // 目标元素
-        let ele;
-
-        if (exprType == "string") {
-            if (!/\<.+\>/.test(expr)) {
-                ele = document.querySelector(expr);
-            } else {
-                ele = parseStringToDom(expr)[0];
-            }
-        } else if (exprType == "object") {
-            ele = parseDataToDom(expr);
-        } else if (expr === document || expr instanceof DocumentFragment) {
-            ele = expr;
-        }
-
-        if (ele) {
-            return createXEle(ele);
-        }
-
-        return null;
+  function $(expr) {
+    if (expr instanceof Element) {
+      return createXEle(expr);
     }
 
-    Object.assign($, {
-        all(expr) {
-            return Array.from(document.querySelectorAll(expr)).map((e) =>
-                createXEle(e)
-            );
-        },
-        register,
-        xdata: (obj) => createXData(obj),
-        nextTick,
-        fn: XEle.prototype,
-        tag: getComp,
-    });
-    //<o:end--toofa.js-->
+    const exprType = getType(expr);
 
-    glo.$ = $;
+    // The final element to be returned
+    let ele;
+
+    if (exprType == "string") {
+      if (!/\<.+\>/.test(expr)) {
+        ele = document.querySelector(expr);
+      } else {
+        ele = parseStringToDom(expr)[0];
+      }
+    } else if (exprType == "object") {
+      ele = parseDataToDom(expr);
+    } else if (expr === document || expr instanceof DocumentFragment) {
+      ele = expr;
+    }
+
+    if (ele) {
+      return createXEle(ele);
+    }
+
+    return null;
+  }
+
+  Object.assign($, {
+    all(expr) {
+      return Array.from(document.querySelectorAll(expr)).map((e) =>
+        createXEle(e)
+      );
+    },
+    register,
+    xdata: (obj) => createXData(obj),
+    nextTick,
+    fn: XEle.prototype,
+    tag: getComp,
+  });
+  //<o:end--toofa.js-->
+
+  glo.$ = $;
 })(window);
