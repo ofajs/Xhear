@@ -1,32 +1,31 @@
-// 获取所有符合表达式的可渲染的元素
+// Get all renderable elements that match the expression
 const getCanRenderEles = (root, expr) => {
-    let arr = Array.from(root.querySelectorAll(expr));
-    if (root instanceof Element && meetsEle(root, expr)) {
-        arr.push(root);
-    }
-    return arr;
+  let arr = Array.from(root.querySelectorAll(expr));
+  if (root instanceof Element && meetsEle(root, expr)) {
+    arr.push(root);
+  }
+  return arr;
 };
 
-// 去除原元素并添加定位元素
+// Remove the original element and add a positioning element
 const postionNode = (e) => {
-    // let textnode = document.createTextNode("");
-    let marker = new Comment("x-marker");
+  let marker = new Comment("x-marker");
 
-    let parent = e.parentNode;
-    parent.insertBefore(marker, e);
-    parent.removeChild(e);
+  let parent = e.parentNode;
+  parent.insertBefore(marker, e);
+  parent.removeChild(e);
 
-    return {
-        marker,
-        parent,
-    };
+  return {
+    marker,
+    parent,
+  };
 };
 
-// 将表达式转换为函数
+// Converting expressions to functions
 const exprToFunc = (expr) => {
-    return new Function(
-        "...$args",
-        `
+  return new Function(
+    "...$args",
+    `
 const [$e,$target] = $args;
 
 try{
@@ -41,794 +40,752 @@ try{
         error:e
     };
 }`
-    );
+  );
 };
 
-// 清除表达式属性并将数据添加到元素对象内
+// Clear the expression property and add the data to the element object
 const moveAttrExpr = (ele, exprName, propData) => {
-    ele.removeAttribute(exprName);
+  ele.removeAttribute(exprName);
 
-    let renderedData = ele.__renderData;
-    if (!renderedData) {
-        renderedData = ele.__renderData = {};
-        // 增加渲染过后的数据
-        ele.setAttribute("x-rendered", "");
-    }
+  let renderedData = ele.__renderData;
+  if (!renderedData) {
+    renderedData = ele.__renderData = {};
 
-    renderedData[exprName] = propData;
+    // Adding rendered data
+    ele.setAttribute("x-rendered", "");
+  }
+
+  renderedData[exprName] = propData;
 };
 
-// 绑定函数监听，添加到记录数组
+// Binding function listener, added to the record array
 const bindWatch = (data, func, bindings) => {
-    let eid = data.watchTick(func);
-    bindings.push({
-        eid,
-        target: data,
-    });
+  let eid = data.watchTick(func);
+  bindings.push({
+    eid,
+    target: data,
+  });
 };
 
-// 获取目标数据get函数
+// Get the target data get function
 const renderXdataGetFunc = (expr, xdata) => {
-    let runFunc;
+  let runFunc;
 
-    if (regIsFuncExpr.test(expr)) {
-        // 属于函数
-        runFunc = exprToFunc("return " + expr).bind(xdata);
-    } else {
-        // 值变动
-        // runFunc = () => xdata[expr];
-        runFunc = () => getXData(xdata, expr);
-    }
+  if (regIsFuncExpr.test(expr)) {
+    runFunc = exprToFunc("return " + expr).bind(xdata);
+  } else {
+    runFunc = () => getXData(xdata, expr);
+  }
 
-    return runFunc;
+  return runFunc;
 };
 
-// 渲染器上的watch函数绑定
-// expr用作判断xdata或host的依据，不做执行
+// Watch function binding on the renderer
+// 'expr' is used as the basis for determining xdata or host, not for execution
 const renderInWatch = ({ xdata, host, expr, watchFun }) => {
-    // 已绑定的数据
-    const bindings = [];
+  const bindings = [];
 
-    // if (host !== xdata) {
-    if (!(xdata instanceof XEle)) {
-        // fill内的再填充渲染
-        // xdata负责监听$index
-        // xdata.$data为item数据本身
-        // $host为组件数据
-        if (expr.includes("$host")) {
-            if (expr.includes("$index")) {
-                bindWatch(xdata, watchFun, bindings);
-            }
-            bindWatch(host, watchFun, bindings);
-        } else if (expr.includes("$index") || expr.includes("$item")) {
-            bindWatch(xdata, watchFun, bindings);
-            isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
-        } else if (expr.includes("$data")) {
-            isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
-        }
-        // else {
-        //     throw {
-        //         desc: "fill element must use $data $host $item or $index",
-        //         target: host,
-        //         expr
-        //     };
-        // }
-    } else {
-        // host数据绑定
+  // if (host !== xdata) {
+  if (!(xdata instanceof XEle)) {
+    // Refill rendering within fill
+    // xdata is responsible for listening to $index
+    // xdata.$data is the item data itself
+    // $host is the component data
+    if (expr.includes("$host")) {
+      if (expr.includes("$index")) {
         bindWatch(xdata, watchFun, bindings);
+      }
+      bindWatch(host, watchFun, bindings);
+    } else if (expr.includes("$index") || expr.includes("$item")) {
+      bindWatch(xdata, watchFun, bindings);
+      isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
+    } else if (expr.includes("$data")) {
+      isxdata(xdata.$data) && bindWatch(xdata.$data, watchFun, bindings);
     }
+    // else {
+    //     throw {
+    //         desc: "fill element must use $data $host $item or $index",
+    //         target: host,
+    //         expr
+    //     };
+    // }
+  } else {
+    // host data binding
+    bindWatch(xdata, watchFun, bindings);
+  }
 
-    return bindings;
+  return bindings;
 };
 
-// 表达式到值的设置
+// Expression to value setting
 const exprToSet = ({ xdata, host, expr, callback, isArray }) => {
-    // 即时运行的判断函数
-    let runFunc = renderXdataGetFunc(expr, xdata);
+  // Instant-running judgment functions
+  let runFunc = renderXdataGetFunc(expr, xdata);
 
-    // 备份比较用的数据
-    let backup_val, backup_ids, backup_objstr;
+  // Backing up data for comparison
+  let backup_val, backup_ids, backup_objstr;
 
-    // 直接运行的渲染函数
-    const watchFun = (modifys) => {
-        const val = runFunc();
+  // Rendering functions that run directly
+  const watchFun = (modifys) => {
+    const val = runFunc();
 
-        if (isxdata(val)) {
-            if (isArray) {
-                // 对象只监听数组变动
-                let ids = val.map((e) => (e && e.xid ? e.xid : e)).join(",");
-                if (backup_ids !== ids) {
-                    callback({ val, modifys });
-                    backup_ids = ids;
-                }
-            } else {
-                // 对象监听
-                let obj_str = val.toJSON();
-
-                if (backup_val !== val || obj_str !== backup_objstr) {
-                    callback({ val, modifys });
-                    backup_objstr = obj_str;
-                }
-            }
-        } else if (backup_val !== val) {
-            callback({ val, modifys });
-            backup_objstr = null;
+    if (isxdata(val)) {
+      if (isArray) {
+        // If it is an array, only listen to the array changes
+        let ids = val.map((e) => (e && e.xid ? e.xid : e)).join(",");
+        if (backup_ids !== ids) {
+          callback({ val, modifys });
+          backup_ids = ids;
         }
-        backup_val = val;
-    };
+      } else {
+        // Object Listening
+        let obj_str = val.toJSON();
 
-    // 先执行一次
-    watchFun();
+        if (backup_val !== val || obj_str !== backup_objstr) {
+          callback({ val, modifys });
+          backup_objstr = obj_str;
+        }
+      }
+    } else if (backup_val !== val) {
+      callback({ val, modifys });
+      backup_objstr = null;
+    }
+    backup_val = val;
+  };
 
-    return renderInWatch({
-        xdata,
-        host,
-        expr,
-        watchFun,
-    });
+  // First execute once
+  watchFun();
+
+  return renderInWatch({
+    xdata,
+    host,
+    expr,
+    watchFun,
+  });
 };
 
-// 添加监听数据
+// Add listening data
 const addBindingData = (target, bindings) => {
-    let _binds = target.__bindings || (target.__bindings = []);
-    _binds.push(...bindings);
+  let _binds = target.__bindings || (target.__bindings = []);
+  _binds.push(...bindings);
 };
 
 const regIsFuncExpr = /[\(\)\;\=\>\<\|\!\?\+\-\*\/\&\|\{\}`]/;
 
-// 元素深度循环函数
+// Element depth loop function
 const elementDeepEach = (ele, callback) => {
-    // callback(ele);
-    Array.from(ele.childNodes).forEach((target) => {
-        callback(target);
+  Array.from(ele.childNodes).forEach((target) => {
+    callback(target);
 
-        if (target instanceof Element) {
-            elementDeepEach(target, callback);
-        }
-    });
+    if (target instanceof Element) {
+      elementDeepEach(target, callback);
+    }
+  });
 };
 
-// 根据 if 语句，去除数据绑定关系
+// Remove data binding relationships based on if statements
 const removeElementBind = (target) => {
-    elementDeepEach(target, (ele) => {
-        if (ele.isCustom) {
-            createXEle(ele).revoke();
-        }
+  elementDeepEach(target, (ele) => {
+    if (ele.isCustom) {
+      createXEle(ele).revoke();
+    }
 
-        if (ele.__bindings) {
-            ele.__bindings.forEach((e) => {
-                let { target, eid } = e;
-                target.unwatch(eid);
-            });
-        }
-    });
+    if (ele.__bindings) {
+      ele.__bindings.forEach((e) => {
+        let { target, eid } = e;
+        target.unwatch(eid);
+      });
+    }
+  });
 };
 
-// 添加渲染模板item内的元素
+// Adding elements inside a rendered template item
 const addTempItemEle = ({ temp, temps, marker, parent, host, xdata }) => {
-    // 添加元素
-    let targets = parseStringToDom(temp.innerHTML);
-    targets.forEach((ele) => {
-        parent.insertBefore(ele, marker);
-        renderTemp({ host, xdata, content: ele, temps });
-    });
-    return targets;
+  // add elements
+  let targets = parseStringToDom(temp.innerHTML);
+  targets.forEach((ele) => {
+    parent.insertBefore(ele, marker);
+    renderTemp({ host, xdata, content: ele, temps });
+  });
+  return targets;
 };
 
-// 删除渲染模板item内的元素
+// Delete the elements inside the rendered template item
 const removeTempItemEle = (arr) => {
-    arr.forEach((item) => {
-        // 去除数据绑定
-        removeElementBind(item);
+  arr.forEach((item) => {
+    // Removing data binding
+    removeElementBind(item);
 
-        // 删除元素
-        item.parentNode.removeChild(item);
-    });
+    item.parentNode.removeChild(item);
+  });
 };
 
-// 渲染组件的逻辑
-// host 主体组件元素；存放方法的主体
-// xdata 渲染目标数据；单层渲染下是host，x-fill模式下是具体的数据
-// content 渲染目标元素
+// Logic for rendering components
+// host :body component element; holds the body of the method
+// xdata: rendering target data; host in single-level rendering, concrete data in x-fill mode
+// content: rendering target element
 const renderTemp = ({ host, xdata, content, temps }) => {
-    // 事件绑定
-    getCanRenderEles(content, "[x-on]").forEach((target) => {
-        let eventInfo = JSON.parse(target.getAttribute("x-on"));
+  // Event Binding
+  getCanRenderEles(content, "[x-on]").forEach((target) => {
+    let eventInfo = JSON.parse(target.getAttribute("x-on"));
 
-        let eids = [];
+    let eids = [];
 
-        const $tar = createXEle(target);
+    const $tar = createXEle(target);
 
-        Object.keys(eventInfo).forEach((eventName) => {
-            let { name } = eventInfo[eventName];
+    Object.keys(eventInfo).forEach((eventName) => {
+      let { name } = eventInfo[eventName];
 
-            let eid;
+      let eid;
 
-            // 判断是否函数
-            if (regIsFuncExpr.test(name)) {
-                // 函数绑定
-                const func = exprToFunc(name);
-                eid = $tar.on(eventName, (event) => {
-                    func.call(xdata, event, $tar);
-                    // func.call(host, event, $tar);
-                });
+      // Determine if the function
+      if (regIsFuncExpr.test(name)) {
+        // Function Binding
+        const func = exprToFunc(name);
+        eid = $tar.on(eventName, (event) => {
+          func.call(xdata, event, $tar);
+        });
+      } else {
+        // Function name binding
+        eid = $tar.on(eventName, (event) => {
+          const func = getXData(xdata, name);
+          if (func) {
+            if (isFunction(func)) {
+              func.call(host, event);
             } else {
-                // 函数名绑定
-                eid = $tar.on(eventName, (event) => {
-                    // if (name.includes(".")) {
-                    //     throw {
-                    //         desc: "don't use dotted keys function"
-                    //     };
-                    // }
-                    // const func = xdata[name];
-                    // const func = host[name];
-                    const func = getXData(xdata, name);
-                    if (func) {
-                        if (isFunction(func)) {
-                            // func.call(xdata, event);
-                            func.call(host, event);
-                        } else {
-                            console.error({
-                                target: xdata,
-                                host,
-                                name,
-                                value: func,
-                                desc: "bind value is not function",
-                            });
-                        }
-                    } else {
-                        console.error({
-                            target: xdata,
-                            host,
-                            name,
-                            desc: "no binding function",
-                        });
-                    }
-                });
+              console.error({
+                target: xdata,
+                host,
+                name,
+                value: func,
+                desc: "bind value is not function",
+              });
             }
-
-            eids.push(eid);
-        });
-
-        moveAttrExpr(target, "x-on", eventInfo);
-    });
-
-    // 属性绑定
-    getCanRenderEles(content, "[x-attr]").forEach((ele) => {
-        const attrData = JSON.parse(ele.getAttribute("x-attr"));
-
-        moveAttrExpr(ele, "x-attr", attrData);
-
-        Object.keys(attrData).forEach((attrName) => {
-            const bindings = exprToSet({
-                xdata,
-                host,
-                expr: attrData[attrName],
-                callback: ({ val }) => {
-                    if (val === null || val === undefined) {
-                        ele.removeAttribute(attrName);
-                    } else {
-                        ele.setAttribute(attrName, val);
-                    }
-                },
+          } else {
+            console.error({
+              target: xdata,
+              host,
+              name,
+              desc: "no binding function",
             });
-
-            addBindingData(ele, bindings);
+          }
         });
+      }
+
+      eids.push(eid);
     });
 
-    // class绑定
-    getCanRenderEles(content, "[x-class]").forEach((ele) => {
-        const classListData = JSON.parse(ele.getAttribute("x-class"));
+    moveAttrExpr(target, "x-on", eventInfo);
+  });
 
-        moveAttrExpr(ele, "x-class", classListData);
+  // Attribute Binding
+  getCanRenderEles(content, "[x-attr]").forEach((ele) => {
+    const attrData = JSON.parse(ele.getAttribute("x-attr"));
 
-        Object.keys(classListData).forEach((className) => {
-            const bindings = exprToSet({
-                xdata,
-                host,
-                expr: classListData[className],
-                callback: ({ val }) => {
-                    // ele.setAttribute(className, val);
-                    if (val) {
-                        ele.classList.add(className);
-                    } else {
-                        ele.classList.remove(className);
-                    }
-                },
-            });
+    moveAttrExpr(ele, "x-attr", attrData);
 
-            addBindingData(ele, bindings);
-        });
+    Object.keys(attrData).forEach((attrName) => {
+      const bindings = exprToSet({
+        xdata,
+        host,
+        expr: attrData[attrName],
+        callback: ({ val }) => {
+          if (val === null || val === undefined) {
+            ele.removeAttribute(attrName);
+          } else {
+            ele.setAttribute(attrName, val);
+          }
+        },
+      });
+
+      addBindingData(ele, bindings);
     });
+  });
 
-    getCanRenderEles(content, "[x-prop]").forEach((ele) => {
-        const propData = JSON.parse(ele.getAttribute("x-prop"));
-        const xEle = createXEle(ele);
+  // class binding
+  getCanRenderEles(content, "[x-class]").forEach((ele) => {
+    const classListData = JSON.parse(ele.getAttribute("x-class"));
 
-        moveAttrExpr(ele, "x-prop", propData);
+    moveAttrExpr(ele, "x-class", classListData);
 
-        Object.keys(propData).forEach((propName) => {
-            const bindings = exprToSet({
-                xdata,
-                host,
-                expr: propData[propName],
-                callback: ({ val }) => {
-                    propName = attrToProp(propName);
-                    // if (!(propName in xEle)) {
-                    //     throw {
-                    //         target: ele,
-                    //         host: host.ele,
-                    //         desc: `this element doesn't have the property ${propName} (:${propName}), did you want to use attr:${propName}?`,
-                    //     };
-                    // } else {
-                    //     try {
-                    //         xEle[propName] = val;
-                    //     } catch (err) {
-                    //         throw {
-                    //             target: ele,
-                    //             host: host.ele,
-                    //             desc: `Failed to set property ${propName} (:${propName})`,
-                    //             error: err
-                    //         };
-                    //     }
-                    // }
+    Object.keys(classListData).forEach((className) => {
+      const bindings = exprToSet({
+        xdata,
+        host,
+        expr: classListData[className],
+        callback: ({ val }) => {
+          // ele.setAttribute(className, val);
+          if (val) {
+            ele.classList.add(className);
+          } else {
+            ele.classList.remove(className);
+          }
+        },
+      });
 
-                    try {
-                        xEle[propName] = val;
-                    } catch (error) {
-                        throw {
-                            target: ele,
-                            host: host.ele,
-                            desc: `failed to set property ${propName} (:${propName} or prop:${propName}), did you want to use attr:${propName}?`,
-                            error,
-                        };
-                    }
-                },
-            });
-
-            addBindingData(ele, bindings);
-        });
+      addBindingData(ele, bindings);
     });
+  });
 
-    // 数据双向绑定
-    getCanRenderEles(content, "[x-sync]").forEach((ele) => {
-        const propData = JSON.parse(ele.getAttribute("x-sync"));
-        const xEle = createXEle(ele);
+  // Property Binding
+  getCanRenderEles(content, "[x-prop]").forEach((ele) => {
+    const propData = JSON.parse(ele.getAttribute("x-prop"));
+    const xEle = createXEle(ele);
 
-        Object.keys(propData).forEach((propName) => {
-            let hostPropName = propData[propName];
-            if (regIsFuncExpr.test(hostPropName)) {
-                throw {
-                    desc: "sync only accepts attribute names",
-                };
-            }
+    moveAttrExpr(ele, "x-prop", propData);
 
-            const bindings1 = exprToSet({
-                xdata,
-                host,
-                expr: hostPropName,
-                callback: ({ val }) => {
-                    setXData(xEle, propName, val);
-                },
-            });
+    Object.keys(propData).forEach((propName) => {
+      const bindings = exprToSet({
+        xdata,
+        host,
+        expr: propData[propName],
+        callback: ({ val }) => {
+          propName = attrToProp(propName);
 
-            const bindings2 = exprToSet({
-                xdata: xEle,
-                host,
-                expr: propName,
-                callback: ({ val }) => {
-                    setXData(xdata, hostPropName, val);
-                },
-            });
-
-            addBindingData(ele, [...bindings1, ...bindings2]);
-        });
-    });
-
-    // 文本绑定
-    getCanRenderEles(content, "x-span").forEach((ele) => {
-        let expr = decodeURI(ele.getAttribute("prop"));
-
-        let { marker, parent } = postionNode(ele);
-
-        // 改为textNode
-        const textnode = document.createTextNode("");
-        parent.replaceChild(textnode, marker);
-
-        // 数据绑定
-        const bindings = exprToSet({
-            xdata,
-            host,
-            expr,
-            callback: ({ val }) => {
-                textnode.textContent = val;
-            },
-        });
-
-        addBindingData(textnode, bindings);
-    });
-
-    // if元素渲染
-    getCanRenderEles(content, "[x-cmd-if]").forEach((ele) => {
-        const conditionEles = [ele];
-        // 将后续的else-if和else都拿起来
-        let { nextElementSibling } = ele;
-        while (
-            nextElementSibling &&
-            (nextElementSibling.hasAttribute("x-cmd-else-if") ||
-                nextElementSibling.hasAttribute("x-cmd-else"))
-        ) {
-            nextElementSibling.parentNode.removeChild(nextElementSibling);
-            conditionEles.push(nextElementSibling);
-            nextElementSibling = ele.nextElementSibling;
-        }
-
-        let all_expr = "";
-
-        // 将连在一起的 if else 都组成一个数组，并转化成条件函数
-        const conditions = conditionEles.map((e, index) => {
-            let callback;
-
-            const expr =
-                e.getAttribute("x-cmd-else-if") || e.getAttribute("x-cmd-if");
-
-            if (expr) {
-                callback = renderXdataGetFunc(expr, xdata);
-                all_expr += `${index == 0 ? "if" : "else-if"}(${expr})...`;
-            }
-
-            return {
-                callback,
-                tempEle: e,
+          try {
+            xEle[propName] = val;
+          } catch (error) {
+            throw {
+              target: ele,
+              host: host.ele,
+              desc: `failed to set property ${propName} (:${propName} or prop:${propName}), did you want to use attr:${propName}?`,
+              error,
             };
-        });
+          }
+        },
+      });
 
-        // 定位文本元素
-        let { marker, parent } = postionNode(ele);
+      addBindingData(ele, bindings);
+    });
+  });
 
-        // 生成的目标元素
-        let oldTargetEle = null;
-        let oldConditionId = -1;
-        // let oldConditionValue;
+  // Two-way data binding
+  getCanRenderEles(content, "[x-sync]").forEach((ele) => {
+    const propData = JSON.parse(ele.getAttribute("x-sync"));
+    const xEle = createXEle(ele);
 
-        const watchFun = (modifys) => {
-            let tempEle,
-                conditionId = -1;
-            let conditionVal;
-            conditions.some((e, index) => {
-                if (e.callback) {
-                    conditionVal = !!e.callback();
-
-                    if (conditionVal) {
-                        tempEle = e.tempEle;
-                        conditionId = index;
-                        return true;
-                    }
-                } else {
-                    // 最后的else
-                    tempEle = e.tempEle;
-                    conditionId = index;
-                    // conditionVal = true;
-                }
-            });
-
-            // 值或序号不一样，都能进入修正的环节
-            // if (oldConditionId !== conditionId || conditionVal !== oldConditionValue) {
-            if (oldConditionId !== conditionId) {
-                // 旧模板销毁
-                if (oldTargetEle) {
-                    // debugger
-                    // 去除数据绑定
-                    removeElementBind(oldTargetEle);
-
-                    // 删除元素
-                    oldTargetEle.parentNode.removeChild(oldTargetEle);
-                    // parent.replaceChild(marker, oldTargetEle);
-                    oldTargetEle = null;
-                }
-
-                // 确定可添加模板
-                // if (conditionVal && tempEle) {
-                if (tempEle) {
-                    // 添加元素
-                    oldTargetEle = parseStringToDom(
-                        tempEle.content.children[0].outerHTML
-                    )[0];
-
-                    parent.insertBefore(oldTargetEle, marker);
-
-                    // 重新渲染
-                    renderTemp({ host, xdata, content: oldTargetEle, temps });
-                }
-            }
-
-            // oldConditionValue = conditionVal;
-            oldConditionId = conditionId;
+    Object.keys(propData).forEach((propName) => {
+      let hostPropName = propData[propName];
+      if (regIsFuncExpr.test(hostPropName)) {
+        throw {
+          desc: "sync only accepts attribute names",
         };
+      }
 
-        // 先执行一次
-        watchFun();
+      const bindings1 = exprToSet({
+        xdata,
+        host,
+        expr: hostPropName,
+        callback: ({ val }) => {
+          setXData(xEle, propName, val);
+        },
+      });
 
-        addBindingData(
-            marker,
-            renderInWatch({
-                xdata,
-                host,
-                expr: all_expr,
-                watchFun,
-            })
-        );
+      const bindings2 = exprToSet({
+        xdata: xEle,
+        host,
+        expr: propName,
+        callback: ({ val }) => {
+          setXData(xdata, hostPropName, val);
+        },
+      });
+
+      addBindingData(ele, [...bindings1, ...bindings2]);
+    });
+  });
+
+  // 文本绑定
+  getCanRenderEles(content, "x-span").forEach((ele) => {
+    let expr = decodeURI(ele.getAttribute("prop"));
+
+    let { marker, parent } = postionNode(ele);
+
+    // Changing markup elements to textNode
+    const textnode = document.createTextNode("");
+    parent.replaceChild(textnode, marker);
+
+    // Data Binding
+    const bindings = exprToSet({
+      xdata,
+      host,
+      expr,
+      callback: ({ val }) => {
+        textnode.textContent = val;
+      },
     });
 
-    // await元素渲染
-    getCanRenderEles(content, "[x-cmd-await]").forEach((ele) => {
-        let awaitTemp = ele,
-            thenTemp,
-            catchTemp;
-        // 将后续的else-if和else都拿起来
-        let { nextElementSibling } = ele;
-        while (
-            nextElementSibling &&
-            (nextElementSibling.hasAttribute("x-cmd-then") ||
-                nextElementSibling.hasAttribute("x-cmd-catch"))
-        ) {
-            if (nextElementSibling.hasAttribute("x-cmd-then")) {
-                thenTemp = nextElementSibling;
-            } else if (nextElementSibling.hasAttribute("x-cmd-catch")) {
-                catchTemp = nextElementSibling;
-            }
-            nextElementSibling.parentNode.removeChild(nextElementSibling);
-            nextElementSibling = ele.nextElementSibling;
+    addBindingData(textnode, bindings);
+  });
+
+  // Conditional expression element rendering
+  getCanRenderEles(content, "[x-cmd-if]").forEach((ele) => {
+    const conditionEles = [ele];
+    // Pick up the subsequent else-if and else
+    let { nextElementSibling } = ele;
+    while (
+      nextElementSibling &&
+      (nextElementSibling.hasAttribute("x-cmd-else-if") ||
+        nextElementSibling.hasAttribute("x-cmd-else"))
+    ) {
+      nextElementSibling.parentNode.removeChild(nextElementSibling);
+      conditionEles.push(nextElementSibling);
+      nextElementSibling = ele.nextElementSibling;
+    }
+
+    let all_expr = "";
+
+    // Converting concatenated conditional elements into conditional functions
+    const conditions = conditionEles.map((e, index) => {
+      let callback;
+
+      const expr =
+        e.getAttribute("x-cmd-else-if") || e.getAttribute("x-cmd-if");
+
+      if (expr) {
+        callback = renderXdataGetFunc(expr, xdata);
+        all_expr += `${index == 0 ? "if" : "else-if"}(${expr})...`;
+      }
+
+      return {
+        callback,
+        tempEle: e,
+      };
+    });
+
+    // Positioning text elements
+    let { marker, parent } = postionNode(ele);
+
+    // Generated target elements
+    let oldTargetEle = null;
+    let oldConditionId = -1;
+
+    const watchFun = (modifys) => {
+      let tempEle,
+        conditionId = -1;
+      let conditionVal;
+      conditions.some((e, index) => {
+        if (e.callback) {
+          conditionVal = !!e.callback();
+
+          if (conditionVal) {
+            tempEle = e.tempEle;
+            conditionId = index;
+            return true;
+          }
+        } else {
+          // The final else condition
+          tempEle = e.tempEle;
+          conditionId = index;
+        }
+      });
+
+      // The value or serial number is different, both can enter the corrected link
+      if (oldConditionId !== conditionId) {
+        // Old template destruction
+        if (oldTargetEle) {
+          removeElementBind(oldTargetEle);
+
+          oldTargetEle.parentNode.removeChild(oldTargetEle);
+          oldTargetEle = null;
         }
 
-        // 添加定位
-        let { marker, parent } = postionNode(ele);
+        // Confirm that templates can be added
+        if (tempEle) {
+          // add element
+          oldTargetEle = parseStringToDom(
+            tempEle.content.children[0].outerHTML
+          )[0];
 
-        let expr = ele.getAttribute("x-cmd-await");
+          parent.insertBefore(oldTargetEle, marker);
 
-        let beforePms, beforeTargets;
-        const bindings = exprToSet({
-            xdata,
-            host,
-            expr,
-            callback: ({ val }) => {
-                // 清除前面的数据
-                if (beforeTargets) {
-                    removeTempItemEle(beforeTargets);
-                    beforeTargets = null;
-                }
+          // Rerendering
+          renderTemp({ host, xdata, content: oldTargetEle, temps });
+        }
+      }
 
-                // 添加元素
-                beforeTargets = addTempItemEle({
-                    temp: awaitTemp,
-                    temps,
-                    marker,
-                    parent,
-                    host,
-                    xdata,
-                });
+      oldConditionId = conditionId;
+    };
 
-                beforePms = val;
+    // First execute once
+    watchFun();
 
-                val.then((e) => {
-                    if (beforePms !== val) {
-                        return;
-                    }
-                    removeTempItemEle(beforeTargets);
-                    beforeTargets = null;
-                    if (thenTemp) {
-                        beforeTargets = addTempItemEle({
-                            temp: thenTemp,
-                            temps,
-                            marker,
-                            parent,
-                            host,
-                            xdata: {
-                                [thenTemp.getAttribute("x-cmd-then")]: e,
-                                $host: host,
-                            },
-                        });
-                    }
-                }).catch((err) => {
-                    if (beforePms !== val) {
-                        return;
-                    }
-                    removeTempItemEle(beforeTargets);
-                    beforeTargets = null;
-                    if (catchTemp) {
-                        beforeTargets = addTempItemEle({
-                            temp: catchTemp,
-                            temps,
-                            marker,
-                            parent,
-                            host,
-                            xdata: {
-                                [catchTemp.getAttribute("x-cmd-catch")]: err,
-                                $host: host,
-                            },
-                        });
-                    }
-                });
-            },
+    addBindingData(
+      marker,
+      renderInWatch({
+        xdata,
+        host,
+        expr: all_expr,
+        watchFun,
+      })
+    );
+  });
+
+  // await element rendering
+  getCanRenderEles(content, "[x-cmd-await]").forEach((ele) => {
+    let awaitTemp = ele,
+      thenTemp,
+      catchTemp;
+    // Pick up the subsequent else-if and else
+    let { nextElementSibling } = ele;
+    while (
+      nextElementSibling &&
+      (nextElementSibling.hasAttribute("x-cmd-then") ||
+        nextElementSibling.hasAttribute("x-cmd-catch"))
+    ) {
+      if (nextElementSibling.hasAttribute("x-cmd-then")) {
+        thenTemp = nextElementSibling;
+      } else if (nextElementSibling.hasAttribute("x-cmd-catch")) {
+        catchTemp = nextElementSibling;
+      }
+      nextElementSibling.parentNode.removeChild(nextElementSibling);
+      nextElementSibling = ele.nextElementSibling;
+    }
+
+    // Add Location
+    let { marker, parent } = postionNode(ele);
+
+    let expr = ele.getAttribute("x-cmd-await");
+
+    let beforePms, beforeTargets;
+    const bindings = exprToSet({
+      xdata,
+      host,
+      expr,
+      callback: ({ val }) => {
+        // 清除前面的数据
+        if (beforeTargets) {
+          removeTempItemEle(beforeTargets);
+          beforeTargets = null;
+        }
+
+        // add elements
+        beforeTargets = addTempItemEle({
+          temp: awaitTemp,
+          temps,
+          marker,
+          parent,
+          host,
+          xdata,
         });
 
-        addBindingData(marker, bindings);
+        beforePms = val;
+
+        val
+          .then((e) => {
+            if (beforePms !== val) {
+              return;
+            }
+            removeTempItemEle(beforeTargets);
+            beforeTargets = null;
+            if (thenTemp) {
+              beforeTargets = addTempItemEle({
+                temp: thenTemp,
+                temps,
+                marker,
+                parent,
+                host,
+                xdata: {
+                  [thenTemp.getAttribute("x-cmd-then")]: e,
+                  $host: host,
+                },
+              });
+            }
+          })
+          .catch((err) => {
+            if (beforePms !== val) {
+              return;
+            }
+            removeTempItemEle(beforeTargets);
+            beforeTargets = null;
+            if (catchTemp) {
+              beforeTargets = addTempItemEle({
+                temp: catchTemp,
+                temps,
+                marker,
+                parent,
+                host,
+                xdata: {
+                  [catchTemp.getAttribute("x-cmd-catch")]: err,
+                  $host: host,
+                },
+              });
+            }
+          });
+      },
     });
 
-    // 填充绑定
-    getCanRenderEles(content, "[x-fill]").forEach((ele) => {
-        const fillData = JSON.parse(ele.getAttribute("x-fill"));
-        let fillKeys = ele.getAttribute("x-item");
-        fillKeys && (fillKeys = JSON.parse(fillKeys));
+    addBindingData(marker, bindings);
+  });
 
-        const container = ele;
+  // Fill Binding
+  getCanRenderEles(content, "[x-fill]").forEach((ele) => {
+    const fillData = JSON.parse(ele.getAttribute("x-fill"));
+    let fillKeys = ele.getAttribute("x-item");
+    fillKeys && (fillKeys = JSON.parse(fillKeys));
 
-        createXEle(container)._unupdate = 1;
+    const container = ele;
 
-        let [tempName, propName] = Object.entries(fillData)[0];
+    createXEle(container)._unupdate = 1;
 
-        let old_xid;
+    let [tempName, propName] = Object.entries(fillData)[0];
 
-        // 提前把 x-fill 属性去掉，防止重复渲染
-        moveAttrExpr(ele, "x-fill", fillData);
-        moveAttrExpr(ele, "x-item", fillKeys);
+    let old_xid;
 
-        const bindings = exprToSet({
-            xdata,
-            host,
-            expr: propName,
-            isArray: 1,
-            callback: (d) => {
-                const targetArr = d.val;
+    // Remove the x-fill attribute in advance to prevent double rendering
+    moveAttrExpr(ele, "x-fill", fillData);
+    moveAttrExpr(ele, "x-item", fillKeys);
 
-                // 获取模板
-                let tempData = temps.get(tempName);
+    const bindings = exprToSet({
+      xdata,
+      host,
+      expr: propName,
+      isArray: 1,
+      callback: (d) => {
+        const targetArr = d.val;
 
-                if (!tempData) {
-                    throw {
-                        target: host.ele,
-                        desc: `this template was not found`,
-                        name: tempName,
-                    };
-                }
+        // Get Template
+        let tempData = temps.get(tempName);
 
-                if (!old_xid) {
-                    // 完全填充
-                    targetArr.forEach((data, index) => {
-                        const itemEle = createFillItem({
-                            host,
-                            data,
-                            index,
-                            tempData,
-                            temps,
-                        });
+        if (!tempData) {
+          throw {
+            target: host.ele,
+            desc: `this template was not found`,
+            name: tempName,
+          };
+        }
 
-                        if (fillKeys) {
-                            initKeyToItem(itemEle, fillKeys, xdata, host);
-                        }
+        if (!old_xid) {
+          // Completely filled
+          targetArr.forEach((data, index) => {
+            const itemEle = createFillItem({
+              host,
+              data,
+              index,
+              tempData,
+              temps,
+            });
 
-                        // 添加到容器内
-                        container.appendChild(itemEle.ele);
-                    });
+            if (fillKeys) {
+              initKeyToItem(itemEle, fillKeys, xdata, host);
+            }
 
-                    old_xid = targetArr.xid;
-                } else {
-                    const childs = Array.from(container.children);
-                    const oldArr = childs.map((e) => e.__fill_item.$data);
+            // Add to container
+            container.appendChild(itemEle.ele);
+          });
 
-                    const holder = Symbol("holder");
+          old_xid = targetArr.xid;
+        } else {
+          const childs = Array.from(container.children);
+          const oldArr = childs.map((e) => e.__fill_item.$data);
 
-                    const afterChilds = [];
-                    targetArr.forEach((e, index) => {
-                        let oldIndex = oldArr.indexOf(e);
-                        if (oldIndex === -1) {
-                            // 属于新增
-                            let newItem = createFillItem({
-                                host,
-                                data: e,
-                                index,
-                                tempData,
-                                temps,
-                            });
+          const holder = Symbol("holder");
 
-                            if (fillKeys) {
-                                initKeyToItem(newItem, fillKeys, xdata, host);
-                            }
+          const afterChilds = [];
+          targetArr.forEach((e, index) => {
+            let oldIndex = oldArr.indexOf(e);
+            if (oldIndex === -1) {
+              let newItem = createFillItem({
+                host,
+                data: e,
+                index,
+                tempData,
+                temps,
+              });
 
-                            afterChilds.push(newItem.ele);
-                        } else {
-                            // 属于位移
-                            let targetEle = childs[oldIndex];
-                            // 更新index
-                            targetEle.__fill_item.$index = index;
-                            afterChilds.push(targetEle);
+              if (fillKeys) {
+                initKeyToItem(newItem, fillKeys, xdata, host);
+              }
 
-                            // 标识已用
-                            oldArr[oldIndex] = holder;
-                        }
-                    });
+              afterChilds.push(newItem.ele);
+            } else {
+              // belongs to the element displacement
+              let targetEle = childs[oldIndex];
+              // update index
+              targetEle.__fill_item.$index = index;
+              afterChilds.push(targetEle);
 
-                    // 需要被清除数据的
-                    const needRemoves = [];
+              oldArr[oldIndex] = holder;
+            }
+          });
 
-                    // 删除不在数据内的元素
-                    oldArr.forEach((e, i) => {
-                        if (e !== holder) {
-                            let e2 = childs[i];
-                            needRemoves.push(e2);
-                            container.removeChild(e2);
-                        }
-                    });
+          // that need to be cleared of data
+          const needRemoves = [];
 
-                    // 去除数据绑定
-                    needRemoves.forEach((e) => removeElementBind(e));
+          // Delete elements that are not in the data
+          oldArr.forEach((e, i) => {
+            if (e !== holder) {
+              let e2 = childs[i];
+              needRemoves.push(e2);
+              container.removeChild(e2);
+            }
+          });
 
-                    // 重构数组
-                    rebuildXEleArray(container, afterChilds);
-                }
-            },
-        });
+          // Removing data binding
+          needRemoves.forEach((e) => removeElementBind(e));
 
-        addBindingData(ele, bindings);
+          // Reconstructing arrays
+          rebuildXEleArray(container, afterChilds);
+        }
+      },
     });
+
+    addBindingData(ele, bindings);
+  });
 };
 
 const initKeyToItem = (itemEle, fillKeys, xdata, host) => {
-    let fData = itemEle.$item;
-    Object.keys(fillKeys).forEach((key) => {
-        let expr = fillKeys[key];
+  let fData = itemEle.$item;
+  Object.keys(fillKeys).forEach((key) => {
+    let expr = fillKeys[key];
 
-        const propName = attrToProp(key);
-        let itemBindings = exprToSet({
-            xdata,
-            host,
-            expr,
-            callback: ({ val }) => {
-                fData[propName] = val;
-            },
-        });
-
-        addBindingData(itemEle.ele, itemBindings);
+    const propName = attrToProp(key);
+    let itemBindings = exprToSet({
+      xdata,
+      host,
+      expr,
+      callback: ({ val }) => {
+        fData[propName] = val;
+      },
     });
+
+    addBindingData(itemEle.ele, itemBindings);
+  });
 };
 
-// 生成fillItem元素
-// fillKeys 传递的Key
 const createFillItem = ({ host, data, index, tempData, temps }) => {
-    const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
+  const itemEle = createXEle(parseStringToDom(tempData.code)[0]);
 
-    const itemData = createXData({
-        get $host() {
-            return host;
-        },
-        // $data: data,
-        $index: index,
-        get $data() {
-            return data;
-        },
-        get $item() {
-            // 获取自身
-            return itemData;
-        },
-        // get $index() {
-        //     return this._index;
-        // },
-        // _index: index
-    });
+  const itemData = createXData({
+    get $host() {
+      return host;
+    },
+    // $data: data,
+    $index: index,
+    get $data() {
+      return data;
+    },
+    get $item() {
+      // get self
+      return itemData;
+    },
+    // get $index() {
+    //     return this._index;
+    // },
+    // _index: index
+  });
 
-    defineProperties(itemEle, {
-        $item: {
-            get: () => itemData,
-        },
-        $data: {
-            get: () => data,
-        },
-    });
+  defineProperties(itemEle, {
+    $item: {
+      get: () => itemData,
+    },
+    $data: {
+      get: () => data,
+    },
+  });
 
-    itemEle.ele.__fill_item = itemData;
+  itemEle.ele.__fill_item = itemData;
 
-    renderTemp({ host, xdata: itemData, content: itemEle.ele, temps });
+  renderTemp({ host, xdata: itemData, content: itemEle.ele, temps });
 
-    return itemEle;
+  return itemEle;
 };
