@@ -394,7 +394,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
     });
   });
 
-  // 文本绑定
+  // Text Binding
   getCanRenderEles(content, "x-span").forEach((ele) => {
     let expr = decodeURI(ele.getAttribute("prop"));
 
