@@ -552,7 +552,7 @@ const renderTemp = ({ host, xdata, content, temps }) => {
       host,
       expr,
       callback: ({ val }) => {
-        // 清除前面的数据
+        // Clear the previous data
         if (beforeTargets) {
           removeTempItemEle(beforeTargets);
           beforeTargets = null;
