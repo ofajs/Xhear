@@ -1889,7 +1889,7 @@ const ComponentResolves = {};
 const getComp = (name) => {
     name = attrToProp(name);
 
-    // 组件上有数据就直接返回
+    // Return directly if you have registration
     if (Components[name]) {
         return Components[name];
     }
@@ -2015,7 +2015,7 @@ const renderXEle = async ({
 // The revoke function has been run
 const RUNNDEDREVOKE = Symbol("runned_revoke");
 
-// 注册组件的主要逻辑
+// Registering component functions
 const register = (opts) => {
     const defs = {
         // Registered component name
@@ -2864,7 +2864,7 @@ const renderTemp = ({
         });
     });
 
-    // 文本绑定
+    // Text Binding
     getCanRenderEles(content, "x-span").forEach((ele) => {
         let expr = decodeURI(ele.getAttribute("prop"));
 
