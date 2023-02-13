@@ -403,7 +403,6 @@ class XEle extends XData {
   //       clearTimeout(resizeTimer);
 
   //       setTimeout(() => {
-  //         // 尺寸时间监听
   //         emitUpdate(
   //           this,
   //           {

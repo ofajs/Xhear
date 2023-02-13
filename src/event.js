@@ -122,7 +122,6 @@ extend(XEle.prototype, {
       if (isFunction(callback)) {
         this.on(name, callback);
       } else {
-        // callback 就是 data
         return this.trigger(name, callback);
       }
     },

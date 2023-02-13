@@ -48,7 +48,6 @@ const renderInput = (xele) => {
     },
   };
 
-  // 根据类型进行设置
   switch (type) {
     case "radio":
     case "checkbox":

@@ -451,7 +451,7 @@ const clearXDataOwner = (xdata, parent) => {
 // Fix xdata's owner data
 const fixXDataOwner = (xdata) => {
     if (xdata._xtatus === "revoke") {
-        // 重新修复状态
+        // Restoration status
         Object.values(xdata).forEach((e) => {
             if (isxdata(e)) {
                 fixXDataOwner(e);
@@ -1247,7 +1247,6 @@ class XEle extends XData {
     //       clearTimeout(resizeTimer);
 
     //       setTimeout(() => {
-    //         // 尺寸时间监听
     //         emitUpdate(
     //           this,
     //           {
@@ -1344,7 +1343,6 @@ const renderInput = (xele) => {
         },
     };
 
-    // 根据类型进行设置
     switch (type) {
         case "radio":
         case "checkbox":
@@ -1744,7 +1742,6 @@ const rebuildXEleArray = (container, rearray) => {
         const targetChild = children[index];
 
         if (!targetChild) {
-            // 属于后面新增
             container.appendChild(ele);
         } else if (ele !== targetChild) {
             container.insertBefore(ele, targetChild);
@@ -1878,7 +1875,6 @@ extend(XEle.prototype, {
             if (isFunction(callback)) {
                 this.on(name, callback);
             } else {
-                // callback 就是 data
                 return this.trigger(name, callback);
             }
         },
@@ -3048,7 +3044,7 @@ const renderTemp = ({
             callback: ({
                 val
             }) => {
-                // 清除前面的数据
+                // Clear the previous data
                 if (beforeTargets) {
                     removeTempItemEle(beforeTargets);
                     beforeTargets = null;
