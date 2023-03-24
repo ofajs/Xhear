@@ -66,7 +66,12 @@ class XEle extends XData {
 
     delete self.length;
 
-    if (self.tag == "input" || self.tag == "textarea" || self.tag == "select") {
+    if (
+      self.tag === "input" ||
+      self.tag === "textarea" ||
+      self.tag === "select" ||
+      self.tag === "button"
+    ) {
       renderInput(self);
     }
   }
