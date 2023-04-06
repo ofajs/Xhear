@@ -1,2 +1,5 @@
 **/node_modules/
 **/.DS_Store
+dist/xhear-dev.js
+dist/xhear-dev.js.map
+.cache

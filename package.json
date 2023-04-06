@@ -3,23 +3,22 @@
   "version": "6.0.1",
   "description": "a web components solution",
   "scripts": {
-    "watch": "node scripts/watch.js"
+    "dev": "parcel packages/base.mjs -d dist --out-file xhear-dev.js",
+    "build": "parcel build packages/base.mjs -d dist --out-file xhear.js"
   },
   "author": {
-      "name": "YAO",
-      "email": "kirayao@hotmail.com",
-      "url": "https://kirakiray.com/"
+    "name": "YAO",
+    "email": "kirayao@hotmail.com",
+    "url": "https://kirakiray.com/"
   },
   "license": "MIT",
   "devDependencies": {
-    "js-beautify": "^1.10.0",
-    "uglify-es": "^3.3.9"
+    "parcel-bundler": "^1.12.5"
   },
-  "main": "dist/xhear.js",
+  "main": "dist/base.mjs",
   "directories": {
     "test": "test"
   },
-  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kirakiray/Xhear.git"
