@@ -1,10 +1,10 @@
 {
   "name": "xhear",
-  "version": "6.0.1",
+  "version": "7.0.0",
   "description": "a web components solution",
   "scripts": {
-    "dev": "parcel packages/base.mjs -d dist --out-file xhear-dev.js",
-    "build": "parcel build packages/base.mjs -d dist --out-file xhear.js"
+    "dev": "parcel packages/base.mjs --public-url /dist --out-file xhear-dev.js",
+    "build": "parcel build packages/base.mjs -d dist --out-file xhear.js --no-source-maps"
   },
   "author": {
     "name": "YAO",
