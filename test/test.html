@@ -4,7 +4,21 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>test</title>
-    <script src="../dist/xhear-dev.js"></script>
+    <title>xhear test</title>
+    <!-- <script src="../dist/xhear.js"></script> -->
   </head>
+  <body>
+    <div id="target">asd
+      <span>a1</span>
+      <span>a2</span>
+      <span>a3</span>
+    </div>
+    <script type="module">
+      import $ from "../src/base.mjs";
+      const a = $("#target");
+      console.log("a => ", a);
+
+      window.a = a;
+    </script>
+  </body>
 </html>

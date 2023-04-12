@@ -8,7 +8,3 @@ const stanz = (data) => {
 Object.assign(stanz, { is: isxdata });
 
 export default stanz;
-
-if (typeof global !== "undefined") {
-  global.stanz = stanz;
-}

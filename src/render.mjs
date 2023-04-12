@@ -1,5 +1,4 @@
-export default function render({ data, host, el }) {
-    console.log("asd");
-    return "asdasdasd";
-  }
-  
+export default function render(el) {
+  console.log("asd");
+  return "asdasdasd";
+}
