@@ -9,7 +9,3 @@ export default function $(expr) {
 
   return createXhear(ele);
 }
-
-if (typeof global !== "undefined") {
-  global.$ = $;
-}

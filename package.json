@@ -5,7 +5,9 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "dev": "node scripts/dev.js",
-    "build": "parcel build src/base.mjs -d dist --out-file xhear.js --no-source-maps --global global"
+    "build": "parcel build src/dist.mjs -d dist --out-file xhear.js --no-source-maps --global global",
+    "static-server": "node scripts/static-server",
+    "test": "npx playwright test"
   },
   "author": {
     "name": "YAO",
@@ -17,7 +19,10 @@
     "@playwright/test": "^1.32.3",
     "parcel-bundler": "^1.12.5",
     "parcel-plugin-wrapper": "^0.2.3",
-    "sync-directory": "^6.0.4"
+    "sync-directory": "^6.0.4",
+    "koa": "^2.14.1",
+    "koa-static": "^5.0.0",
+    "shelljs": "^0.8.5"
   },
   "main": "dist/base.mjs",
   "directories": {
