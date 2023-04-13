@@ -1,19 +1,24 @@
 import { createXhear } from "./public.mjs";
 import { handler } from "./accessor.mjs";
-import { PROXY } from "./stanz/main.mjs";
 import { getType } from "./stanz/public.mjs";
+import { constructor } from "./stanz/main.mjs";
+import fnInstallWatch from "./stanz/watch.mjs";
 const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
 
 export default class Xhear {
   constructor({ ele }) {
-    const proxySelf = new Proxy(this, handler);
+    const proxySelf = constructor.call(this, handler);
 
     defineProperties(this, {
+      _owner: {
+        get() {
+          const { parentNode } = ele;
+
+          return parentNode ? [createXhear(parentNode)] : [];
+        },
+      },
       ele: {
         get: () => ele,
-      },
-      [PROXY]: {
-        get: () => proxySelf,
       },
     });
 
@@ -93,3 +98,5 @@ export default class Xhear {
     Object.assign(style, d);
   }
 }
+
+fnInstallWatch(Xhear);
