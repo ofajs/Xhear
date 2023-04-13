@@ -17,14 +17,17 @@
   </head>
   <body>
     This is the html file for development and debugging
-    <br>
-    <section id="target">
+    <br />
+    <div id="target">
       <span>a1</span>
       <span>a2</span>
       <span>a3</span>
-    </section>
+    </div>
     <script type="module">
       import $ from "../../packages/main/base.mjs";
+
+      const ele = document.createElement("div");
+      const ha = $(ele);
 
       const a = $("#target");
 

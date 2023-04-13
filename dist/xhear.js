@@ -20,7 +20,7 @@ var e=require("process");Object.defineProperty(exports,"__esModule",{value:!0}),
 },{"./public.mjs":"jcrR","./accessor.mjs":"KVRu","../stanz/src/public.mjs":"m8ax","../stanz/src/main.mjs":"XZcT","../stanz/src/watch.mjs":"HwQr"}],"jcrR":[function(require,module,exports) {
 "use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.createXhear=void 0;var e=r(require("./main.mjs"));function r(e){return e&&e.__esModule?e:{default:e}}const t=r=>r.__xhear__?r.__xhear__:new e.default({ele:r});exports.createXhear=t;
 },{"./main.mjs":"PnwU"}],"SZYs":[function(require,module,exports) {
-"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.default=r;var e=require("./public.mjs");function r(r){if(r instanceof Element)return createXEle(r);const t=document.querySelector(r);return(0,e.createXhear)(t)}
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.default=r;var e=require("./public.mjs");function r(r){if(r instanceof Element)return(0,e.createXhear)(r);const t=document.querySelector(r);return(0,e.createXhear)(t)}
 },{"./public.mjs":"jcrR"}],"s7iV":[function(require,module,exports) {
 var global = arguments[3];
 var e=arguments[3],u=r(require("./base.mjs"));function r(e){return e&&e.__esModule?e:{default:e}}void 0!==e&&(e.$=u.default);

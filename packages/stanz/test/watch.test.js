@@ -148,12 +148,16 @@ describe("Test if the watch method of the instance is correct", () => {
       val: "I am d",
     });
 
+    let i = 0;
     d.watch(() => {
+      i++;
       throw "update in";
     });
 
     d.obj._update = false;
     d.obj.val = "change obj val";
+
+    expect(i).toBe(0);
   });
 
   test("test unwatch", () => {
@@ -175,6 +179,8 @@ describe("Test if the watch method of the instance is correct", () => {
     d.obj.val = "change obj val";
     d.unwatch(wid);
     d.obj.val = "change obj val2";
+
+    expect(i).toBe(1);
   });
 
   test("test watchTick", () => {
@@ -196,9 +202,13 @@ describe("Test if the watch method of the instance is correct", () => {
       if (i > 1) {
         throw "watch error";
       }
+
+      expect(i).toBe(1);
     });
 
     delete d.test;
     delete d.obj.test2;
+
+    expect(i).toBe(0);
   });
 });
