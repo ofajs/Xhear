@@ -1,8 +1,8 @@
 import { createXhear } from "./public.mjs";
 import { handler } from "./accessor.mjs";
-import { getType } from "./stanz/public.mjs";
-import { constructor } from "./stanz/main.mjs";
-import fnInstallWatch from "./stanz/watch.mjs";
+import { getType } from "../stanz/src/public.mjs";
+import { constructor } from "../stanz/src/main.mjs";
+import fnInstallWatch from "../stanz/src/watch.mjs";
 const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
 
 export default class Xhear {

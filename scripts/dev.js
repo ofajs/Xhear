@@ -1,11 +1,24 @@
 const path = require("path");
 const syncDirectory = require("sync-directory");
 
-const stanzSrcDir = path.resolve(__dirname, "../../stanz/src");
-const srcDir = path.resolve(__dirname, "../src/stanz");
+const watchDirs = [
+  {
+    name: "stanz",
+    source: path.resolve(__dirname, "../../stanz/src"),
+    test: path.resolve(__dirname, "../../stanz/test"),
+  },
+];
 
-syncDirectory(stanzSrcDir, srcDir, {
-  watch: true,
+watchDirs.forEach((e) => {
+  const { name, source, test } = e;
+
+  syncDirectory(source, path.resolve(__dirname, `../packages/${name}/src`), {
+    watch: true,
+  });
+
+  syncDirectory(test, path.resolve(__dirname, `../packages/${name}/test`), {
+    watch: true,
+  });
+
+  console.log(`Listening to stanz source files : ${source} and ${test}`);
 });
-
-console.log(`Listening to stanz source files : ${stanzSrcDir}`);

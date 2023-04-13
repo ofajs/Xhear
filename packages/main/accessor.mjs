@@ -1,5 +1,5 @@
 import { createXhear } from "./public.mjs";
-import { handler as stanzHandler, setData } from "./stanz/accessor.mjs";
+import { handler as stanzHandler, setData } from "../stanz/src/accessor.mjs";
 
 export const handler = {
   set(target, key, value, receiver) {

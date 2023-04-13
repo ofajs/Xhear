@@ -6,17 +6,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>xhear test</title>
     <!-- <script src="../dist/xhear.js"></script> -->
+    <style>
+      body > span {
+        color: red;
+      }
+      #target {
+        display: contents;
+      }
+    </style>
   </head>
   <body>
-    <div id="target">asd
+    This is the html file for development and debugging
+    <br>
+    <section id="target">
       <span>a1</span>
       <span>a2</span>
       <span>a3</span>
-    </div>
+    </section>
     <script type="module">
-      import $ from "../../src/base.mjs";
+      import $ from "../../packages/main/base.mjs";
+
       const a = $("#target");
-      console.log("a => ", a);
+
+      a.watch((e) => {
+        console.log(e);
+      });
+
+      a.val = "I am testele";
+      a.obj = {
+        val: "test obj",
+        sub: {
+          val: "I am sub",
+        },
+      };
 
       window.a = a;
     </script>

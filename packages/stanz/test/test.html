@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>stanz test</title>
+    <!-- <script src="../dist/stanz-dev.js"></script> -->
+    <!-- <script src="../dist/stanz.js"></script> -->
+    <script type="module">
+      import stanz from "../src/base.mjs";
+
+      const d = stanz([
+        { val: "V1" },
+        { val: "V2" },
+        { val: "V3" },
+        { val: "V4" },
+      ]);
+
+      const v2 = d[0];
+
+      d.push(v2);
+
+      window.d = d;
+    </script>
+  </head>
+  <body>
+    This is the html file for development and debugging
+  </body>
+</html>
