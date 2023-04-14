@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>xhear sub object test</title>
+    <title>$.stanz test</title>
     <link
       rel="stylesheet"
       href="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.css"
@@ -20,34 +20,17 @@
       const getKey = () => "a_" + Math.random().toString(16).slice(2);
 
       function require() {
-        const r = {
-          default: (obj) => {
-            const key = getKey();
-
-            const ele = document.createElement("div");
-            ele.innerHTML = key;
-            ele.style.display = "none";
-            document.body.appendChild(ele);
-
-            const t1 = $(ele);
-
-            t1[key] = obj;
-
-            return t1[key];
-          },
+        return {
+          default: $.stanz,
         };
-
-        Object.assign(r.default, $.stanz);
-
-        return r;
       }
 
       const test = it;
     </script>
-    <!-- <script
+    <script
       src="../../packages/stanz/test/accessor.test.js"
       type="module"
-    ></script> -->
+    ></script>
     <script
       src="../../packages/stanz/test/methods.test.js"
       type="module"
