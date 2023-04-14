@@ -10,16 +10,17 @@
     <script type="module">
       import stanz from "../src/base.mjs";
 
-      const d = stanz([
-        { val: "V1" },
-        { val: "V2" },
-        { val: "V3" },
-        { val: "V4" },
-      ]);
+      const d = stanz({ val: "I am d" });
 
-      const v2 = d[0];
-
-      d.push(v2);
+      d.extend({
+        _a: 0,
+        set a(val) {
+          this._a = val;
+        },
+        get a() {
+          return this._a + 100;
+        },
+      });
 
       window.d = d;
     </script>

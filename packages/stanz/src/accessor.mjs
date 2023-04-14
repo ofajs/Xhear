@@ -1,5 +1,5 @@
-import { isxdata, isObject } from "./public.mjs";
-import Stanz, { PROXY } from "./main.mjs";
+import { isObject } from "./public.mjs";
+import Stanz, { PROXY, isxdata } from "./main.mjs";
 import { emitUpdate } from "./watch.mjs";
 
 const { defineProperties } = Object;
@@ -90,7 +90,7 @@ export const handler = {
       receiver: target[PROXY],
       type: "delete",
     });
-    
+
     return Reflect.deleteProperty(target, key);
   },
 };

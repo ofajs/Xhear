@@ -36,3 +36,24 @@ describe("Test the methods owned by the Stanz instance", () => {
     expect(stanz.is(b)).toBe(true);
   });
 });
+
+test("extend test", () => {
+  const d = stanz({ val: "I am d" });
+
+  d.extend({
+    _a: 0,
+    set a(val) {
+      this._a = val;
+    },
+    get a() {
+      return this._a + 100;
+    },
+  });
+
+  const keys = Object.keys(d);
+
+  expect(keys).toEqual(["val", "_a", "a"]);
+  expect(d.a).toBe(100);
+  d.a++;
+  expect(d.a).toBe(201);
+});

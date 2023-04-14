@@ -1,7 +1,4 @@
-import Stanz from "./main.mjs";
 export const getRandomId = () => Math.random().toString(32).slice(2);
-
-export const isxdata = (val) => val instanceof Stanz;
 
 const objectToString = Object.prototype.toString;
 export const getType = (value) =>
@@ -39,3 +36,35 @@ export function debounce(func, wait = 0) {
     hisArgs.push(...args);
   };
 }
+
+// Enhanced methods for extending objects
+export const extend = (_this, proto, descriptor = {}) => {
+  Object.keys(proto).forEach((k) => {
+    const result = Object.getOwnPropertyDescriptor(proto, k);
+    const { configurable, enumerable, writable, get, set, value } = result;
+
+    if ("value" in result) {
+      if (_this.hasOwnProperty(k)) {
+        _this[k] = value;
+      } else {
+        Object.defineProperty(_this, k, {
+          enumerable,
+          configurable,
+          writable,
+          ...descriptor,
+          value,
+        });
+      }
+    } else {
+      Object.defineProperty(_this, k, {
+        enumerable,
+        configurable,
+        ...descriptor,
+        get,
+        set,
+      });
+    }
+  });
+
+  return _this;
+};

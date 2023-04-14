@@ -1,6 +1,6 @@
 import { clearData } from "./accessor.mjs";
-import { SELF, PROXY } from "./main.mjs";
-import { isObject, isxdata } from "./public.mjs";
+import { SELF, PROXY, isxdata } from "./main.mjs";
+import { isObject } from "./public.mjs";
 import { emitUpdate } from "./watch.mjs";
 
 const mutatingMethods = [
@@ -48,50 +48,49 @@ function compareArrays(oldArray, newArray) {
   return { deletedItems, addedItems };
 }
 
-export default (Stanz) => {
-  const fn = Stanz.prototype;
-  const arrayFn = Array.prototype;
+const fn = {};
 
-  mutatingMethods.forEach((methodName) => {
-    if (fn[methodName]) {
-      Object.defineProperty(fn, methodName, {
-        value(...args) {
-          const backupArr = Array.from(this);
+const arrayFn = Array.prototype;
 
-          const reval = arrayFn[methodName].apply(this[SELF], args);
+mutatingMethods.forEach((methodName) => {
+  if (arrayFn[methodName]) {
+    fn[methodName] = function (...args) {
+      const backupArr = Array.from(this);
 
-          const { deletedItems, addedItems } = compareArrays(backupArr, this);
+      const reval = arrayFn[methodName].apply(this[SELF], args);
 
-          // Refactoring objects as proxy instances
-          for (let [key, value] of addedItems) {
-            if (isxdata(value)) {
-              value._owner.push(this);
-            } else if (isObject(value)) {
-              this.__unupdate = 1;
-              this[key] = value;
-              delete this.__unupdate;
-            }
-          }
+      const { deletedItems, addedItems } = compareArrays(backupArr, this);
 
-          for (let item of deletedItems) {
-            clearData(item, this);
-          }
+      // Refactoring objects as proxy instances
+      for (let [key, value] of addedItems) {
+        if (isxdata(value)) {
+          value._owner.push(this);
+        } else if (isObject(value)) {
+          this.__unupdate = 1;
+          this[key] = value;
+          delete this.__unupdate;
+        }
+      }
 
-          emitUpdate({
-            type: "array",
-            currentTarget: this,
-            target: this,
-            args,
-            name: methodName,
-          });
+      for (let item of deletedItems) {
+        clearData(item, this);
+      }
 
-          if (reval === this[SELF]) {
-            return this[PROXY];
-          }
-
-          return reval;
-        },
+      emitUpdate({
+        type: "array",
+        currentTarget: this,
+        target: this,
+        args,
+        name: methodName,
       });
-    }
-  });
-};
+
+      if (reval === this[SELF]) {
+        return this[PROXY];
+      }
+
+      return reval;
+    };
+  }
+});
+
+export default fn;

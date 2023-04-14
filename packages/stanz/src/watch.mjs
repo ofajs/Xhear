@@ -53,22 +53,20 @@ export const emitUpdate = ({
     });
 };
 
-export default (Stanz) => {
-  Object.assign(Stanz.prototype, {
-    watch(callback) {
-      const wid = "w-" + getRandomId();
+export default {
+  watch(callback) {
+    const wid = "w-" + getRandomId();
 
-      this[WATCHS].set(wid, callback);
+    this[WATCHS].set(wid, callback);
 
-      return wid;
-    },
+    return wid;
+  },
 
-    unwatch(wid) {
-      return this[WATCHS].delete(wid);
-    },
+  unwatch(wid) {
+    return this[WATCHS].delete(wid);
+  },
 
-    watchTick(callback) {
-      return this.watch(debounce(callback));
-    },
-  });
+  watchTick(callback) {
+    return this.watch(debounce(callback));
+  },
 };

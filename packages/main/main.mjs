@@ -1,8 +1,8 @@
 import { createXhear } from "./public.mjs";
 import { handler } from "./accessor.mjs";
-import { getType } from "../stanz/src/public.mjs";
+import { getType, extend } from "../stanz/src/public.mjs";
 import { constructor } from "../stanz/src/main.mjs";
-import fnInstallWatch from "../stanz/src/watch.mjs";
+import watchFn from "../stanz/src/watch.mjs";
 const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
 
 export default class Xhear {
@@ -38,6 +38,10 @@ export default class Xhear {
 
   all(expr) {
     return Array.from(this.ele.querySelectorAll(expr)).map(createXhear);
+  }
+
+  extend(obj, desc) {
+    return extend(this, obj, desc);
   }
 
   get tag() {
@@ -99,4 +103,6 @@ export default class Xhear {
   }
 }
 
-fnInstallWatch(Xhear);
+Xhear.prototype.extend(watchFn, {
+  enumerable: false,
+});
