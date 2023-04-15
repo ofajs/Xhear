@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>xhear sub object test</title>
+    <link
+      rel="stylesheet"
+      href="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.css"
+    />
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine-html.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot0.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot1.js"></script>
+    <script src="../../dist/xhear.js"></script>
+    <script>
+      const test = it;
+    </script>
+  </head>
+  <body>
+    <div id="target" style="display: none">
+      <div id="target-sub">sub</div>
+    </div>
+    <script type="module">
+      describe("test xhear watch", () => {
+        test("test watch update", () => {
+          const target = $("#target");
+          const targetSub = $("#target-sub");
+
+          let i = 0;
+
+          target.watch((e) => {
+            i++;
+            if (i === 1) {
+              expect(e.path.length).toBe(1);
+            } else {
+              expect(e.path.length).toBe(3);
+            }
+          });
+
+          targetSub.obj = {
+            val: "I am obj",
+            sub: {
+              val: "I am sub obj",
+            },
+          };
+
+          targetSub.obj.sub.val = "change sub val";
+
+          expect(i).toBe(2);
+        });
+      });
+    </script>
+  </body>
+</html>
