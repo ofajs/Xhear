@@ -7,7 +7,7 @@ const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
 
 export default class Xhear {
   constructor({ ele }) {
-    const proxySelf = constructor.call(this, handler);
+    const proxySelf = constructor.call(this, {}, handler);
 
     defineProperties(this, {
       _owner: {
