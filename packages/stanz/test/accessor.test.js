@@ -162,4 +162,19 @@ describe("stanz test of access rights", () => {
 
     expect(a1.owner.has(d)).toBe(false);
   });
+
+  test("set same value", () => {
+    const d = stanz({ val: "I am d" });
+
+    let i = 0;
+
+    d.watch((e) => {
+      i++;
+      throw "error";
+    });
+
+    d.val = "I am d";
+
+    expect(i).toBe(0);
+  });
 });

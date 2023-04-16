@@ -14,12 +14,14 @@ export const setData = ({ target, key, value, receiver, type }) => {
   }
 
   const oldValue = receiver[key];
+  const isSame = oldValue === value;
 
-  if (isxdata(oldValue)) {
+  if (!isSame && isxdata(oldValue)) {
     clearData(oldValue, receiver);
   }
 
-  !target.__unupdate &&
+  !isSame &&
+    !target.__unupdate &&
     emitUpdate({
       type: type || "set",
       target: receiver,

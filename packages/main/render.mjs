@@ -21,9 +21,14 @@ export function render({ data, content, target }) {
   });
 
   Array.from(texts).forEach((el) => {
+    const textEl = document.createTextNode("asd");
+    const { parentNode } = el;
+    parentNode.insertBefore(textEl, el);
+    parentNode.removeChild(el);
+
     const func = convertToFunc(el.getAttribute("expr"), data);
     tasks.push(() => {
-      el.textContent = func();
+      textEl.textContent = func();
     });
   });
 
@@ -39,13 +44,15 @@ export function render({ data, content, target }) {
         try {
           const { once } = $el[actionName];
 
+          const func = () => {
+            $el[actionName](...args, { isExpr: true, data });
+          };
+
           if (once) {
             // The render function will only be executed once
-            $el[actionName](...args, { isExpr: true, data });
+            func();
           } else {
-            tasks.push(() => {
-              $el[actionName](...args, { isExpr: true, data });
-            });
+            tasks.push(func);
           }
         } catch (error) {
           // throw {
