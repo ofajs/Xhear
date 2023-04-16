@@ -1,8 +1,12 @@
 export default {
   on(name, func, options) {
-    func = this._convertExpr(options, func);
-    this.ele.addEventListener(name, func);
+    if (options && options.isExpr && !/[^\d\w]/.test(func)) {
+      func = options.data[func];
+    } else {
+      func = this._convertExpr(options, func);
+    }
 
+    this.ele.addEventListener(name, func);
     return this;
   },
   one(name, func, options) {
