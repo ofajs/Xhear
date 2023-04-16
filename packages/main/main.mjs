@@ -1,5 +1,7 @@
 import { createXhear } from "./public.mjs";
 import { handler } from "./accessor.mjs";
+import renderFn from "./render.mjs";
+import eventFn from "./event.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";
 import { constructor } from "../stanz/src/main.mjs";
 import watchFn from "../stanz/src/watch.mjs";
@@ -103,6 +105,9 @@ export default class Xhear {
   }
 }
 
-Xhear.prototype.extend(watchFn, {
-  enumerable: false,
-});
+Xhear.prototype.extend(
+  { ...watchFn, ...eventFn, ...renderFn },
+  {
+    enumerable: false,
+  }
+);

@@ -1,5 +1,7 @@
 import { createXhear } from "./public.mjs";
 import stanz from "../stanz/src/base.mjs";
+import { render, convert } from "./render.mjs";
+import Xhear from "./main.mjs";
 
 export default function $(expr) {
   if (expr instanceof Element) {
@@ -11,4 +13,4 @@ export default function $(expr) {
   return createXhear(ele);
 }
 
-Object.assign($, { stanz });
+Object.assign($, { stanz, render, convert, fn: Xhear.prototype });
