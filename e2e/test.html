@@ -18,29 +18,49 @@
   <body>
     This is the html file for development and debugging
     <br />
-    <div id="target">
-      <span>a1</span>
-      <span>a2</span>
-      <span>a3</span>
-    </div>
+    <div id="target">target</div>
+
+    <template>
+      <div on:click="num++" :bb="num">
+        {{num}} {{num + 1}}
+        <br />
+        <span attr:ta="testAttr" attr:num="num">aa</span>
+        <br />
+        <span :ta="num / 2">bb</span>
+        <br />
+        <div on:click="testFun">Click Me to Console</div>
+        <br />
+        <br />
+        {{num % 4}}
+        <div :if="num % 4 > 2">I am IF div</div>
+        <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
+        <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
+        <div :else>I am ELSE div</div>
+      </div>
+      <!-- <template>
+        <div on:click="bb"></div>
+      </template> -->
+    </template>
     <script type="module">
       import $ from "../../packages/main/base.mjs";
 
-      const a = $("#target");
+      window.$ = $;
 
-      a.watch((e) => {
-        console.log(e);
-      });
+      $.convert($("template").ele);
 
-      a.val = "I am testele";
-      a.obj = {
-        val: "test obj",
-        sub: {
-          val: "I am sub",
+      const data = (window.data = $.stanz({
+        num: 100,
+        testAttr: "I am test attr",
+        testFun() {
+          console.log("I am test fun");
         },
-      };
+      }));
 
-      window.a = a;
+      $.render({
+        target: $("#target").ele,
+        data,
+        content: $("template").html,
+      });
     </script>
   </body>
 </html>

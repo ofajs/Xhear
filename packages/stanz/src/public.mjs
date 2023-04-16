@@ -12,8 +12,6 @@ export const isObject = (obj) => {
   return type === "array" || type === "object";
 };
 
-export const isFunction = (val) => getType(val).search("function");
-
 export function nextTick(callback) {
   if (typeof process === "object" && typeof process.nextTick === "function") {
     process.nextTick(callback);

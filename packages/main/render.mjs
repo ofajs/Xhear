@@ -1,5 +1,4 @@
-import { isFunction } from "../stanz/src/public.mjs";
-import { createXhear } from "./public.mjs";
+import { createXhear, isFunction, hyphenToUpperCase } from "./public.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
@@ -157,6 +156,7 @@ const defaultData = {
   prop(name, value, options) {
     value = this._convertExpr(options, value);
     value = getVal(value);
+    name = hyphenToUpperCase(name);
 
     this[name] = value;
   },
@@ -172,3 +172,45 @@ defaultData.prop.always = true;
 defaultData.attr.always = true;
 
 export default defaultData;
+
+export function eleIf({ ele, val }) {
+  if (val) {
+    const mark = this.__beforeMark;
+    if (!mark) {
+      return;
+    }
+    const { parentNode } = mark;
+    parentNode.insertBefore(ele, mark);
+    this.__beforeMark = null;
+    parentNode.removeChild(mark);
+  } else {
+    const { parentNode } = ele;
+    if (!parentNode) {
+      return;
+    }
+    const { __conditionType } = ele;
+    const text = ele.textContent.trim().slice(0, 30);
+    const comment = (this.__beforeMark = document.createComment(text));
+    comment.__conditionType = __conditionType;
+    parentNode.insertBefore(comment, ele);
+    parentNode.removeChild(ele);
+  }
+}
+
+export function conditionJudge(ele, type) {
+  ele.__conditionType = type;
+
+  // Determine if the previous one is an 'if' or 'ifelse'
+  let prevNode = ele;
+  do {
+    prevNode = prevNode.previousSibling;
+  } while (prevNode instanceof Text);
+
+  const prevType = prevNode.__conditionType;
+  if (!(prevType === "if" || prevType === "elseIf")) {
+    const err = new Error(`The previous element must be if or ifElse`);
+    err.target = ele;
+    err.prevNode = prevNode;
+    throw err;
+  }
+}
