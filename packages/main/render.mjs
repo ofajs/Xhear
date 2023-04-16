@@ -4,7 +4,16 @@ import { createXhear } from "./public.mjs";
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
 const convertToFunc = (expr, data) => {
-  return new Function(`with(this){return ${expr};}`).bind(data);
+  const funcStr = `
+try{
+  with(this){
+    return ${expr};
+  }
+}catch(error){
+  console.error(error);
+}
+`;
+  return new Function(funcStr).bind(data);
 };
 
 export function render({ data, content, target }) {
@@ -42,28 +51,28 @@ export function render({ data, content, target }) {
     for (let [actionName, arr] of Object.entries(bindData)) {
       arr.forEach((args) => {
         try {
-          const { once } = $el[actionName];
+          const { always } = $el[actionName];
 
           const func = () => {
             $el[actionName](...args, { isExpr: true, data });
           };
 
-          if (once) {
-            // The render function will only be executed once
-            func();
-          } else {
+          if (always) {
+            // Run every data update
             tasks.push(func);
+          } else {
+            func();
           }
         } catch (error) {
-          // throw {
-          //   desc: `This method does not exist : ${actionName}`,
-          //   error,
-          // }
-
-          console.error({
+          throw {
             desc: `This method does not exist : ${actionName}`,
             error,
-          });
+          };
+
+          // console.error({
+          //   desc: `This method does not exist : ${actionName}`,
+          //   error,
+          // });
         }
       });
     }
@@ -135,7 +144,7 @@ const getVal = (val) => {
   return val;
 };
 
-export default {
+const defaultData = {
   _convertExpr(options = {}, expr) {
     const { isExpr, data } = options;
 
@@ -158,3 +167,8 @@ export default {
     this.ele.setAttribute(name, value);
   },
 };
+
+defaultData.prop.always = true;
+defaultData.attr.always = true;
+
+export default defaultData;
