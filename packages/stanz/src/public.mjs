@@ -12,13 +12,20 @@ export const isObject = (obj) => {
   return type === "array" || type === "object";
 };
 
+const tickSets = new Set();
+
 export function nextTick(callback) {
-  if (typeof process === "object" && typeof process.nextTick === "function") {
-    process.nextTick(callback);
-  } else {
-    Promise.resolve().then(callback);
-  }
+  const tickId = `t-${getRandomId()}`;
+  tickSets.add(tickId);
+  Promise.resolve().then(() => {
+    if (tickSets.has(tickId)) {
+      callback();
+    }
+  });
+  return tickId;
 }
+
+export const clearTick = (id) => tickSets.delete(id);
 
 export function debounce(func, wait = 0) {
   let timeout = null;

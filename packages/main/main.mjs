@@ -1,11 +1,12 @@
-import { createXhear, getNextNode } from "./public.mjs";
+import { createXhear } from "./public.mjs";
 import { handler } from "./accessor.mjs";
-import renderFn, { eleIf, conditionJudge } from "./render.mjs";
+import renderFn from "./render.mjs";
+import { conditionJudge, eleIf, refreshCondition } from "./condition.mjs";
 import eventFn from "./event.mjs";
-import { getType, extend, nextTick } from "../stanz/src/public.mjs";
+import { getType, extend } from "../stanz/src/public.mjs";
 import { constructor } from "../stanz/src/main.mjs";
 import watchFn from "../stanz/src/watch.mjs";
-const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
+const { defineProperties } = Object;
 
 export default class Xhear {
   constructor({ ele }) {
@@ -109,51 +110,7 @@ export default class Xhear {
 
     ele.__conditionType = "if";
     ele.__condition = val;
-    nextTick(() => {
-      let allConditionEles = ele.__allConditionEles;
-
-      if (!allConditionEles) {
-        allConditionEles = [];
-        let target = ele;
-
-        while (target && target.__conditionType) {
-          allConditionEles.push(target);
-          target = getNextNode(target);
-        }
-
-        ele.__allConditionEles = allConditionEles;
-      }
-
-      let isOK = 0;
-      allConditionEles.forEach((el) => {
-        const $el = createXhear(el);
-
-        const { __conditionType, __condition } = el;
-
-        if (isOK) {
-          eleIf.call($el, {
-            ele: el,
-            val: false,
-          });
-          return;
-        } else if (!isOK && el.__conditionType === "else") {
-          eleIf.call($el, {
-            ele: el,
-            val: true,
-          });
-          return;
-        }
-
-        if (__condition) {
-          isOK = 1;
-        }
-
-        eleIf.call($el, {
-          ele: el,
-          val: __condition,
-        });
-      });
-    });
+    refreshCondition(ele);
   }
 
   get if() {
