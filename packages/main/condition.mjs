@@ -1,7 +1,7 @@
-import { nextTick } from "../stanz/src/public.mjs";
+import { nextTick, clearTick } from "../stanz/src/public.mjs";
 import { createXhear, getNextNode } from "./public.mjs";
 
-export function eleIf({ ele, val }) {
+function eleIf({ ele, val }) {
   if (val) {
     const mark = this.__beforeMark;
     if (!mark) {
@@ -45,7 +45,8 @@ export function conditionJudge(ele, type) {
 
 // The "If" condition performs a single judgment
 export function refreshCondition(ele) {
-  nextTick(() => {
+  clearTick(ele.__tickid);
+  ele.__tickid = nextTick(() => {
     let allConditionEles = ele.__allConditionEles;
 
     if (!allConditionEles) {
@@ -72,7 +73,7 @@ export function refreshCondition(ele) {
           val: false,
         });
         return;
-      } else if (!isOK && el.__conditionType === "else") {
+      } else if (!isOK && __conditionType === "else") {
         eleIf.call($el, {
           ele: el,
           val: true,

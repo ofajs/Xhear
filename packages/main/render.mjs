@@ -15,7 +15,9 @@ try{
   return new Function(funcStr).bind(data);
 };
 
-export function render({ data, content, target }) {
+export function render({ data, target, template }) {
+  const content = template.innerHTML;
+
   if (content) {
     target.innerHTML = content;
   }
@@ -29,7 +31,7 @@ export function render({ data, content, target }) {
   });
 
   Array.from(texts).forEach((el) => {
-    const textEl = document.createTextNode("asd");
+    const textEl = document.createTextNode("");
     const { parentNode } = el;
     parentNode.insertBefore(textEl, el);
     parentNode.removeChild(el);
@@ -53,7 +55,11 @@ export function render({ data, content, target }) {
           const { always } = $el[actionName];
 
           const func = () => {
-            $el[actionName](...args, { isExpr: true, data });
+            $el[actionName](...args, {
+              isExpr: true,
+              data,
+              temps: template.__temps,
+            });
           };
 
           if (always) {
@@ -82,22 +88,32 @@ export function render({ data, content, target }) {
   tasks.forEach((func) => func());
 }
 
-export function convert(el) {
+export function convert(el, temps = {}) {
   const { tagName } = el;
   if (tagName === "TEMPLATE") {
     let content = el.innerHTML;
     const matchs = content.match(/{{.+?}}/g);
 
-    matchs.forEach((str) => {
-      content = content.replace(
-        str,
-        `<xtext expr="${str.replace(/{{(.+?)}}/, "$1")}"></xtext>`
-      );
-    });
+    if (matchs) {
+      matchs.forEach((str) => {
+        content = content.replace(
+          str,
+          `<xtext expr="${str.replace(/{{(.+?)}}/, "$1")}"></xtext>`
+        );
+      });
 
-    el.innerHTML = content;
+      el.innerHTML = content;
+    }
 
-    convert(el.content);
+    const tempName = el.getAttribute("name");
+
+    if (tempName) {
+      temps[tempName] = el;
+    }
+
+    el.__temps = temps;
+
+    convert(el.content, temps);
   } else if (tagName) {
     const obj = {};
 
@@ -130,9 +146,11 @@ export function convert(el) {
 
   if (el.children) {
     Array.from(el.children).forEach((el) => {
-      convert(el);
+      convert(el, temps);
     });
   }
+
+  return temps;
 }
 
 const getVal = (val) => {
@@ -165,6 +183,9 @@ const defaultData = {
     value = getVal(value);
 
     this.ele.setAttribute(name, value);
+  },
+  fill(tempName, data, options) {
+    console.log("fill => ", tempName, data, options);
   },
 };
 

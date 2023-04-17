@@ -1,7 +1,7 @@
 import { createXhear } from "./public.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render.mjs";
-import { conditionJudge, eleIf, refreshCondition } from "./condition.mjs";
+import { conditionJudge, refreshCondition } from "./condition.mjs";
 import eventFn from "./event.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";
 import { constructor } from "../stanz/src/main.mjs";
@@ -67,7 +67,7 @@ export default class Xhear {
     this.ele.innerHTML = val;
   }
 
-  get class() {
+  get classList() {
     return this.ele.classList;
   }
 
@@ -113,10 +113,6 @@ export default class Xhear {
     refreshCondition(ele);
   }
 
-  get if() {
-    return !this.__beforeMark;
-  }
-
   set elseIf(val) {
     const { ele } = this;
 
@@ -128,7 +124,7 @@ export default class Xhear {
     conditionJudge(ele, "elseIf");
   }
 
-  set else(val) {
+  set else(v) {
     const { ele } = this;
 
     if (ele.__conditionType) {

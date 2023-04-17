@@ -1,6 +1,6 @@
 export default {
   on(name, func, options) {
-    if (options && options.isExpr && !/[^\d\w]/.test(func)) {
+    if (options && options.isExpr && !/[^\d\w_\$]/.test(func)) {
       func = options.data[func];
     } else {
       func = this._convertExpr(options, func);

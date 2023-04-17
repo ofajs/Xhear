@@ -20,6 +20,7 @@ export function nextTick(callback) {
   Promise.resolve().then(() => {
     if (tickSets.has(tickId)) {
       callback();
+      tickSets.delete(tickId);
     }
   });
   return tickId;
