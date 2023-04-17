@@ -1,4 +1,4 @@
-import { createXhear, isFunction, hyphenToUpperCase } from "./public.mjs";
+import { eleX, isFunction, hyphenToUpperCase } from "./public.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
@@ -47,7 +47,7 @@ export function render({ data, target, template }) {
   eles.forEach((el) => {
     const bindData = JSON.parse(el.getAttribute("x-bind-data"));
 
-    const $el = createXhear(el);
+    const $el = eleX(el);
 
     for (let [actionName, arr] of Object.entries(bindData)) {
       arr.forEach((args) => {

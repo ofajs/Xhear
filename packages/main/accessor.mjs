@@ -1,4 +1,4 @@
-import { createXhear } from "./public.mjs";
+import { eleX } from "./public.mjs";
 import { handler as stanzHandler, setData } from "../stanz/src/accessor.mjs";
 
 export const handler = {
@@ -11,7 +11,7 @@ export const handler = {
   },
   get(target, key, value, receiver) {
     if (!/\D/.test(String(key))) {
-      return createXhear(target.ele.children[key]);
+      return eleX(target.ele.children[key]);
     }
 
     return Reflect.get(target, key, value, receiver);

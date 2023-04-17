@@ -1,5 +1,5 @@
 import { nextTick, clearTick } from "../stanz/src/public.mjs";
-import { createXhear, getNextNode } from "./public.mjs";
+import { eleX, getNextNode } from "./public.mjs";
 
 function eleIf({ ele, val }) {
   if (val) {
@@ -63,7 +63,7 @@ export function refreshCondition(ele) {
 
     let isOK = 0;
     allConditionEles.forEach((el) => {
-      const $el = createXhear(el);
+      const $el = eleX(el);
 
       const { __conditionType, __condition } = el;
 

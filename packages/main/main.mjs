@@ -1,8 +1,9 @@
-import { createXhear } from "./public.mjs";
+import { eleX } from "./public.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render.mjs";
 import { conditionJudge, refreshCondition } from "./condition.mjs";
 import eventFn from "./event.mjs";
+import arrayFn from "./array.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";
 import { constructor } from "../stanz/src/main.mjs";
 import watchFn from "../stanz/src/watch.mjs";
@@ -17,7 +18,7 @@ export default class Xhear {
         get() {
           const { parentNode } = ele;
 
-          return parentNode ? [createXhear(parentNode)] : [];
+          return parentNode ? [eleX(parentNode)] : [];
         },
       },
       ele: {
@@ -36,11 +37,11 @@ export default class Xhear {
 
   $(expr) {
     const target = this.ele.querySelector(expr);
-    return target ? null : createXhear(target);
+    return target ? null : eleX(target);
   }
 
   all(expr) {
-    return Array.from(this.ele.querySelectorAll(expr)).map(createXhear);
+    return Array.from(this.ele.querySelectorAll(expr)).map(eleX);
   }
 
   extend(obj, desc) {
@@ -136,7 +137,7 @@ export default class Xhear {
 }
 
 Xhear.prototype.extend(
-  { ...watchFn, ...eventFn, ...renderFn },
+  { ...watchFn, ...eventFn, ...arrayFn, ...renderFn },
   {
     enumerable: false,
   }
