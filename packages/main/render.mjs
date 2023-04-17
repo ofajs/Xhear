@@ -69,15 +69,9 @@ export function render({ data, target, template }) {
             func();
           }
         } catch (error) {
-          throw {
-            desc: `This method does not exist : ${actionName}`,
-            error,
-          };
-
-          // console.error({
-          //   desc: `This method does not exist : ${actionName}`,
-          //   error,
-          // });
+          const err = new Error(`This method does not exist : ${actionName}`);
+          err.error = error;
+          throw err;
         }
       });
     }

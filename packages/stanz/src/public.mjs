@@ -13,7 +13,6 @@ export const isObject = (obj) => {
 };
 
 const tickSets = new Set();
-
 export function nextTick(callback) {
   const tickId = `t-${getRandomId()}`;
   tickSets.add(tickId);
@@ -25,7 +24,6 @@ export function nextTick(callback) {
   });
   return tickId;
 }
-
 export const clearTick = (id) => tickSets.delete(id);
 
 export function debounce(func, wait = 0) {

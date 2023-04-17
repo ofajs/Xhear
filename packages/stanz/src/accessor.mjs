@@ -75,13 +75,16 @@ export const handler = {
       const data = setData({ target, key, value, receiver });
       return Reflect.set(target, key, data, receiver);
     } catch (error) {
-      throw {
-        desc: `failed to set ${key}`,
+      const err = new Error(`failed to set ${key}`);
+      
+      Object.assign(err, {
         key,
         value,
         target: receiver,
         error,
-      };
+      });
+
+      throw err;
     }
   },
   deleteProperty(target, key) {
