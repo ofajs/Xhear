@@ -92,3 +92,21 @@ test("reverse test", async ({ page }) => {
 
   expect(data).toBe(["4", "5", "1", "3", "2"].join(","));
 });
+
+test("sort test", async ({ page }) => {
+  await page.goto("http://localhost:3398/e2e/statics/array-test.html");
+
+  await expect((await page.$$(".sub")).length).toBe(5);
+
+  const { _preview: data } = await page.waitForFunction(async () => {
+    $("#target").sort((a, b) => {
+      return a.text - b.text;
+    });
+
+    return $("#target")
+      .map((e) => e.text)
+      .join(",");
+  });
+
+  expect(data).toBe(["1", "2", "3", "4", "5"].join(","));
+});
