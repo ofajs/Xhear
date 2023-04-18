@@ -1,4 +1,4 @@
-import { eleX, createXEle } from "./public.mjs";
+import { eleX, createXEle } from "./util.mjs";
 import { render, convert } from "./render.mjs";
 import Xhear from "./main.mjs";
 import stanz from "../stanz/src/base.mjs";

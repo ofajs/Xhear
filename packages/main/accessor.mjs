@@ -1,4 +1,4 @@
-import { eleX } from "./public.mjs";
+import { eleX } from "./util.mjs";
 import { handler as stanzHandler, setData } from "../stanz/src/accessor.mjs";
 
 export const handler = {

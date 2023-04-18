@@ -1,16 +1,18 @@
-import { eleX } from "./public.mjs";
+import { eleX } from "./util.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render.mjs";
 import { conditionJudge, refreshCondition } from "./condition.mjs";
 import eventFn from "./event.mjs";
-import arrayFn from "./array.mjs";
+import LikeArray from "./array.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";
 import { constructor } from "../stanz/src/main.mjs";
 import watchFn from "../stanz/src/watch.mjs";
 const { defineProperties } = Object;
 
-export default class Xhear {
+export default class Xhear extends LikeArray {
   constructor({ ele }) {
+    super();
+
     const proxySelf = constructor.call(this, {}, handler);
 
     defineProperties(this, {
@@ -137,7 +139,7 @@ export default class Xhear {
 }
 
 Xhear.prototype.extend(
-  { ...watchFn, ...eventFn, ...arrayFn, ...renderFn },
+  { ...watchFn, ...eventFn, ...renderFn },
   {
     enumerable: false,
   }

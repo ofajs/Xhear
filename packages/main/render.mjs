@@ -1,4 +1,5 @@
-import { eleX, isFunction, hyphenToUpperCase } from "./public.mjs";
+import { isFunction, hyphenToUpperCase } from "./public.mjs";
+import { eleX } from "./util.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
