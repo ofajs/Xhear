@@ -25,7 +25,16 @@ export const objToXEle = (obj) => {
   return $ele;
 };
 
-export const createXEle = (expr) => {
+const temp = document.createElement("div");
+
+export const strToXEle = (str) => {
+  temp.innerHTML = str;
+  const ele = temp.children[0];
+
+  return eleX(ele);
+};
+
+export const createXEle = (expr, exprType) => {
   if (expr instanceof Xhear) {
     return expr;
   }
@@ -34,8 +43,13 @@ export const createXEle = (expr) => {
     return eleX(expr);
   }
 
-  if (getType(expr) === "object") {
-    return objToXEle(expr);
+  const type = getType(expr);
+
+  switch (type) {
+    case "object":
+      return objToXEle(expr);
+    case "string":
+      return strToXEle(expr);
   }
 };
 
