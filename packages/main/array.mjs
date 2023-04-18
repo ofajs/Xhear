@@ -1,5 +1,5 @@
 import { isFunction } from "./public.mjs";
-import { createXEle } from "./util.mjs";
+import { createXEle, eleX } from "./util.mjs";
 import { emitUpdate } from "../stanz/src/watch.mjs";
 
 const originSplice = (ele, start, count, ...items) => {
@@ -8,8 +8,9 @@ const originSplice = (ele, start, count, ...items) => {
   for (let i = start, len = start + count; i < len; i++) {
     const target = children[i];
     removes.push(target);
-    ele.remove(target);
   }
+
+  removes.forEach((el) => el.remove());
 
   if (items.length) {
     const frag = document.createDocumentFragment();
@@ -58,7 +59,7 @@ const likeArrayFn = {
   pop(...args) {
     const { ele } = this;
 
-    const targets = originSplice(ele, ele.children.length - 1, 0, ...args);
+    const targets = originSplice(ele, ele.children.length - 1, 1, ...args);
 
     emitUpdate({
       type: "array",
@@ -68,13 +69,13 @@ const likeArrayFn = {
       name: "pop",
     });
 
-    return targets[0];
+    return eleX(targets[0]);
   },
 
   shift(...args) {
     const { ele } = this;
 
-    originSplice(ele, 0, 0, ...args);
+    const targets = originSplice(ele, 0, 1, ...args);
 
     emitUpdate({
       type: "array",
@@ -84,7 +85,7 @@ const likeArrayFn = {
       name: "shift",
     });
 
-    return ele.children.length;
+    return eleX(targets[0]);
   },
 
   unshift(...args) {
@@ -113,9 +114,31 @@ const likeArrayFn = {
       name: "splice",
     });
 
-    return reVal;
+    return reVal.map(eleX);
   },
 };
+
+["reverse", "sort"].forEach((name) => {
+  likeArrayFn[name] = function (...args) {
+    const childs = Array.from(this.ele.childNodes).map(eleX);
+
+    arrayFn[name].call(childs, ...args);
+
+    const frag = document.createDocumentFragment();
+    childs.forEach((e) => frag.append(e.ele));
+    this.ele.append(frag);
+
+    emitUpdate({
+      type: "array",
+      currentTarget: this,
+      target: this,
+      args,
+      name,
+    });
+
+    return this;
+  };
+});
 
 const arrayFn = Array.prototype;
 
@@ -132,9 +155,7 @@ Object.keys(Object.getOwnPropertyDescriptors(arrayFn)).forEach((key) => {
 
   if (isFunction(targetFunc)) {
     likeArrayFn[key] = function (...args) {
-      const childs = Array.from(this.ele.children);
-
-      return targetFunc.apply(childs, args);
+      return targetFunc.apply(Array.from(this.ele.children).map(eleX), args);
     };
   }
 });

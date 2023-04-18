@@ -29,7 +29,7 @@ const temp = document.createElement("div");
 
 export const strToXEle = (str) => {
   temp.innerHTML = str;
-  const ele = temp.children[0];
+  const ele = temp.children[0] || temp.childNodes[0];
   temp.innerHTML = "";
 
   return eleX(ele);
