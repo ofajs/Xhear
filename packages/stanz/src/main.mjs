@@ -21,10 +21,10 @@ export function constructor(data, handler = stanzHandler) {
     xid: { value: data.xid || getRandomId() },
     // Save all parent objects
     _owner: {
-      configurable: true,
       value: [],
     },
     owner: {
+      configurable: true,
       get() {
         return new Set(this._owner);
       },
@@ -76,11 +76,15 @@ export default class Stanz extends Array {
   // This method is still in the experimental period
   revoke() {
     const self = this[SELF];
+
+    self.__unupdate = 1;
+
     entries(this).forEach(([name, value]) => {
       if (isxdata(value)) {
         this[name] = null;
       }
     });
+
     self._owner.forEach((parent) => {
       entries(parent).forEach(([name, value]) => {
         if (value === this) {
@@ -88,6 +92,7 @@ export default class Stanz extends Array {
         }
       });
     });
+
     delete self[SELF];
     delete self[PROXY];
     self._revoke();
@@ -139,6 +144,31 @@ export default class Stanz extends Array {
 
   extend(obj, desc) {
     return extend(this, obj, desc);
+  }
+
+  get(key) {
+    if (/\./.test(key)) {
+      const keys = key.split(".");
+      let target = this;
+      for (let i = 0, len = keys.length; i < len; i++) {
+        try {
+          target = target[keys[i]];
+        } catch (error) {
+          const err = new Error(
+            `Failed to get data : ${keys.slice(0, i).join(".")}`
+          );
+          Object.assign(err, {
+            error,
+            target,
+          });
+          throw err;
+        }
+      }
+
+      return target;
+    }
+
+    return this[key];
   }
 }
 

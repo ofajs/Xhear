@@ -10,15 +10,23 @@
     <script type="module">
       import stanz from "../src/base.mjs";
 
-      const d = stanz({ val: "I am d" });
-
-      let i = 0;
-
-      d.watch((e) => {
-        i++;
-        throw "error";
-        console.log("e => ", e);
+      const d = stanz({
+        val: "I am d",
+        obj: {
+          val: "I am obj",
+          sub: {
+            val: "I am sub",
+          },
+        },
+        arr: [7, 3, 6, 4, 9, 2, 1],
       });
+
+      d.watchTick((e) => {
+        console.log(e);
+      });
+
+      d.arr.push(11);
+      d.arr.reverse();
 
       window.d = d;
     </script>

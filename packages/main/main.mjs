@@ -16,11 +16,12 @@ export default class Xhear extends LikeArray {
     const proxySelf = constructor.call(this, {}, handler);
 
     defineProperties(this, {
-      _owner: {
+      owner: {
         get() {
           const { parentNode } = ele;
-
-          return parentNode ? [eleX(parentNode)] : [];
+          const { _owner } = this;
+          const arr = parentNode ? [eleX(parentNode), ..._owner] : [..._owner];
+          return new Set(arr);
         },
       },
       ele: {

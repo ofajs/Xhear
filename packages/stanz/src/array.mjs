@@ -82,6 +82,7 @@ mutatingMethods.forEach((methodName) => {
         target: this,
         args,
         name: methodName,
+        oldValue: backupArr,
       });
 
       if (reval === this[SELF]) {

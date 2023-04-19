@@ -20,17 +20,13 @@ export const emitUpdate = ({
     type,
     target,
     name,
-    value,
     oldValue,
+    value,
   };
 
   if (type === "array") {
-    options = {
-      type,
-      target,
-      name,
-      args,
-    };
+    delete options.value;
+    options.args = args;
   }
 
   if (currentTarget._hasWatchs) {
