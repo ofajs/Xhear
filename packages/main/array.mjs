@@ -116,13 +116,29 @@ const likeArrayFn = {
 
     return reVal.map(eleX);
   },
-};
+  reverse(...args) {
+    const childs = Array.from(this.ele.childNodes);
 
-["reverse", "sort"].forEach((name) => {
-  likeArrayFn[name] = function (...args) {
-    const childs = Array.from(this.ele.childNodes).map(eleX);
+    arrayFn.reverse.call(childs, ...args);
 
-    arrayFn[name].call(childs, ...args);
+    const frag = document.createDocumentFragment();
+    childs.forEach((ele) => frag.append(ele));
+    this.ele.append(frag);
+
+    emitUpdate({
+      type: "array",
+      currentTarget: this,
+      target: this,
+      args,
+      name: "reverse",
+    });
+
+    return this;
+  },
+  sort(...args) {
+    const childs = Array.from(this.ele.children).map(eleX);
+
+    arrayFn.sort.call(childs, ...args);
 
     const frag = document.createDocumentFragment();
     childs.forEach((e) => frag.append(e.ele));
@@ -133,12 +149,12 @@ const likeArrayFn = {
       currentTarget: this,
       target: this,
       args,
-      name,
+      name: "sort",
     });
 
     return this;
-  };
-});
+  },
+};
 
 const arrayFn = Array.prototype;
 
