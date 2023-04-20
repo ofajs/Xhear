@@ -18,7 +18,7 @@ try{
   return new Function("...$args", funcStr).bind(data);
 };
 
-export function render({ data, target, template, temps }) {
+export function render({ data, target, template, temps, ...otherOpts }) {
   const content = template && template.innerHTML;
 
   if (content) {
@@ -58,6 +58,7 @@ export function render({ data, target, template, temps }) {
               isExpr: true,
               data,
               temps,
+              ...otherOpts,
             });
           };
 
@@ -194,28 +195,15 @@ const defaultData = {
   },
   fill(tempName, key, options) {
     const { data, temps } = options;
+    const $host = options.$host || data;
 
     const targetTemp = temps[hyphenToUpperCase(tempName)];
 
     const _ele = this.ele;
 
-    const replaceIt = () => {
-      const target = data.get(key);
-
-      if (!target) {
-        return;
-      }
-
-      _ele.innerHTML = "";
-      target.forEach((d) => {
-        const { ele } = createItem(d, targetTemp, temps);
-        _ele.appendChild(ele);
-      });
-    };
-
     data.watchTick((e) => {
       if (e.hasReplaced(key)) {
-        replaceIt();
+        replaceIt({ data, key, _ele, targetTemp, temps, $host });
         return;
       } else if (!e.hasModified(key)) {
         return;
@@ -235,6 +223,13 @@ const defaultData = {
       for (let i = 0, len = target.length; i < len; i++) {
         const current = target[i];
         const cursorEl = children[i];
+
+        if (!cursorEl) {
+          const { ele } = createItem(current, targetTemp, temps, $host);
+          _ele.appendChild(ele);
+          continue;
+        }
+
         const cursorData = cursorEl.__render_data.$data;
 
         if (current === cursorData) {
@@ -249,7 +244,7 @@ const defaultData = {
           _ele.insertBefore(oldEl, cursorEl);
         } else {
           // New elements added
-          const { ele } = createItem(current, targetTemp, temps);
+          const { ele } = createItem(current, targetTemp, temps, $host);
           _ele.insertBefore(ele, cursorEl);
         }
 
@@ -261,13 +256,14 @@ const defaultData = {
       }
     });
 
-    replaceIt();
+    replaceIt({ data, key, _ele, targetTemp, temps, $host });
   },
 };
 
-const createItem = (d, targetTemp, temps) => {
+const createItem = (d, targetTemp, temps, $host) => {
   const itemData = new Stanz({
     $data: d,
+    // $host,
   });
 
   const $ele = createXEle(targetTemp.innerHTML);
@@ -282,6 +278,19 @@ const createItem = (d, targetTemp, temps) => {
   return { ele, itemData };
 };
 
+const replaceIt = ({ data, key, _ele, targetTemp, temps, $host }) => {
+  const target = data.get(key);
+
+  if (!target) {
+    return;
+  }
+
+  _ele.innerHTML = "";
+  target.forEach((d) => {
+    const { ele } = createItem(d, targetTemp, temps, $host);
+    _ele.appendChild(ele);
+  });
+};
 defaultData.prop.always = true;
 defaultData.attr.always = true;
 
