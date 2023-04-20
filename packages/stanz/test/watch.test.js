@@ -183,7 +183,7 @@ describe("Test if the watch method of the instance is correct", () => {
     expect(i).toBe(1);
   });
 
-  test("test watchTick", () => {
+  test("test watchTick", async () => {
     const d = stanz({
       val: "I am d",
       test: "test delete this",
@@ -202,13 +202,145 @@ describe("Test if the watch method of the instance is correct", () => {
       if (i > 1) {
         throw "watch error";
       }
-
-      expect(i).toBe(1);
     });
 
     delete d.test;
     delete d.obj.test2;
 
-    expect(i).toBe(0);
+    await new Promise((res) => setTimeout(res, 100));
+
+    expect(i).toBe(1);
+  });
+
+  test("test watcher", () => {
+    const d = stanz({
+      val: "I am d",
+      obj: {
+        val: "I am obj",
+        sub: {
+          val: "I am sub",
+        },
+        oarr: [1, 2, 3],
+      },
+      arr: [7, 3, 6, 4, 9, 2, 1],
+    });
+
+    let i = 0;
+
+    d.watch((e) => {
+      i++;
+      if (i === 1) {
+        expect(e.hasModified("arr")).toBe(true);
+        expect(e.hasReplaced("arr")).toBe(false);
+      } else if (i === 2) {
+        expect(e.hasModified("arr")).toBe(true);
+        expect(e.hasReplaced("arr")).toBe(false);
+      } else if (i === 3) {
+        expect(e.hasModified("arr")).toBe(true);
+        expect(e.hasReplaced("arr")).toBe(true);
+      }
+
+      expect(e.hasModified("obj")).toBe(false);
+      expect(e.hasReplaced("obj")).toBe(false);
+    });
+
+    d.arr.push(11);
+    d.arr.reverse();
+    d.arr = [222, 333];
+  });
+
+  test("test watchers", async () => {
+    const d = stanz({
+      val: "I am d",
+      obj: {
+        val: "I am obj",
+        sub: {
+          val: "I am sub",
+        },
+        oarr: [1, 2, 3],
+      },
+      arr: [7, 3, 6, 4, 9, 2, 1],
+    });
+
+    let i = 0;
+
+    d.watchTick((e) => {
+      i++;
+
+      if (i === 1) {
+        expect(e.hasModified("arr")).toBe(true);
+        expect(e.hasReplaced("arr")).toBe(false);
+
+        expect(e.hasModified("obj")).toBe(false);
+        expect(e.hasReplaced("obj")).toBe(false);
+      } else if (i === 2) {
+        expect(e.hasModified("arr")).toBe(true);
+        expect(e.hasReplaced("arr")).toBe(true);
+
+        expect(e.hasModified("obj")).toBe(true);
+        expect(e.hasReplaced("obj")).toBe(false);
+      }
+    });
+
+    d.arr.push(11);
+
+    await new Promise((res) => setTimeout(res, 100));
+
+    d.arr = [100, 200];
+    d.obj.oarr.push(11);
+
+    await new Promise((res) => setTimeout(res, 100));
+
+    expect(i).toBe(2);
+  });
+
+  test("test watcher [point key]", () => {
+    const d = stanz({
+      val: "I am d",
+      obj: {
+        val: "I am obj",
+        sub: {
+          val: "I am sub",
+          oarr: [1, 2, 3],
+        },
+      },
+    });
+
+    let i = 0;
+
+    d.watch((e) => {
+      i++;
+
+      if (i === 1) {
+        expect(e.hasModified("obj.sub.oarr")).toBe(true);
+        expect(e.hasModified("obj.sub")).toBe(true);
+        expect(e.hasModified("obj")).toBe(true);
+        expect(e.hasModified("obj.sub.val")).toBe(false);
+        expect(e.hasReplaced("obj.sub.oarr")).toBe(false);
+        expect(e.hasReplaced("obj.sub")).toBe(false);
+        expect(e.hasReplaced("obj")).toBe(false);
+      } else if (i === 2) {
+        expect(e.hasModified("obj.sub.oarr")).toBe(true);
+        expect(e.hasModified("obj.sub")).toBe(true);
+        expect(e.hasModified("obj")).toBe(true);
+        expect(e.hasModified("obj.sub.val")).toBe(false);
+        expect(e.hasReplaced("obj.sub.oarr")).toBe(true);
+        expect(e.hasReplaced("obj.sub")).toBe(false);
+        expect(e.hasReplaced("obj")).toBe(false);
+      } else if (i === 3) {
+        expect(e.hasModified("obj.sub.oarr")).toBe(false);
+        expect(e.hasModified("obj.sub")).toBe(true);
+        expect(e.hasModified("obj")).toBe(true);
+        expect(e.hasModified("obj.sub.val")).toBe(true);
+        expect(e.hasReplaced("obj.sub.val")).toBe(true);
+        expect(e.hasReplaced("obj.sub.oarr")).toBe(false);
+        expect(e.hasReplaced("obj.sub")).toBe(false);
+        expect(e.hasReplaced("obj")).toBe(false);
+      }
+    });
+
+    d.obj.sub.oarr.push(5);
+    d.obj.sub.oarr = [4, 5, 6];
+    d.obj.sub.val = "change sub val";
   });
 });

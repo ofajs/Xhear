@@ -17,18 +17,20 @@
   </head>
   <body>
     This is the html file for development and debugging
-    <br />
     <div id="target">target</div>
 
     <template>
-      <div on:click="num++" :bb="num">
+      <div :bb="num">
+        <button on:click="num++">NUM++</button>
         {{num}} {{num + 1}}
         <br />
-        <span attr:ta="testAttr" attr:num="num">aa</span>
+        <span attr:ta="testAttr" attr:n-count="num">aa</span>
         <br />
         <span :ta="num / 2">bb</span>
         <br />
-        <div on:click="testFun">Click Me to Console</div>
+        <button on:click="testFun">Click Me to Console</button>
+        <br />
+        <button on:click="obj.func($event)">Click Me to obj Console</button>
         <br />
         <br />
         {{num % 4}}
@@ -36,31 +38,78 @@
         <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
         <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
         <div :else>I am ELSE div</div>
+        <br />
+        <br />
+        <div
+          fill:test-item="arr"
+          style="padding: 16px; background-color: #eee"
+        ></div>
       </div>
-      <!-- <template>
-        <div on:click="bb"></div>
-      </template> -->
+      <template name="testItem">
+        <div
+          style="margin: 10px; padding: 10px; border: red solid 1px"
+          attr:test-val="$data.val"
+        >
+          <div>{{$data.val}}</div>
+          <div fill:test-item="$data.childs"></div>
+          <!-- <button on:click="$host.testFun($data)">test console</button> -->
+        </div>
+      </template>
     </template>
     <script type="module">
       import $ from "../../packages/main/base.mjs";
 
       window.$ = $;
 
-      $.convert($("template").ele);
+      const temps = $.convert($("template").ele);
 
       const data = (window.data = $.stanz({
         num: 100,
         testAttr: "I am test attr",
-        testFun() {
-          console.log("I am test fun");
+        obj: {
+          func(e) {
+            console.log("I am obj", e);
+          },
+        },
+        arr: [
+          {
+            val: "I am 0",
+          },
+          {
+            val: "I am 1",
+            childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+          },
+          {
+            val: "I am 2",
+          },
+        ],
+        testFun(e) {
+          console.log("I am test fun", e);
         },
       }));
 
       $.render({
         target: $("#target").ele,
         data,
-        content: $("template").html,
+        temps,
+        template: $("template").ele,
       });
+
+      window.test = () => {
+        data.arr.push({
+          val: "I am 4",
+        });
+        data.arr.push({
+          val: "I am 3",
+        });
+        data.arr.shift();
+        data.arr.reverse();
+      };
+
+      window.test2 = () => {
+        data.arr[1].childs = [{ val: "asdasd" }];
+        // data.arr = [{ val: "change 1" }, { val: "change 2" }];
+      };
     </script>
   </body>
 </html>

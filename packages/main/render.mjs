@@ -194,20 +194,35 @@ const defaultData = {
   },
   fill(tempName, key, options) {
     const { data, temps } = options;
-    const target = data[key];
-
-    if (!target) {
-      const err = new Error(`No corresponding data found : ${key}`);
-      err.target = data;
-      err.key = key;
-      throw err;
-    }
 
     const targetTemp = temps[hyphenToUpperCase(tempName)];
 
     const _ele = this.ele;
 
-    target.watchTick(() => {
+    const replaceIt = () => {
+      const target = data.get(key);
+
+      if (!target) {
+        return;
+      }
+
+      _ele.innerHTML = "";
+      target.forEach((d) => {
+        const { ele } = createItem(d, targetTemp, temps);
+        _ele.appendChild(ele);
+      });
+    };
+
+    data.watchTick((e) => {
+      if (e.hasReplaced(key)) {
+        replaceIt();
+        return;
+      } else if (!e.hasModified(key)) {
+        return;
+      }
+
+      const target = data.get(key);
+
       const { children } = _ele;
 
       const oldArray = Array.from(children).map((e) => e.__render_data.$data);
@@ -246,11 +261,7 @@ const defaultData = {
       }
     });
 
-    target.forEach((d) => {
-      const { ele } = createItem(d, targetTemp, temps);
-
-      _ele.appendChild(ele);
-    });
+    replaceIt();
   },
 };
 

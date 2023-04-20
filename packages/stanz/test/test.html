@@ -16,17 +16,26 @@
           val: "I am obj",
           sub: {
             val: "I am sub",
+            oarr: [1, 2, 3],
           },
         },
         arr: [7, 3, 6, 4, 9, 2, 1],
       });
 
       d.watchTick((e) => {
-        console.log(e);
+        console.log("watchTick => ", e);
       });
 
-      d.arr.push(11);
-      d.arr.reverse();
+      d.watch((e) => {
+        console.log(
+          "watch => ",
+          e,
+          e.hasModified("obj.sub.val"),
+          e.hasReplaced("obj")
+        );
+      });
+
+      d.obj.sub.oarr = [3, 4, 5];
 
       window.d = d;
     </script>
