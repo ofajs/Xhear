@@ -75,8 +75,8 @@ export const handler = {
       const data = setData({ target, key, value, receiver });
       return Reflect.set(target, key, data, receiver);
     } catch (error) {
-      const err = new Error(`failed to set ${key}`);
-      
+      const err = new Error(`failed to set ${key} \n ${error.stack}`);
+
       Object.assign(err, {
         key,
         value,

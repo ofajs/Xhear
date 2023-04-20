@@ -162,7 +162,9 @@ export default class Stanz extends Array {
           target = target[keys[i]];
         } catch (error) {
           const err = new Error(
-            `Failed to get data : ${keys.slice(0, i).join(".")}`
+            `Failed to get data : ${keys.slice(0, i).join(".")} \n${
+              error.stack
+            }`
           );
           Object.assign(err, {
             error,
