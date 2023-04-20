@@ -1,7 +1,8 @@
 import { eleX } from "./util.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render.mjs";
-import { conditionJudge, refreshCondition } from "./condition.mjs";
+import fillFn from "./fill.mjs";
+import conditionFn from "./condition.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";
@@ -108,39 +109,14 @@ export default class Xhear extends LikeArray {
 
     Object.assign(style, d);
   }
-
-  set if(val) {
-    const { ele } = this;
-
-    ele.__conditionType = "if";
-    ele.__condition = val;
-    refreshCondition(ele);
-  }
-
-  set elseIf(val) {
-    const { ele } = this;
-
-    ele.__condition = val;
-    if (ele.__conditionType) {
-      return;
-    }
-
-    conditionJudge(ele, "elseIf");
-  }
-
-  set else(v) {
-    const { ele } = this;
-
-    if (ele.__conditionType) {
-      return;
-    }
-
-    conditionJudge(ele, "else");
-  }
 }
 
-Xhear.prototype.extend(
-  { ...watchFn, ...eventFn, ...renderFn },
+const fn = Xhear.prototype;
+
+fn.extend(conditionFn);
+
+fn.extend(
+  { ...watchFn, ...eventFn, ...renderFn, ...fillFn },
   {
     enumerable: false,
   }

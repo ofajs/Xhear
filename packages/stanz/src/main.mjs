@@ -77,7 +77,14 @@ export default class Stanz extends Array {
   revoke() {
     const self = this[SELF];
 
+    if (self._onrevokes) {
+      self._onrevokes.forEach((f) => f());
+      self._onrevokes.length = 0;
+    }
+
     self.__unupdate = 1;
+
+    self[WATCHS].clear();
 
     entries(this).forEach(([name, value]) => {
       if (isxdata(value)) {

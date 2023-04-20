@@ -26,7 +26,7 @@ function eleIf({ ele, val }) {
   }
 }
 
-export function conditionJudge(ele, type) {
+function conditionJudge(ele, type) {
   ele.__conditionType = type;
 
   // Determine if the previous one is an 'if' or 'ifelse'
@@ -45,7 +45,7 @@ export function conditionJudge(ele, type) {
 }
 
 // The "If" condition performs a single judgment
-export function refreshCondition(ele) {
+function refreshCondition(ele) {
   clearTick(ele.__tickid);
   ele.__tickid = nextTick(() => {
     let allConditionEles = ele.__allConditionEles;
@@ -93,3 +93,34 @@ export function refreshCondition(ele) {
     });
   });
 }
+
+export default {
+  set if(val) {
+    const { ele } = this;
+
+    ele.__conditionType = "if";
+    ele.__condition = val;
+    refreshCondition(ele);
+  },
+
+  set elseIf(val) {
+    const { ele } = this;
+
+    ele.__condition = val;
+    if (ele.__conditionType) {
+      return;
+    }
+
+    conditionJudge(ele, "elseIf");
+  },
+
+  set else(v) {
+    const { ele } = this;
+
+    if (ele.__conditionType) {
+      return;
+    }
+
+    conditionJudge(ele, "else");
+  },
+};

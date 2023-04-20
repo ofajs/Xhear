@@ -1,6 +1,5 @@
-import Stanz from "../stanz/src/main.mjs";
-import { isFunction, hyphenToUpperCase, isArrayEqual } from "./public.mjs";
-import { createXEle, eleX } from "./util.mjs";
+import { isFunction, hyphenToUpperCase } from "./public.mjs";
+import { eleX } from "./util.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
@@ -28,6 +27,10 @@ export function render({ data, target, template, temps, ...otherOpts }) {
   const texts = target.querySelectorAll("xtext");
 
   const tasks = [];
+
+  if (!data._onrevokes) {
+    data._onrevokes = [() => (tasks.length = 0)];
+  }
 
   Array.from(texts).forEach((el) => {
     const textEl = document.createTextNode("");
@@ -69,7 +72,9 @@ export function render({ data, target, template, temps, ...otherOpts }) {
             func();
           }
         } catch (error) {
-          const err = new Error(`This method does not exist : ${actionName}`);
+          const err = new Error(
+            `Execution of the ${actionName} method reports an error :\n ${error.stack}`
+          );
           err.error = error;
           throw err;
         }
@@ -91,7 +96,7 @@ export function render({ data, target, template, temps, ...otherOpts }) {
 
     tasks.forEach((func) => func());
 
-    data.watchTick(() => {
+    data.watchTick((e) => {
       tasks.forEach((func) => func());
     });
   }
@@ -193,104 +198,8 @@ const defaultData = {
 
     this.ele.setAttribute(name, value);
   },
-  fill(tempName, key, options) {
-    const { data, temps } = options;
-    const $host = options.$host || data;
-
-    const targetTemp = temps[hyphenToUpperCase(tempName)];
-
-    const _ele = this.ele;
-
-    data.watchTick((e) => {
-      if (e.hasReplaced(key)) {
-        replaceIt({ data, key, _ele, targetTemp, temps, $host });
-        return;
-      } else if (!e.hasModified(key)) {
-        return;
-      }
-
-      const target = data.get(key);
-
-      const { children } = _ele;
-
-      const oldArray = Array.from(children).map((e) => e.__render_data.$data);
-      const newArray = Array.from(target);
-
-      if (isArrayEqual(oldArray, newArray)) {
-        return;
-      }
-
-      for (let i = 0, len = target.length; i < len; i++) {
-        const current = target[i];
-        const cursorEl = children[i];
-
-        if (!cursorEl) {
-          const { ele } = createItem(current, targetTemp, temps, $host);
-          _ele.appendChild(ele);
-          continue;
-        }
-
-        const cursorData = cursorEl.__render_data.$data;
-
-        if (current === cursorData) {
-          continue;
-        }
-
-        if (oldArray.includes(current)) {
-          // Data displacement occurs
-          const oldEl = Array.from(children).find(
-            (e) => e.__render_data.$data === current
-          );
-          _ele.insertBefore(oldEl, cursorEl);
-        } else {
-          // New elements added
-          const { ele } = createItem(current, targetTemp, temps, $host);
-          _ele.insertBefore(ele, cursorEl);
-        }
-
-        // need to be deleted
-        if (!newArray.includes(cursorData)) {
-          cursorEl.__render_data.revoke();
-          cursorEl.remove();
-        }
-      }
-    });
-
-    replaceIt({ data, key, _ele, targetTemp, temps, $host });
-  },
 };
 
-const createItem = (d, targetTemp, temps, $host) => {
-  const itemData = new Stanz({
-    $data: d,
-    // $host,
-  });
-
-  const $ele = createXEle(targetTemp.innerHTML);
-  const { ele } = $ele;
-
-  render({
-    target: ele,
-    data: itemData,
-    temps,
-  });
-
-  return { ele, itemData };
-};
-
-const replaceIt = ({ data, key, _ele, targetTemp, temps, $host }) => {
-  const target = data.get(key);
-
-  if (!target) {
-    return;
-  }
-
-  _ele.innerHTML = "";
-  target.forEach((d) => {
-    const { ele } = createItem(d, targetTemp, temps, $host);
-    _ele.appendChild(ele);
-  });
-};
 defaultData.prop.always = true;
 defaultData.attr.always = true;
 
