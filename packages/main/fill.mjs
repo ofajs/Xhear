@@ -13,12 +13,6 @@ export default {
     const _ele = this.ele;
 
     data.watchTick((e) => {
-      try {
-        data.xid;
-      } catch (err) {
-        // data revoked
-        return;
-      }
       if (e.hasReplaced(key)) {
         replaceIt({ data, key, _ele, targetTemp, temps, $host });
         return;

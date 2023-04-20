@@ -152,6 +152,22 @@ export default {
   watchTick(callback) {
     return this.watch(
       debounce((arr) => {
+        try {
+          this.xid;
+        } catch (err) {
+          // console.warn(`The revoked object cannot use watchTick : `, this);
+          return;
+        }
+        arr = arr.filter((e) => {
+          try {
+            e.path.forEach((item) => item.xid);
+          } catch (err) {
+            return false;
+          }
+
+          return true;
+        });
+
         callback(new Watchers(arr));
       })
     );

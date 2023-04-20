@@ -26,16 +26,19 @@
         console.log("watchTick => ", e);
       });
 
-      d.watch((e) => {
-        console.log(
-          "watch => ",
-          e,
-          e.hasModified("obj.sub.val"),
-          e.hasReplaced("obj")
-        );
-      });
+      // d.watch((e) => {
+      //   console.log(
+      //     "watch => ",
+      //     e,
+      //     e.hasModified("obj.sub.val"),
+      //     e.hasReplaced("obj")
+      //   );
+      // });
 
       d.obj.sub.oarr = [3, 4, 5];
+
+      d.revoke();
+      // d.obj.revoke();
 
       window.d = d;
     </script>
