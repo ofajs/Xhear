@@ -92,23 +92,28 @@ const createItem = (d, targetTemp, temps, $host) => {
   return { ele, itemData };
 };
 
+const revokeEl = (el) => {
+  const { __render_data } = el;
+
+  if (__render_data) {
+    __render_data.revoke();
+  }
+
+  Array.from(el.querySelectorAll("[x-fill-item]")).forEach(revokeEl);
+};
+
 const replaceIt = ({ data, key, _ele, targetTemp, temps, $host }) => {
   const target = data.get(key);
+
+  // clear old data
+  Array.from(_ele.children).forEach(revokeEl);
+
+  _ele.innerHTML = "";
 
   if (!target) {
     return;
   }
 
-  // clear old data
-  Array.from(_ele.children).forEach((e) => {
-    const { __render_data } = e;
-
-    if (__render_data) {
-      __render_data.revoke();
-    }
-  });
-
-  _ele.innerHTML = "";
   target.forEach((d) => {
     const { ele } = createItem(d, targetTemp, temps, $host);
     _ele.appendChild(ele);
