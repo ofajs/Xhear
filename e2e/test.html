@@ -18,8 +18,9 @@
   <body>
     This is the html file for development and debugging
     <div id="target">target</div>
+    <test-ele></test-ele>
 
-    <template>
+    <template id="targetTemp">
       <div :bb="num">
         <button on:click="num++">NUM++</button>
         {{num}} {{num + 1}}
@@ -62,59 +63,53 @@
 
       window.$ = $;
 
-      const temps = $.convert($("template").ele);
+      $("test-ele").aaa = "aaa";
 
-      const data = (window.data = $.stanz({
-        num: 100,
-        testAttr: "I am test attr",
-        obj: {
-          func(e) {
-            console.log("I am obj", e);
+      $.register({
+        tag: "test-ele",
+        attrs: {
+          num: 100,
+          testAttr: "I am test attr",
+        },
+        data: {
+          // num: 100,
+          // testAttr: "I am test attr",
+          obj: {
+            func(e) {
+              console.log("I am obj", e);
+            },
+          },
+          arr: [
+            {
+              val: "I am 0",
+            },
+            {
+              val: "I am 1",
+              childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+            },
+            {
+              val: "I am 2",
+            },
+          ],
+        },
+        temp: $("#targetTemp").html,
+        watch: {
+          testAttr(newval, oldVal) {
+            console.log("testArrt => ", newval);
           },
         },
-        arr: [
-          {
-            val: "I am 0",
+        proto: {
+          testFun(e) {
+            console.log("I am test fun", e);
           },
-          {
-            val: "I am 1",
-            childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
-          },
-          {
-            val: "I am 2",
-          },
-        ],
-        testFun(e) {
-          console.log("I am test fun", e);
         },
-      }));
-
-      $.render({
-        target: $("#target").ele,
-        data,
-        temps,
-        template: $("template").ele,
+        created() {
+          console.log("created => ", this);
+        },
+        ready() {
+          console.log("ready => ", this);
+        },
       });
-
-      window.test = () => {
-        data.arr.push({
-          val: "I am 4",
-        });
-        data.arr.push({
-          val: "I am 3",
-        });
-        window.ta = data.arr.shift();
-        data.arr.reverse();
-      };
-
-      window.test2 = () => {
-        data.arr[1].childs = [{ val: "asdasd" }];
-        // data.arr = [{ val: "change 1" }, { val: "change 2" }];
-      };
-
-      window.test3 = () => {
-        window.ta = data.arr.shift();
-      };
     </script>
   </body>
 </html>

@@ -6,7 +6,7 @@ import conditionFn from "./render/condition.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";
-import { constructor } from "../stanz/src/main.mjs";
+import Stanz, { constructor } from "../stanz/src/main.mjs";
 import watchFn from "../stanz/src/watch.mjs";
 const { defineProperties } = Object;
 
@@ -41,7 +41,7 @@ export default class Xhear extends LikeArray {
 
   $(expr) {
     const target = this.ele.querySelector(expr);
-    return target ? null : eleX(target);
+    return target ? eleX(target) : null;
   }
 
   all(expr) {
@@ -84,6 +84,15 @@ export default class Xhear extends LikeArray {
     return getComputedStyle(this.ele);
   }
 
+  get shadow() {
+    return eleX(this.ele.shadowRoot);
+  }
+
+  get parent() {
+    let { parentNode } = this.ele;
+    return !parentNode || parentNode === document ? null : eleX(parentNode);
+  }
+
   get style() {
     return this.ele.style;
   }
@@ -111,12 +120,19 @@ export default class Xhear extends LikeArray {
   }
 }
 
+const sfn = Stanz.prototype;
 const fn = Xhear.prototype;
 
 fn.extend(conditionFn);
 
 fn.extend(
-  { ...watchFn, ...eventFn, ...renderFn, ...fillFn },
+  {
+    get: sfn.get,
+    ...watchFn,
+    ...eventFn,
+    ...renderFn,
+    ...fillFn,
+  },
   {
     enumerable: false,
   }

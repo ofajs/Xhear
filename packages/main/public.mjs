@@ -7,6 +7,10 @@ export const hyphenToUpperCase = (str) =>
     return p1.toUpperCase();
   });
 
+export function capitalizeFirstLetter(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 export const getNextNode = (ele) => {
   let nextEle = ele;
   do {
@@ -26,4 +30,10 @@ export const isArrayEqual = (arr1, arr2) => {
     }
   }
   return true;
+};
+
+export const toDashCase = (str) => {
+  return str.replace(/[A-Z]/g, function (match) {
+    return "-" + match.toLowerCase();
+  });
 };
