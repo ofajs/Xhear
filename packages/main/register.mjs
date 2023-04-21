@@ -167,5 +167,3 @@ function validateTagName(str) {
 
   return true;
 }
-
-window.validateTagName = validateTagName;
