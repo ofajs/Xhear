@@ -1,8 +1,8 @@
 import { eleX } from "./util.mjs";
 import { handler } from "./accessor.mjs";
-import renderFn from "./render.mjs";
-import fillFn from "./fill.mjs";
-import conditionFn from "./condition.mjs";
+import renderFn from "./render/render.mjs";
+import fillFn from "./render/fill.mjs";
+import conditionFn from "./render/condition.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
 import { getType, extend } from "../stanz/src/public.mjs";

@@ -51,6 +51,7 @@
           attr:test-val="$data.val"
         >
           <div>{{$data.val}}</div>
+          <div>$host === {{$host.num}}</div>
           <div fill:test-item="$data.childs"></div>
           <!-- <button on:click="$host.testFun($data)">test console</button> -->
         </div>
@@ -102,13 +103,17 @@
         data.arr.push({
           val: "I am 3",
         });
-        data.arr.shift();
+        window.ta = data.arr.shift();
         data.arr.reverse();
       };
 
       window.test2 = () => {
         data.arr[1].childs = [{ val: "asdasd" }];
         // data.arr = [{ val: "change 1" }, { val: "change 2" }];
+      };
+
+      window.test3 = () => {
+        window.ta = data.arr.shift();
       };
     </script>
   </body>

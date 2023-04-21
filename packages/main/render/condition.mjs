@@ -1,6 +1,6 @@
-import { nextTick, clearTick } from "../stanz/src/public.mjs";
-import { getNextNode } from "./public.mjs";
-import { eleX } from "./util.mjs";
+import { nextTick, clearTick } from "../../stanz/src/public.mjs";
+import { getNextNode } from "../public.mjs";
+import { eleX } from "../util.mjs";
 
 function eleIf({ ele, val }) {
   if (val) {
