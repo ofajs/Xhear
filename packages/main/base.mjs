@@ -14,4 +14,10 @@ export default function $(expr) {
   return createXEle(expr);
 }
 
-Object.assign($, { stanz, render, convert, fn: Xhear.prototype });
+Object.assign($, {
+  stanz,
+  render,
+  convert,
+  fn: Xhear.prototype,
+  all: (expr) => Array.from(document.querySelectorAll(expr)).map(eleX),
+});

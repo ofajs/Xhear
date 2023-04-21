@@ -61,7 +61,7 @@ export default {
 
         // need to be deleted
         if (!newArray.includes(cursorData)) {
-          cursorEl.__render_data.revoke();
+          revokeEl(cursorEl);
           cursorEl.remove();
         }
       }

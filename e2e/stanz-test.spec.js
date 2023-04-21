@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test("stanz test", async ({ page }) => {
+test("stanz", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/stanz-test.html");
 
   await page.waitForSelector(".jasmine-suite-detail.jasmine-passed");
@@ -12,7 +12,7 @@ test("stanz test", async ({ page }) => {
   expect(jasmineSuiteDetails.length).toBe(4);
 });
 
-test("xhear sub object test", async ({ page }) => {
+test("xhear sub object", async ({ page }) => {
   await page.goto(
     "http://localhost:3398/e2e/statics/xhear-sub-object-test.html"
   );

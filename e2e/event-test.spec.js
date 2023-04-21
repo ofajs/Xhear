@@ -6,7 +6,7 @@ const getText = async function (page, expr) {
   return logText;
 };
 
-test("test on", async ({ page }) => {
+test("on", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/event-test.html");
 
   await page.waitForFunction(async () => {
@@ -26,7 +26,7 @@ test("test on", async ({ page }) => {
   await expect(logText2).toBe("click2");
 });
 
-test("test off", async ({ page }) => {
+test("off", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/event-test.html");
 
   await page.waitForFunction(async () => {
@@ -50,7 +50,7 @@ test("test off", async ({ page }) => {
   await expect(logText2).toBe("click1");
 });
 
-test("test one", async ({ page }) => {
+test("one", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/event-test.html");
 
   await page.waitForFunction(async () => {
@@ -70,7 +70,7 @@ test("test one", async ({ page }) => {
   await expect(logText2).toBe("click1");
 });
 
-test("test emit", async ({ page }) => {
+test("emit", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/event-test.html");
 
   await page.waitForFunction(async () => {

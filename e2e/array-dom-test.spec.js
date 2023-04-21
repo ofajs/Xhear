@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test("push and unshift test", async ({ page }) => {
+test("push and unshift", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
@@ -26,7 +26,7 @@ test("push and unshift test", async ({ page }) => {
   expect(data).toBe(["0", "2", "3", "1", "5", "4", "6"].join(","));
 });
 
-test("pop and shift test", async ({ page }) => {
+test("pop and shift", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
@@ -52,7 +52,7 @@ test("pop and shift test", async ({ page }) => {
   expect(data).toBe(["3", "1", "5"].join(","));
 });
 
-test("splice test", async ({ page }) => {
+test("splice", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
@@ -77,7 +77,7 @@ test("splice test", async ({ page }) => {
   expect(data).toBe(["2", "10", "11", "5", "4"].join(","));
 });
 
-test("reverse test", async ({ page }) => {
+test("reverse", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
@@ -93,7 +93,7 @@ test("reverse test", async ({ page }) => {
   expect(data).toBe(["4", "5", "1", "3", "2"].join(","));
 });
 
-test("sort test", async ({ page }) => {
+test("sort", async ({ page }) => {
   await page.goto("http://localhost:3398/e2e/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);

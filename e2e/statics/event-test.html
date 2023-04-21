@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>xhear sub object test</title>
     <script src="../../dist/xhear.js"></script>
+    <!-- <script type="module">
+      import $ from "../../packages/main/base.mjs";
+
+      window.$ = $;
+    </script> -->
   </head>
   <body>
     <div id="target" data-testid="target" style="background-color: #aaa">
@@ -13,10 +18,10 @@
       <div id="target-sub" data-testid="target-sub">sub</div>
     </div>
     <div id="log">I am log</div>
-    <script>
+    <script type="module">
       window.count = 0;
 
-      const func = () => {
+      window.func = () => {
         count++;
         $("#log").text = "click" + count;
       };

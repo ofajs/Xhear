@@ -6,7 +6,12 @@ export default {
       func = this._convertExpr(options, func);
     }
 
+    if (options && options.data) {
+      func = func.bind(options.data);
+    }
+
     this.ele.addEventListener(name, func);
+
     return this;
   },
   one(name, func, options) {
