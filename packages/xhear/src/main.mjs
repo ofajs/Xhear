@@ -3,12 +3,44 @@ import { handler } from "./accessor.mjs";
 import renderFn from "./render/render.mjs";
 import fillFn from "./render/fill.mjs";
 import conditionFn from "./render/condition.mjs";
+import syncFn from "./render/sync.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
+import { initFormEle } from "./form.mjs";
 import { getType, extend } from "../../stanz/src/public.mjs";
 import Stanz, { constructor } from "../../stanz/src/main.mjs";
 import watchFn from "../../stanz/src/watch.mjs";
 const { defineProperties } = Object;
+
+const init = ({ _this, ele, proxySelf }) => {
+  const descs = {
+    owner: {
+      get() {
+        const { parentNode } = ele;
+        const { _owner } = _this;
+        const arr = parentNode ? [eleX(parentNode), ..._owner] : [..._owner];
+        return new Set(arr);
+      },
+    },
+    ele: {
+      get: () => ele,
+    },
+  };
+
+  const tag = ele.tagName && ele.tagName.toLowerCase();
+
+  if (tag) {
+    descs.tag = {
+      enumerable: true,
+      value: tag,
+    };
+
+  }
+
+  defineProperties(_this, descs);
+  
+  initFormEle(proxySelf);
+};
 
 export default class Xhear extends LikeArray {
   constructor({ ele }) {
@@ -16,30 +48,11 @@ export default class Xhear extends LikeArray {
 
     const proxySelf = constructor.call(this, {}, handler);
 
-    const descs = {
-      owner: {
-        get() {
-          const { parentNode } = ele;
-          const { _owner } = this;
-          const arr = parentNode ? [eleX(parentNode), ..._owner] : [..._owner];
-          return new Set(arr);
-        },
-      },
-      ele: {
-        get: () => ele,
-      },
-    };
-
-    const tag = ele.tagName && ele.tagName.toLowerCase();
-
-    if (tag) {
-      descs.tag = {
-        enumerable: true,
-        value: tag,
-      };
-    }
-
-    defineProperties(this, descs);
+    init({
+      _this: this,
+      ele,
+      proxySelf,
+    });
 
     ele.__xhear__ = proxySelf;
 

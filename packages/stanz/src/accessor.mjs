@@ -4,7 +4,7 @@ import { emitUpdate } from "./watch.mjs";
 
 const { defineProperties } = Object;
 
-export const setData = ({ target, key, value, receiver, type }) => {
+export const setData = ({ target, key, value, receiver, type, succeed }) => {
   let data = value;
   if (isxdata(data)) {
     data._owner.push(receiver);
@@ -20,6 +20,8 @@ export const setData = ({ target, key, value, receiver, type }) => {
     clearData(oldValue, receiver);
   }
 
+  const reval = succeed(data);
+
   !isSame &&
     !target.__unupdate &&
     emitUpdate({
@@ -31,7 +33,7 @@ export const setData = ({ target, key, value, receiver, type }) => {
       oldValue,
     });
 
-  return data;
+  return reval;
 };
 
 export const clearData = (val, target) => {
@@ -72,8 +74,15 @@ export const handler = {
     }
 
     try {
-      const data = setData({ target, key, value, receiver });
-      return Reflect.set(target, key, data, receiver);
+      return setData({
+        target,
+        key,
+        value,
+        receiver,
+        succeed(data) {
+          return Reflect.set(target, key, data, receiver);
+        },
+      });
     } catch (error) {
       const err = new Error(`failed to set ${key} \n ${error.stack}`);
 
@@ -88,14 +97,19 @@ export const handler = {
     }
   },
   deleteProperty(target, key) {
-    setData({
+    if (/^_/.test(key) || typeof key === "symbol") {
+      return Reflect.deleteProperty(target, key);
+    }
+
+    return setData({
       target,
       key,
       value: undefined,
       receiver: target[PROXY],
       type: "delete",
+      succeed() {
+        return Reflect.deleteProperty(target, key);
+      },
     });
-
-    return Reflect.deleteProperty(target, key);
   },
 };

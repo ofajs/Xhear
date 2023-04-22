@@ -196,6 +196,10 @@ const defaultData = {
     value = this._convertExpr(options, value);
     value = getVal(value);
 
+    if (value === undefined) {
+      return this.ele.getAttribute(name);
+    }
+
     this.ele.setAttribute(name, value);
   },
 };
