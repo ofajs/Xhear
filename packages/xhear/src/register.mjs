@@ -138,7 +138,7 @@ export const register = (opts = {}) => {
     }
 
     static get observedAttributes() {
-      return getAttrKeys(defaults.attrs).map((e) => toDashCase(e));
+      return getAttrKeys(defaults.attrs || {}).map((e) => toDashCase(e));
     }
   });
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>render test</title>
     <script src="../../../../dist/xhear.js"></script>
     <style>
       .sub-item {
@@ -16,78 +16,48 @@
   </head>
   <body>
     <div id="target">render test</div>
-    <template>
-      <div :bb="num">
-        <button on:click="num++" data-testid="num_plus">NUM++</button>
-        <br />
-        <span attr:ta="testAttr" attr:n-count="num" id="target_a">{{num}}</span>
-        <br />
-        <span :ta="num / 2" id="target_b">{{num + 1}}</span>
-        <br />
-        <button on:click="testFun" data-testid="num_pp">Click Me add 10</button>
-        <br />
-        <!-- <button on:click="obj.func($event)">Click Me to obj Console</button> -->
-        <br />
-        <br />
-        <span>{{num % 4}}</span>
-        <div id="condition-container">
-          <div :if="num % 4 > 2">I am IF div</div>
-          <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
-          <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
-          <div :else>I am ELSE div</div>
-        </div>
-        <br />
-        <br />
-        <div
-          id="fill-container"
-          fill:test-item="arr"
-          style="padding: 16px; background-color: #eee"
-        ></div>
-      </div>
-      <template name="testItem">
-        <div class="sub-item" attr:test-val="$data.val">
-          <div class="sub-val">{{$data.val}}</div>
-          <div>$host === <span class="host_num">{{$host.num}}</span></div>
-          <div fill:test-item="$data.childs"></div>
-          <!-- <button on:click="$host.testFun($data)">test console</button> -->
-        </div>
-      </template>
-    </template>
+    <template> </template>
     <script>
-      const temps = $.convert($("template").ele);
+      (async () => {
+        const tempContent = await fetch("./temp.html").then((e) => e.text());
 
-      const data = (window.data = $.stanz({
-        num: 100,
-        testAttr: "I am test attr",
-        obj: {
-          val: "I am obj",
-          // func(e) {
-          //   console.log("I am obj", e);
-          // },
-        },
-        arr: [
-          {
-            val: "I am 0",
-          },
-          {
-            val: "I am 1",
-            childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
-          },
-          {
-            val: "I am 2",
-          },
-        ],
-        testFun(e) {
-          this.num = this.num + 10;
-        },
-      }));
+        $("template").html = tempContent;
 
-      $.render({
-        target: $("#target").ele,
-        data,
-        temps,
-        template: $("template").ele,
-      });
+        const temps = $.convert($("template").ele);
+
+        const data = (window.data = $.stanz({
+          num: 100,
+          testAttr: "I am test attr",
+          obj: {
+            val: "I am obj",
+            // func(e) {
+            //   console.log("I am obj", e);
+            // },
+          },
+          arr: [
+            {
+              val: "I am 0",
+            },
+            {
+              val: "I am 1",
+              childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+            },
+            {
+              val: "I am 2",
+            },
+          ],
+          testFun(e) {
+            this.num = this.num + 10;
+          },
+        }));
+
+        $.render({
+          target: $("#target").ele,
+          data,
+          temps,
+          template: $("template").ele,
+        });
+      })();
     </script>
   </body>
 </html>

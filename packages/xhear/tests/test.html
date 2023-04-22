@@ -54,12 +54,11 @@
           <div>{{$data.val}}</div>
           <div>$host === {{$host.num}}</div>
           <div fill:test-item="$data.childs"></div>
-          <!-- <button on:click="$host.testFun($data)">test console</button> -->
         </div>
       </template>
     </template>
     <script type="module">
-      import $ from "../../packages/main/base.mjs";
+      import $ from "../src/base.mjs";
 
       window.$ = $;
 
