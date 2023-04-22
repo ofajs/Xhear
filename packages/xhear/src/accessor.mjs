@@ -16,4 +16,21 @@ export const handler = {
 
     return Reflect.get(target, key, value, receiver);
   },
+  ownKeys(target) {
+    let keys = Reflect.ownKeys(target);
+    let len = target.ele.children.length;
+    for (let i = 0; i < len; i++) {
+      keys.push(String(i));
+    }
+    return keys;
+  },
+  getOwnPropertyDescriptor(target, key) {
+    if (typeof key === "string" && !/\D/.test(key)) {
+      return {
+        enumerable: true,
+        configurable: true,
+      };
+    }
+    return Reflect.getOwnPropertyDescriptor(target, key);
+  },
 };

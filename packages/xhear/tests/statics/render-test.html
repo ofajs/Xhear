@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>render test</title>
-    <script src="../../../../dist/xhear.js"></script>
+    <!-- <script src="../../../../dist/xhear.js"></script> -->
     <style>
       .sub-item {
         margin: 10px;
@@ -17,7 +17,10 @@
   <body>
     <div id="target">render test</div>
     <template> </template>
-    <script>
+    <script type="module">
+      import $ from "../../src/base.mjs";
+      window.$ = $;
+
       (async () => {
         const tempContent = await fetch("./temp.html").then((e) => e.text());
 

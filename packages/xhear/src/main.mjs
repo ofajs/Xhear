@@ -16,7 +16,7 @@ export default class Xhear extends LikeArray {
 
     const proxySelf = constructor.call(this, {}, handler);
 
-    defineProperties(this, {
+    const descs = {
       owner: {
         get() {
           const { parentNode } = ele;
@@ -28,7 +28,18 @@ export default class Xhear extends LikeArray {
       ele: {
         get: () => ele,
       },
-    });
+    };
+
+    const tag = ele.tagName && ele.tagName.toLowerCase();
+
+    if (tag) {
+      descs.tag = {
+        enumerable: true,
+        value: tag,
+      };
+    }
+
+    defineProperties(this, descs);
 
     ele.__xhear__ = proxySelf;
 
@@ -50,10 +61,6 @@ export default class Xhear extends LikeArray {
 
   extend(obj, desc) {
     return extend(this, obj, desc);
-  }
-
-  get tag() {
-    return this.ele.tagName.toLowerCase();
   }
 
   get text() {
@@ -128,10 +135,13 @@ fn.extend(conditionFn);
 fn.extend(
   {
     get: sfn.get,
+    toJSON: sfn.toJSON,
+    toString: sfn.toString,
     ...watchFn,
     ...eventFn,
     ...renderFn,
     ...fillFn,
+    ...syncFn,
   },
   {
     enumerable: false,
