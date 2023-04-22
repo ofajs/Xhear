@@ -1,4 +1,4 @@
-import { nextTick, clearTick } from "../../stanz/src/public.mjs";
+import { nextTick, clearTick } from "../../../stanz/src/public.mjs";
 import { getNextNode } from "../public.mjs";
 import { eleX } from "../util.mjs";
 

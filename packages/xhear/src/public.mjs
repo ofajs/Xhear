@@ -1,4 +1,4 @@
-import { getType } from "../stanz/src/public.mjs";
+import { getType } from "../../stanz/src/public.mjs";
 
 export const isFunction = (val) => getType(val).includes("function");
 

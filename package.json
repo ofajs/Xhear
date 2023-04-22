@@ -5,7 +5,7 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "dev": "node scripts/dev.js",
-    "build": "parcel build packages/main/dist.mjs -d dist --out-file xhear.js --no-source-maps --global global",
+    "build": "parcel build packages/xhear/src/dist.mjs -d dist --out-file xhear.js --no-source-maps --global global",
     "static-server": "node scripts/static-server",
     "playwright": "npm run build && npx playwright test",
     "test": "node scripts/ci-test"

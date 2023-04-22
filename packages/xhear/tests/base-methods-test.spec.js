@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 test("text", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/base-methods-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/base-methods-test.html");
 
   const result = await page.waitForFunction(async () => {
     return $("#target1").text;
@@ -17,7 +17,7 @@ test("text", async ({ page }) => {
 });
 
 test("html", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/base-methods-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/base-methods-test.html");
 
   const result = await page.waitForFunction(async () => {
     return $("#target1").html;

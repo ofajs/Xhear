@@ -11,7 +11,7 @@ const getData = async (page, func) => {
 };
 
 test("render '{{text}}' and 'on'", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/render-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/render-test.html");
 
   await expect(await getText(page, "#target_a")).toBe("100");
   await expect(await getText(page, "#target_b")).toBe("101");
@@ -28,7 +28,7 @@ test("render '{{text}}' and 'on'", async ({ page }) => {
 });
 
 test("render 'condition'", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/render-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/render-test.html");
 
   await expect(await getText(page, "#condition-container")).toBe(
     "I am ELSE div"
@@ -68,7 +68,7 @@ test("render 'condition'", async ({ page }) => {
 });
 
 test("render 'fill'", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/render-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/render-test.html");
 
   await expect((await page.$$(".sub-item")).length).toBe(5);
 

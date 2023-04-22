@@ -1,5 +1,5 @@
 import { eleX } from "./util.mjs";
-import { handler as stanzHandler } from "../stanz/src/accessor.mjs";
+import { handler as stanzHandler } from "../../stanz/src/accessor.mjs";
 
 export const handler = {
   set(target, key, value, receiver) {

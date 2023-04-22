@@ -7,7 +7,7 @@ const getText = async function (page, expr) {
 };
 
 test("on", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/event-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/event-test.html");
 
   await page.waitForFunction(async () => {
     $("#target").on("click", func);
@@ -27,7 +27,7 @@ test("on", async ({ page }) => {
 });
 
 test("off", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/event-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/event-test.html");
 
   await page.waitForFunction(async () => {
     $("#target").on("click", func);
@@ -51,7 +51,7 @@ test("off", async ({ page }) => {
 });
 
 test("one", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/event-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/event-test.html");
 
   await page.waitForFunction(async () => {
     $("#target").one("click", func);
@@ -71,7 +71,7 @@ test("one", async ({ page }) => {
 });
 
 test("emit", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/event-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/event-test.html");
 
   await page.waitForFunction(async () => {
     $("#target").emit("custom-eve");

@@ -5,9 +5,9 @@ import fillFn from "./render/fill.mjs";
 import conditionFn from "./render/condition.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
-import { getType, extend } from "../stanz/src/public.mjs";
-import Stanz, { constructor } from "../stanz/src/main.mjs";
-import watchFn from "../stanz/src/watch.mjs";
+import { getType, extend } from "../../stanz/src/public.mjs";
+import Stanz, { constructor } from "../../stanz/src/main.mjs";
+import watchFn from "../../stanz/src/watch.mjs";
 const { defineProperties } = Object;
 
 export default class Xhear extends LikeArray {

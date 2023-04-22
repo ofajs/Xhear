@@ -1,4 +1,4 @@
-import Stanz from "../../stanz/src/main.mjs";
+import Stanz from "../../../stanz/src/main.mjs";
 import { hyphenToUpperCase, isArrayEqual } from "../public.mjs";
 import { createXEle } from "../util.mjs";
 import { render } from "./render.mjs";

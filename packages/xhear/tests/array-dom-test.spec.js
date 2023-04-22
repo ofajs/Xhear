@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 test("push and unshift", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/array-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
 
@@ -27,7 +27,7 @@ test("push and unshift", async ({ page }) => {
 });
 
 test("pop and shift", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/array-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
 
@@ -53,7 +53,7 @@ test("pop and shift", async ({ page }) => {
 });
 
 test("splice", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/array-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
 
@@ -78,7 +78,7 @@ test("splice", async ({ page }) => {
 });
 
 test("reverse", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/array-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
 
@@ -94,7 +94,7 @@ test("reverse", async ({ page }) => {
 });
 
 test("sort", async ({ page }) => {
-  await page.goto("http://localhost:3398/e2e/statics/array-test.html");
+  await page.goto("http://localhost:3398/packages/xhear/tests/statics/array-test.html");
 
   await expect((await page.$$(".sub")).length).toBe(5);
 
