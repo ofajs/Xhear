@@ -7,6 +7,9 @@ const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
 export const SELF = Symbol("self");
 export const PROXY = Symbol("proxy");
 export const WATCHS = Symbol("watchs");
+export const ISXDATA = Symbol("isxdata");
+
+export const isxdata = (val) => val && !!val[ISXDATA];
 
 export function constructor(data, handler = stanzHandler) {
   // const proxySelf = new Proxy(this, handler);
@@ -28,6 +31,9 @@ export function constructor(data, handler = stanzHandler) {
       get() {
         return new Set(this._owner);
       },
+    },
+    [ISXDATA]: {
+      value: true,
     },
     [SELF]: {
       configurable: true,
@@ -187,5 +193,3 @@ Stanz.prototype.extend(
     enumerable: false,
   }
 );
-
-export const isxdata = (val) => val instanceof Stanz;
