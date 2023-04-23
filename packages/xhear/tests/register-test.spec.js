@@ -160,4 +160,19 @@ test.describe("register", () => {
       })
     ).toBe("I am 2,I am 0");
   });
+
+  test("sync", async ({ page }) => {
+    await page.goto(
+      "http://localhost:3398/packages/xhear/tests/statics/sync-test.html"
+    );
+
+    await expect(page.getByPlaceholder("I am i1")).toHaveValue("I am val");
+    await expect(page.getByPlaceholder("I am i2")).toHaveValue("I am val");
+
+    await page.getByPlaceholder("I am i1").fill("testval");
+    await expect(page.getByPlaceholder("I am i2")).toHaveValue("testval");
+
+    await page.getByPlaceholder("I am i2").fill("change val 2");
+    await expect(page.getByPlaceholder("I am i1")).toHaveValue("change val 2");
+  });
 });

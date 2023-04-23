@@ -6,6 +6,8 @@ export default {
 
     const { data } = options;
 
+    this[propName] = data[targetName];
+
     this.watch((e) => {
       if (e.hasModified(propName)) {
         data[targetName] = this[propName];
