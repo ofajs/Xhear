@@ -1,25 +1,35 @@
 {
   "name": "xhear",
-  "version": "6.0.1",
+  "version": "7.0.0",
   "description": "a web components solution",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "watch": "node scripts/watch.js"
+    "dev": "node scripts/dev.js",
+    "build": "parcel build packages/xhear/src/dist.mjs -d dist --out-file xhear.js --no-source-maps --global global",
+    "static-server": "node scripts/static-server",
+    "playwright": "npm run build && npx playwright test",
+    "test": "node scripts/ci-test"
   },
   "author": {
-      "name": "YAO",
-      "email": "kirayao@hotmail.com",
-      "url": "https://kirakiray.com/"
+    "name": "YAO",
+    "email": "kirayao@hotmail.com",
+    "url": "https://kirakiray.com/"
   },
   "license": "MIT",
   "devDependencies": {
-    "js-beautify": "^1.10.0",
-    "uglify-es": "^3.3.9"
+    "@playwright/test": "^1.32.3",
+    "jasmine-core": "^4.6.0",
+    "koa": "^2.14.1",
+    "koa-static": "^5.0.0",
+    "parcel-bundler": "^1.12.5",
+    "parcel-plugin-wrapper": "^0.2.3",
+    "shelljs": "^0.8.5",
+    "sync-directory": "^6.0.4"
   },
-  "main": "dist/xhear.js",
+  "main": "dist/base.mjs",
   "directories": {
     "test": "test"
   },
-  "dependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kirakiray/Xhear.git"
@@ -27,8 +37,6 @@
   "bugs": {
     "url": "https://github.com/kirakiray/Xhear/issues"
   },
-  "homepage": "https://github.com/kirakiray/Xhear#readme",
-  "watchjs": {
-    "startyear": "2018"
-  }
+  "homepage": "https://github.com/kirakiray/Xhear",
+  "startyear": "2018"
 }
