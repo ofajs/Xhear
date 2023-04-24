@@ -7,53 +7,43 @@
     <title>xhear test</title>
     <!-- <script src="../dist/xhear.js"></script> -->
     <style>
-      body > span {
-        color: red;
-      }
-      #target {
-        display: contents;
+      :not(:defined) {
+        display: none;
       }
     </style>
   </head>
   <body>
     This is the html file for development and debugging
-    <div id="target">target</div>
-    <test-ele></test-ele>
 
-    <template id="targetTemp">
-      <div :bb="num">
-        <button on:click="num++">NUM++</button>
-        {{num}} {{num + 1}}
-        <br />
-        <span attr:ta="testAttr" attr:n-count="num">aa</span>
-        <br />
-        <span :ta="num / 2">bb</span>
-        <br />
-        <button on:click="testFun">Click Me to Console</button>
-        <br />
-        <button on:click="obj.func($event)">Click Me to obj Console</button>
-        <br />
-        <br />
-        {{num % 4}}
-        <div :if="num % 4 > 2">I am IF div</div>
-        <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
-        <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
-        <div :else>I am ELSE div</div>
-        <br />
-        <br />
-        <div
-          fill:test-item="arr"
-          style="padding: 16px; background-color: #eee"
-        ></div>
+    <div id="target1">
+      <test-one>22</test-one>
+      <test-one>33</test-one>
+      <test-one>11</test-one>
+    </div>
+    <br />
+    <div id="target2">
+      <div><test-one>22</test-one></div>
+      <div><test-one>33</test-one></div>
+      <div><test-one>11</test-one></div>
+    </div>
+    <br />
+    <test-two></test-two>
+
+    <template id="compOne">
+      <div>
+        <input type="text" placeholder="I am i1" sync:value="val" />
+        <slot></slot>
       </div>
-      <template name="testItem">
-        <div
-          style="margin: 10px; padding: 10px; border: red solid 1px"
-          attr:test-val="$data.val"
-        >
-          <div>{{$data.val}}</div>
-          <div>$host === {{$host.num}}</div>
-          <div fill:test-item="$data.childs"></div>
+    </template>
+    <template id="compTwo">
+      <div fill:one="arr"></div>
+      <div fill:two="arr"></div>
+      <template name="one">
+        <test-one>{{$data}}</test-one>
+      </template>
+      <template name="two">
+        <div>
+          <test-one>{{$data}}</test-one>
         </div>
       </template>
     </template>
@@ -61,54 +51,53 @@
       import $ from "../src/base.mjs";
 
       window.$ = $;
-
-      $("test-ele").aaa = "aaa";
-
       $.register({
-        tag: "test-ele",
-        attrs: {
-          num: 100,
-          testAttr: "I am test attr",
-        },
+        tag: "test-one",
+        temp: $("#compOne").html,
         data: {
-          // num: 100,
-          // testAttr: "I am test attr",
-          obj: {
-            func(e) {
-              console.log("I am obj", e);
-            },
-          },
-          arr: [
-            {
-              val: "I am 0",
-            },
-            {
-              val: "I am 1",
-              childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
-            },
-            {
-              val: "I am 2",
-            },
-          ],
+          val: "I am val",
         },
-        temp: $("#targetTemp").html,
-        watch: {
-          testAttr(newval, oldVal) {
-            console.log("testArrt => ", newval);
-          },
+        attached() {
+          if (this.isAtt) {
+            throw "attached";
+          }
+          this._isAtt = 1;
+          console.log("attached => ", this);
         },
-        proto: {
-          testFun(e) {
-            console.log("I am test fun", e);
-          },
-        },
-        created() {
-          console.log("created => ", this);
-        },
-        ready() {
-          console.log("ready => ", this);
+        detached() {
+          if (this.isDet) {
+            throw "detached";
+          }
+          this._isDet = 1;
+          console.log("detached => ", this);
         },
       });
+
+      $.register({
+        tag: "test-two",
+        temp: $("#compTwo").html,
+        data: {
+          arr: [555, 666, 444],
+        },
+      });
+
+      window.testReverse = () => {
+        $("#target1").reverse();
+        $("#target2").reverse();
+        $("test-two").arr.reverse();
+      };
+
+      window.testSort = () => {
+        $("#target1").sort((a, b) => {
+          return a.text - b.text;
+        });
+        $("#target2").sort((a, b) => {
+          return a.text - b.text;
+        });
+        $("test-two").arr.sort((a, b) => {
+          return a - b;
+        });
+      };
     </script>
   </body>
 </html>

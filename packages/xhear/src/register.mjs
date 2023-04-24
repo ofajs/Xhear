@@ -120,11 +120,15 @@ export const register = (opts = {}) => {
     }
 
     connectedCallback() {
-      defaults.attached && defaults.attached.call($ele);
+      defaults.attached &&
+        !isInArray(this) &&
+        defaults.attached.call(eleX(this));
     }
 
     disconnectedCallback() {
-      defaults.detached && defaults.detached.call($ele);
+      defaults.detached &&
+        !isInArray(this) &&
+        defaults.detached.call(eleX(this));
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
@@ -144,6 +148,24 @@ export const register = (opts = {}) => {
 
   customElements.define(defaults.tag, XElement);
 };
+
+function isInArray(ele) {
+  let target = ele;
+
+  while (target) {
+    if (target.__inArray) {
+      return true;
+    }
+
+    target = target.parentNode || target.host;
+
+    if (!target || (target.tagName && target.tagName === "BODY")) {
+      break;
+    }
+  }
+
+  return false;
+}
 
 function validateTagName(str) {
   // Check if the string starts or ends with '-'

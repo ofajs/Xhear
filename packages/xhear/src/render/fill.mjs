@@ -52,7 +52,9 @@ export default {
           const oldEl = Array.from(children).find(
             (e) => e.__render_data.$data === current
           );
+          oldEl.__inArray = 1;
           _ele.insertBefore(oldEl, cursorEl);
+          delete oldEl.__inArray;
         } else {
           // New elements added
           const { ele } = createItem(current, targetTemp, temps, $host);

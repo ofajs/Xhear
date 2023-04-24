@@ -34,11 +34,10 @@ const init = ({ _this, ele, proxySelf }) => {
       enumerable: true,
       value: tag,
     };
-
   }
 
   defineProperties(_this, descs);
-  
+
   initFormEle(proxySelf);
 };
 
@@ -137,6 +136,10 @@ export default class Xhear extends LikeArray {
     });
 
     Object.assign(style, d);
+  }
+
+  remove() {
+    this.ele.remove();
   }
 }
 

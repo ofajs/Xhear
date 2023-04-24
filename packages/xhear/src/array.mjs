@@ -122,8 +122,17 @@ const likeArrayFn = {
     arrayFn.reverse.call(childs, ...args);
 
     const frag = document.createDocumentFragment();
-    childs.forEach((ele) => frag.append(ele));
+
+    childs.forEach((ele) => {
+      ele.__inArray = 1;
+      frag.append(ele);
+    });
+
     this.ele.append(frag);
+
+    childs.forEach((ele) => {
+      delete ele.__inArray;
+    });
 
     emitUpdate({
       type: "array",
@@ -141,8 +150,17 @@ const likeArrayFn = {
     arrayFn.sort.call(childs, ...args);
 
     const frag = document.createDocumentFragment();
-    childs.forEach((e) => frag.append(e.ele));
+
+    childs.forEach((e) => {
+      e.ele.__inArray = 1;
+      frag.append(e.ele);
+    });
+
     this.ele.append(frag);
+
+    childs.forEach((e) => {
+      delete e.ele.__inArray;
+    });
 
     emitUpdate({
       type: "array",

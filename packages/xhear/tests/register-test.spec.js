@@ -1,6 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 const getText = async (page, expr) => {
+  await new Promise((res) => setTimeout(res, 100));
   const text = await (await page.$(expr)).textContent();
   return text.replace(/\n/g, "").trim();
 };
@@ -174,5 +175,18 @@ test.describe("register", () => {
 
     await page.getByPlaceholder("I am i2").fill("change val 2");
     await expect(page.getByPlaceholder("I am i1")).toHaveValue("change val 2");
+  });
+
+  test("attached and detached", async ({ page }) => {
+    await page.goto(
+      "http://localhost:3398/packages/xhear/tests/statics/component-attached-detached.html"
+    );
+
+    await page.waitForSelector(".jasmine-specs .jasmine-passed", {
+      state: "visible",
+      count: 2,
+    });
+
+    await expect((await page.$$(".jasmine-failed")).length).toBe(0);
   });
 });
