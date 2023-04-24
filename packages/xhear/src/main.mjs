@@ -6,7 +6,7 @@ import conditionFn from "./render/condition.mjs";
 import syncFn from "./render/sync.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
-import { initFormEle } from "./form.mjs";
+import formFn, { initFormEle } from "./form.mjs";
 import { getType, extend } from "../../stanz/src/public.mjs";
 import Stanz, { constructor } from "../../stanz/src/main.mjs";
 import watchFn from "../../stanz/src/watch.mjs";
@@ -158,6 +158,7 @@ fn.extend(
     ...renderFn,
     ...fillFn,
     ...syncFn,
+    ...formFn,
   },
   {
     enumerable: false,

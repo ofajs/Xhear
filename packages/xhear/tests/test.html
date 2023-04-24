@@ -13,91 +13,65 @@
     </style>
   </head>
   <body>
-    This is the html file for development and debugging
-
-    <div id="target1">
-      <test-one>22</test-one>
-      <test-one>33</test-one>
-      <test-one>11</test-one>
-    </div>
-    <br />
-    <div id="target2">
-      <div><test-one>22</test-one></div>
-      <div><test-one>33</test-one></div>
-      <div><test-one>11</test-one></div>
-    </div>
-    <br />
-    <test-two></test-two>
-
-    <template id="compOne">
+    <div id="target">
       <div>
-        <input type="text" placeholder="I am i1" sync:value="val" />
-        <slot></slot>
+        <label>text <input type="text" name="Texter" /> </label>
       </div>
-    </template>
-    <template id="compTwo">
-      <div fill:one="arr"></div>
-      <div fill:two="arr"></div>
-      <template name="one">
-        <test-one>{{$data}}</test-one>
-      </template>
-      <template name="two">
-        <div>
-          <test-one>{{$data}}</test-one>
-        </div>
-      </template>
-    </template>
+      <div>
+        <label>file<input type="file" name="Filer" /></label>
+      </div>
+      <div>
+        <label
+          >select
+          <select name="Selector">
+            <option value="1">One</option>
+            <option value="2">Two</option>
+            <option value="3">Three</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>
+          It A
+          <input type="checkbox" name="checker" value="A" />
+        </label>
+        <label>
+          It B
+          <input type="checkbox" name="checker" value="B" />
+        </label>
+        <label>
+          It C
+          <input type="checkbox" name="checker" value="C" />
+        </label>
+      </div>
+      <div>
+        <label>
+          It D
+          <input type="radio" name="radior" value="D" />
+        </label>
+        <label>
+          It E
+          <input type="radio" name="radior" value="E" />
+        </label>
+        <label>
+          It F
+          <input type="radio" name="radior" value="F" />
+        </label>
+      </div>
+      <div>
+        <textarea name="TA" id="" cols="30" rows="10">I am textarea</textarea>
+      </div>
+    </div>
+
     <script type="module">
       import $ from "../src/base.mjs";
-
       window.$ = $;
-      $.register({
-        tag: "test-one",
-        temp: $("#compOne").html,
-        data: {
-          val: "I am val",
-        },
-        attached() {
-          if (this.isAtt) {
-            throw "attached";
-          }
-          this._isAtt = 1;
-          console.log("attached => ", this);
-        },
-        detached() {
-          if (this.isDet) {
-            throw "detached";
-          }
-          this._isDet = 1;
-          console.log("detached => ", this);
-        },
+
+      window.data = $("#target").form();
+
+      data.watchTick((e) => {
+        console.log(data);
       });
-
-      $.register({
-        tag: "test-two",
-        temp: $("#compTwo").html,
-        data: {
-          arr: [555, 666, 444],
-        },
-      });
-
-      window.testReverse = () => {
-        $("#target1").reverse();
-        $("#target2").reverse();
-        $("test-two").arr.reverse();
-      };
-
-      window.testSort = () => {
-        $("#target1").sort((a, b) => {
-          return a.text - b.text;
-        });
-        $("#target2").sort((a, b) => {
-          return a.text - b.text;
-        });
-        $("test-two").arr.sort((a, b) => {
-          return a - b;
-        });
-      };
     </script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 {
   "name": "xhear",
-  "version": "7.0.0",
+  "version": "7.1.0",
   "description": "a web components solution",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
