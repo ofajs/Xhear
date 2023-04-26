@@ -1,4 +1,5 @@
 import { eleX } from "./util.mjs";
+import { meetsEle } from "./public.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render/render.mjs";
 import fillFn from "./render/fill.mjs";
@@ -107,9 +108,65 @@ export default class Xhear extends LikeArray {
     return eleX(this.ele.shadowRoot);
   }
 
+  get root() {
+    const rootNode = this.ele.getRootNode();
+    return rootNode ? eleX(rootNode) : null;
+  }
+  get host() {
+    let root = this.ele.getRootNode();
+    let { host } = root;
+    return host ? eleX(host) : null;
+  }
+
   get parent() {
     let { parentNode } = this.ele;
     return !parentNode || parentNode === document ? null : eleX(parentNode);
+  }
+
+  get parents() {
+    const parents = [];
+    let target = this;
+    while (target.parent) {
+      target = target.parent;
+      parents.push(target);
+    }
+    return parents;
+  }
+
+  get next() {
+    const nextEle = this.ele.nextElementSibling;
+    return nextEle ? eleX(nextEle) : null;
+  }
+
+  get nexts() {
+    const { parent } = this;
+    const selfIndex = this.index;
+    return parent.filter((e, i) => i > selfIndex);
+  }
+
+  get prev() {
+    const prevEle = this.ele.previousElementSibling;
+    return prevEle ? eleX(prevEle) : null;
+  }
+
+  get prevs() {
+    const { parent } = this;
+    const selfIndex = this.index;
+    return parent.filter((e, i) => i < selfIndex);
+  }
+
+  get siblings() {
+    return this.parent.filter((e) => e !== this);
+  }
+
+  get index() {
+    let { parentNode } = this.ele;
+
+    if (!parentNode) {
+      return null;
+    }
+
+    return Array.prototype.indexOf.call(parentNode.children, this.ele);
   }
 
   get style() {
@@ -136,6 +193,52 @@ export default class Xhear extends LikeArray {
     });
 
     Object.assign(style, d);
+  }
+
+  get width() {
+    return parseInt(getComputedStyle(this.ele).width);
+  }
+
+  get height() {
+    return parseInt(getComputedStyle(this.ele).height);
+  }
+
+  get clientWidth() {
+    return this.ele.clientWidth;
+  }
+
+  get clientHeight() {
+    return this.ele.clientHeight;
+  }
+
+  get offsetWidth() {
+    return this.ele.offsetWidth;
+  }
+
+  get offsetHeight() {
+    return this.ele.offsetHeight;
+  }
+
+  get outerWidth() {
+    let computedStyle = getComputedStyle(this.ele);
+    return (
+      this.ele.offsetWidth +
+      parseInt(computedStyle["margin-left"]) +
+      parseInt(computedStyle["margin-right"])
+    );
+  }
+
+  get outerHeight() {
+    let computedStyle = getComputedStyle(this.ele);
+    return (
+      this.ele.offsetHeight +
+      parseInt(computedStyle["margin-top"]) +
+      parseInt(computedStyle["margin-bottom"])
+    );
+  }
+
+  is(expr) {
+    return meetsEle(this.ele, expr);
   }
 
   remove() {

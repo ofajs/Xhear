@@ -39,21 +39,8 @@ export const toDashCase = (str) => {
 };
 
 // Determine if an element is eligible
-const meetTemp = document.createElement("template");
 export const meetsEle = (ele, expr) => {
-  if (!ele.tagName) {
-    return false;
-  }
-  if (ele === expr) {
-    return true;
-  }
-  if (ele === document) {
-    return false;
-  }
-  meetTemp.innerHTML = `<${ele.tagName.toLowerCase()} ${Array.from(
-    ele.attributes
-  )
-    .map((e) => e.name + '="' + e.value + '"')
-    .join(" ")} />`;
-  return !!meetTemp.content.querySelector(expr);
+  const temp = document.createElement("template");
+  temp.content.append(ele.cloneNode());
+  return !!temp.content.querySelector(expr);
 };
