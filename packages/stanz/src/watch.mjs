@@ -149,7 +149,7 @@ export default {
     return this[WATCHS].delete(wid);
   },
 
-  watchTick(callback) {
+  watchTick(callback, wait) {
     return this.watch(
       debounce((arr) => {
         try {
@@ -169,7 +169,7 @@ export default {
         });
 
         callback(new Watchers(arr));
-      })
+      }, wait || 0)
     );
   },
 };

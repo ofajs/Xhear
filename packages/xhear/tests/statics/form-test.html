@@ -4,21 +4,19 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>xhear test</title>
-    <!-- <script src="../dist/xhear.js"></script> -->
-    <style>
-      :not(:defined) {
-        display: none;
-      }
-    </style>
+    <title>form test</title>
   </head>
   <body>
     <div id="target">
       <div>
-        <label>text <input type="text" name="Texter" /> </label>
+        <label
+          >text <input type="text" name="Texter" data-testid="input1" />
+        </label>
       </div>
       <div>
-        <label>file<input type="file" name="Filer" /></label>
+        <label
+          >file<input type="file" name="Filer" data-testid="fileinputer"
+        /></label>
       </div>
       <div>
         <label
@@ -61,17 +59,31 @@
       <div>
         <textarea name="TA" id="" cols="30" rows="10">I am textarea</textarea>
       </div>
+      <div>
+        <test-comp name="custom"></test-comp>
+      </div>
     </div>
-
+    <template id="test-comp">
+      <div style="border: red solid 1px">
+        <input type="text" placeholder="custom-inputer" sync:value="value" />
+      </div>
+    </template>
     <script type="module">
-      import $ from "../src/base.mjs";
+      import $ from "../../src/base.mjs";
+
       window.$ = $;
-
-      window.data = $("#target").formData();
-
-      data.watchTick((e) => {
-        console.log(data);
+      $.register({
+        tag: "test-comp",
+        temp: $("#test-comp").html,
+        attrs: {
+          name: null,
+        },
+        data: {
+          value: "default value",
+        },
       });
+
+      window.data = $("#target").formData("input,select,textarea,test-comp");
     </script>
   </body>
 </html>
