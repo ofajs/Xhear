@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>form test</title>
+  </head>
+  <body>
+    <div id="target">
+      <div>
+        <label
+          >text <input type="text" name="Texter" data-testid="input1" />
+        </label>
+      </div>
+      <div>
+        <label
+          >file<input type="file" name="Filer" data-testid="fileinputer"
+        /></label>
+      </div>
+      <div>
+        <label
+          >select
+          <select name="Selector">
+            <option value="1">One</option>
+            <option value="2">Two</option>
+            <option value="3">Three</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>
+          It A
+          <input type="checkbox" name="checker" value="A" />
+        </label>
+        <label>
+          It B
+          <input type="checkbox" name="checker" value="B" />
+        </label>
+        <label>
+          It C
+          <input type="checkbox" name="checker" value="C" />
+        </label>
+      </div>
+      <div>
+        <label>
+          It D
+          <input type="radio" name="radior" value="D" />
+        </label>
+        <label>
+          It E
+          <input type="radio" name="radior" value="E" />
+        </label>
+        <label>
+          It F
+          <input type="radio" name="radior" value="F" />
+        </label>
+      </div>
+      <div>
+        <textarea name="TA" id="" cols="30" rows="10">I am textarea</textarea>
+      </div>
+      <div>
+        <test-comp name="custom"></test-comp>
+      </div>
+    </div>
+    <template id="test-comp">
+      <div style="border: red solid 1px">
+        <input type="text" placeholder="custom-inputer" sync:value="value" />
+      </div>
+    </template>
+    <script type="module">
+      import $ from "../../src/base.mjs";
+
+      window.$ = $;
+      $.register({
+        tag: "test-comp",
+        temp: $("#test-comp").html,
+        attrs: {
+          name: null,
+        },
+        data: {
+          value: "default value",
+        },
+      });
+
+      window.data = $("#target").formData("input,select,textarea,test-comp");
+    </script>
+  </body>
+</html>

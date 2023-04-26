@@ -142,6 +142,9 @@ const getFormData = (target, expr) => {
         const [e] = selectedsOpt;
         data[name] = e.value || e.textContent;
       }
+    } else {
+      // custom element
+      data[name] = $el.value;
     }
   });
 
@@ -149,7 +152,8 @@ const getFormData = (target, expr) => {
 };
 
 export default {
-  form(expr, opts = { wait: 50 }) {
+  // This method is still being tested
+  formData(expr, opts = { wait: 200 }) {
     const data = stanz({});
 
     assign(data, getFormData(this, expr || "input,select,textarea"));

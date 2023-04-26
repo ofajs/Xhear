@@ -31,15 +31,25 @@ export function debounce(func, wait = 0) {
   let hisArgs = [];
 
   return function (...args) {
-    if (timeout === null) {
-      timeout = 1;
-      (wait > 0 ? setTimeout : nextTick)(() => {
+    hisArgs.push(...args);
+
+    if (wait > 0) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
         func.call(this, hisArgs);
         hisArgs = [];
         timeout = null;
       }, wait);
+    } else {
+      if (timeout === null) {
+        timeout = 1;
+        nextTick(() => {
+          func.call(this, hisArgs);
+          hisArgs = [];
+          timeout = null;
+        });
+      }
     }
-    hisArgs.push(...args);
   };
 }
 
