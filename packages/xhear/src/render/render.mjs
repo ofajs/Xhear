@@ -27,6 +27,7 @@ export function render({ data, target, template, temps, ...otherOpts }) {
   const texts = target.querySelectorAll("xtext");
 
   const tasks = [];
+  const revokers = [];
 
   if (!data._onrevokes) {
     data._onrevokes = [() => (tasks.length = 0)];
@@ -56,20 +57,25 @@ export function render({ data, target, template, temps, ...otherOpts }) {
         try {
           const { always } = $el[actionName];
 
-          const func = () => {
+          const func = () =>
             $el[actionName](...args, {
               isExpr: true,
               data,
               temps,
               ...otherOpts,
             });
-          };
-
           if (always) {
             // Run every data update
             tasks.push(func);
           } else {
-            func();
+            const revokeFunc = func();
+            if (isFunction(revokeFunc)) {
+              revokers.push(revokeFunc);
+            } else {
+              console.warn(
+                `The '${actionName}' rendering function needs to return the revoker`
+              );
+            }
           }
         } catch (error) {
           const err = new Error(
@@ -100,6 +106,13 @@ export function render({ data, target, template, temps, ...otherOpts }) {
       tasks.forEach((func) => func());
     });
   }
+
+  // Returns the function that undoes the rendering
+  return () => {
+    tasks.length = 0;
+    revokers.forEach((f) => f());
+    revokers.length = 0;
+  };
 }
 
 export function convert(el) {

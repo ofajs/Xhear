@@ -11,8 +11,9 @@ export default {
     const targetTemp = temps[hyphenToUpperCase(tempName)];
 
     const _ele = this.ele;
+    const revokes = [];
 
-    data.watchTick((e) => {
+    const wid = data.watchTick((e) => {
       if (e.hasReplaced(key)) {
         replaceIt({ data, key, _ele, targetTemp, temps, $host });
         return;
@@ -70,6 +71,11 @@ export default {
     });
 
     replaceIt({ data, key, _ele, targetTemp, temps, $host });
+
+    return () => {
+      data.unwatch(wid);
+      revokes.forEach((f) => f());
+    };
   },
 };
 
@@ -82,7 +88,7 @@ const createItem = (d, targetTemp, temps, $host) => {
   const $ele = createXEle(targetTemp.innerHTML);
   const { ele } = $ele;
 
-  render({
+  const revoke = render({
     target: ele,
     data: itemData,
     temps,
@@ -91,7 +97,7 @@ const createItem = (d, targetTemp, temps, $host) => {
 
   ele.setAttribute("x-fill-item", 1);
 
-  return { ele, itemData };
+  return { ele, itemData, revoke };
 };
 
 const revokeEl = (el) => {
@@ -116,8 +122,13 @@ const replaceIt = ({ data, key, _ele, targetTemp, temps, $host }) => {
     return;
   }
 
+  const revokes = [];
+
   target.forEach((d) => {
-    const { ele } = createItem(d, targetTemp, temps, $host);
+    const { ele, revoke } = createItem(d, targetTemp, temps, $host);
     _ele.appendChild(ele);
+    revokes.push(revokes);
   });
+
+  return revokes;
 };
