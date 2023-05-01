@@ -1,6 +1,14 @@
 import { nextTick, clearTick } from "../../../stanz/src/public.mjs";
-import { getNextNode } from "../public.mjs";
 import { eleX } from "../util.mjs";
+
+const getNextNode = (ele) => {
+  let nextEle = ele;
+  do {
+    nextEle = nextEle.nextSibling;
+  } while (nextEle instanceof Text);
+
+  return nextEle;
+};
 
 function eleIf({ ele, val }) {
   if (val) {
@@ -29,7 +37,7 @@ function eleIf({ ele, val }) {
 function conditionJudge(ele, type) {
   ele.__conditionType = type;
 
-  // Determine if the previous one is an 'if' or 'ifelse'
+  // Determine if the previous one is an 'if' or 'elseIf'
   let prevNode = ele;
   do {
     prevNode = prevNode.previousSibling;

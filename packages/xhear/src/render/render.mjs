@@ -28,10 +28,6 @@ export function render({ data, target, template, temps, ...otherOpts }) {
 
   const tasks = [];
 
-  if (!data._onrevokes) {
-    data._onrevokes = [() => (tasks.length = 0)];
-  }
-
   Array.from(texts).forEach((el) => {
     const textEl = document.createTextNode("");
     const { parentNode } = el;

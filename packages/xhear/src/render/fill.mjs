@@ -24,7 +24,8 @@ export default {
 
       const { children } = _ele;
 
-      const oldArray = Array.from(children).map((e) => e.__render_data.$data);
+      const backupChilds = Array.from(children);
+      const oldArray = backupChilds.map((e) => e.__render_data.$data);
       const newArray = Array.from(target);
 
       if (isArrayEqual(oldArray, newArray)) {
@@ -60,13 +61,17 @@ export default {
           const { ele } = createItem(current, targetTemp, temps, $host);
           _ele.insertBefore(ele, cursorEl);
         }
+      }
+
+      backupChilds.forEach((current, i) => {
+        const data = oldArray[i];
 
         // need to be deleted
-        if (!newArray.includes(cursorData)) {
-          revokeEl(cursorEl);
-          cursorEl.remove();
+        if (!newArray.includes(data)) {
+          revokeEl(current);
+          current.remove();
         }
-      }
+      });
     });
 
     replaceIt({ data, key, _ele, targetTemp, temps, $host });
