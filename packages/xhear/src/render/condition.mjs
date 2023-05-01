@@ -37,7 +37,7 @@ function eleIf({ ele, val }) {
 function conditionJudge(ele, type) {
   ele.__conditionType = type;
 
-  // Determine if the previous one is an 'if' or 'ifelse'
+  // Determine if the previous one is an 'if' or 'elseIf'
   let prevNode = ele;
   do {
     prevNode = prevNode.previousSibling;
