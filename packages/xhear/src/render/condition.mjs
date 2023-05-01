@@ -1,6 +1,14 @@
 import { nextTick, clearTick } from "../../../stanz/src/public.mjs";
-import { getNextNode } from "../public.mjs";
 import { eleX } from "../util.mjs";
+
+const getNextNode = (ele) => {
+  let nextEle = ele;
+  do {
+    nextEle = nextEle.nextSibling;
+  } while (nextEle instanceof Text);
+
+  return nextEle;
+};
 
 function eleIf({ ele, val }) {
   if (val) {

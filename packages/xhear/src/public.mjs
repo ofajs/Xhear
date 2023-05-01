@@ -11,15 +11,6 @@ export function capitalizeFirstLetter(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export const getNextNode = (ele) => {
-  let nextEle = ele;
-  do {
-    nextEle = nextEle.nextSibling;
-  } while (nextEle instanceof Text);
-
-  return nextEle;
-};
-
 export const isArrayEqual = (arr1, arr2) => {
   if (arr1.length !== arr2.length) {
     return false;
