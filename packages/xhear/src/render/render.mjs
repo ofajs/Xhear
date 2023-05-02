@@ -181,20 +181,28 @@ const defaultData = {
 
     return convertToFunc(expr, data);
   },
-  prop(name, value, options) {
+  prop(...args) {
+    let [name, value, options] = args;
+
+    if (args.length === 1) {
+      return this[name];
+    }
+
     value = this._convertExpr(options, value);
     value = getVal(value);
     name = hyphenToUpperCase(name);
 
     this[name] = value;
   },
-  attr(name, value, options) {
-    value = this._convertExpr(options, value);
-    value = getVal(value);
+  attr(...args) {
+    let [name, value, options] = args;
 
-    if (value === undefined) {
+    if (args.length === 1) {
       return this.ele.getAttribute(name);
     }
+
+    value = this._convertExpr(options, value);
+    value = getVal(value);
 
     this.ele.setAttribute(name, value);
   },
