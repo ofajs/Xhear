@@ -8,16 +8,22 @@
   <button on:click="testFun" data-testid="num_pp">Click Me add 10</button>
   <br />
   <br />
+  <input type="number" sync:value="num" />
   <br />
   <span>{{num % 4}}</span>
   <div id="condition-container">
-    <div :if="num % 4 > 2">I am IF div</div>
+    <!-- <div :if="num % 4 > 2">I am IF div</div>
     <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
     <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
-    <div :else>I am ELSE div</div>
+    <div :else>I am ELSE div</div> -->
+    <x-if :value="num % 4 > 2"> I am IF div {{num}} </x-if>
+    <!-- <x-else> asd </x-else> -->
   </div>
   <br />
   <br />
+  <br />
+  <br />
+  <x-fill></x-fill>
   <div
     id="fill-container"
     fill:test-item="arr"
@@ -32,6 +38,9 @@
   >
     <div class="sub-val">{{$data.val}}</div>
     <div>$host === <span class="host_num">{{$host.num}}</span></div>
+
+    <!-- <div :if="$host.num % 2"> -->
     <div fill:test-item="$data.childs"></div>
+    <!-- </div> -->
   </div>
 </template>

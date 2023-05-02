@@ -87,7 +87,7 @@ export const register = (opts = {}) => {
         $ele.watchTick((e) => {
           for (let [name, func] of wen) {
             if (e.hasModified(name)) {
-              func($ele[name]);
+              func.call($ele, $ele[name]);
             }
           }
         });

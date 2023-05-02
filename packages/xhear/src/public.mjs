@@ -35,3 +35,15 @@ export const meetsEle = (ele, expr) => {
   temp.content.append(ele.cloneNode());
   return !!temp.content.querySelector(expr);
 };
+
+export function isEmptyObject(obj) {
+  if (!obj) {
+    return false;
+  }
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
+}

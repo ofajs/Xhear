@@ -11,6 +11,7 @@ import formFn, { initFormEle } from "./form.mjs";
 import { getType, extend } from "../../stanz/src/public.mjs";
 import Stanz, { constructor } from "../../stanz/src/main.mjs";
 import watchFn from "../../stanz/src/watch.mjs";
+import "./render/condition-comp.mjs";
 const { defineProperties } = Object;
 
 const init = ({ _this, ele, proxySelf }) => {

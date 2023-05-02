@@ -8,16 +8,21 @@ export default {
 
     this[propName] = data[targetName];
 
-    this.watch((e) => {
+    const wid1 = this.watch((e) => {
       if (e.hasModified(propName)) {
         data[targetName] = this[propName];
       }
     });
 
-    data.watch((e) => {
+    const wid2 = data.watch((e) => {
       if (e.hasModified(targetName)) {
         this[propName] = data[targetName];
       }
     });
+
+    return () => {
+      this.unwatch(wid1);
+      data.unwatch(wid2);
+    };
   },
 };

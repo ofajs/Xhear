@@ -1,7 +1,18 @@
-import { isFunction, hyphenToUpperCase, meetsEle } from "../public.mjs";
+import {
+  isFunction,
+  hyphenToUpperCase,
+  meetsEle,
+  isEmptyObject,
+} from "../public.mjs";
 import { eleX } from "../util.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
+const remove = (arr, target) => {
+  const index = arr.indexOf(target);
+  if (index > -1) {
+    arr.splice(index, 1);
+  }
+};
 
 const convertToFunc = (expr, data) => {
   const funcStr = `
@@ -34,6 +45,7 @@ export function render({
   const texts = target.querySelectorAll("xtext");
 
   const tasks = [];
+  const revokes = target.__revokes || (target.__revokes = []);
 
   Array.from(texts).forEach((el) => {
     const textEl = document.createTextNode("");
@@ -42,9 +54,18 @@ export function render({
     parentNode.removeChild(el);
 
     const func = convertToFunc(el.getAttribute("expr"), data);
-    tasks.push(() => {
+    const renderFunc = () => {
       textEl.textContent = func();
-    });
+    };
+    tasks.push(renderFunc);
+
+    const textRevoke = () => {
+      remove(revokes, textRevoke);
+      remove(tasks, renderFunc);
+      delete textEl.__revoke;
+    };
+    revokes.push(textRevoke);
+    textEl.__revoke = textRevoke;
   });
 
   const eles = searchEle(target, `[x-bind-data]`);
@@ -63,20 +84,40 @@ export function render({
         try {
           const { always } = $el[actionName];
 
-          const func = () => {
+          const func = () =>
             $el[actionName](...args, {
               isExpr: true,
               data,
               temps,
               ...otherOpts,
             });
-          };
+
+          let actionRevoke;
 
           if (always) {
             // Run every data update
             tasks.push(func);
+
+            actionRevoke = () => {
+              remove(revokes, actionRevoke);
+              remove(tasks, func);
+              delete el.__revoke;
+            };
           } else {
-            func();
+            const revokeFunc = func();
+
+            if (isFunction(revokeFunc)) {
+              actionRevoke = () => {
+                remove(revokes, actionRevoke);
+                revokeFunc();
+                delete el.__revoke;
+              };
+            } else {
+              console.warn(`${actionName} render method need return revoke`);
+            }
+
+            revokes.push(actionRevoke);
+            el.__revoke = actionRevoke;
           }
         } catch (error) {
           const err = new Error(
@@ -91,22 +132,40 @@ export function render({
     el.removeAttribute("x-bind-data");
   });
 
+  if (!target.__render_temps && !isEmptyObject(temps)) {
+    target.__render_temps = temps;
+  }
+
   if (tasks.length) {
-    if (target.__render_data) {
-      console.warn(
-        `An old listener already exists and the rendering of this element may be wrong`,
-        { element: target, old: target.__render_data, new: data }
+    if (target.__render_data && target.__render_data !== data) {
+      const error = new Error(
+        `An old listener already exists and the rendering of this element may be wrong`
       );
+
+      Object.assign(error, {
+        element: target,
+        old: target.__render_data,
+        new: data,
+      });
+
+      throw error;
     }
 
     target.__render_data = data;
 
     tasks.forEach((func) => func());
 
-    data.watchTick((e) => {
-      tasks.forEach((func) => func());
+    const wid = data.watchTick((e) => {
+      if (tasks.length) {
+        tasks.forEach((func) => func());
+      } else {
+        // debugger;
+        data.unwatch(wid);
+      }
     });
   }
+
+  console.log("revokes => ", revokes);
 }
 
 export function convert(el) {
