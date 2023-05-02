@@ -92,6 +92,7 @@ const createItem = (d, targetTemp, temps, $host) => {
     data: itemData,
     temps,
     $host,
+    isRenderSelf: true,
   });
 
   ele.setAttribute("x-fill-item", 1);

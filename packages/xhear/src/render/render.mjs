@@ -1,4 +1,4 @@
-import { isFunction, hyphenToUpperCase } from "../public.mjs";
+import { isFunction, hyphenToUpperCase, meetsEle } from "../public.mjs";
 import { eleX } from "../util.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
@@ -17,7 +17,14 @@ try{
   return new Function("...$args", funcStr).bind(data);
 };
 
-export function render({ data, target, template, temps, ...otherOpts }) {
+export function render({
+  data,
+  target,
+  template,
+  temps,
+  isRenderSelf,
+  ...otherOpts
+}) {
   const content = template && template.innerHTML;
 
   if (content) {
@@ -41,6 +48,10 @@ export function render({ data, target, template, temps, ...otherOpts }) {
   });
 
   const eles = searchEle(target, `[x-bind-data]`);
+
+  if (isRenderSelf && meetsEle(target, `[x-bind-data]`)) {
+    eles.unshift(target);
+  }
 
   eles.forEach((el) => {
     const bindData = JSON.parse(el.getAttribute("x-bind-data"));
