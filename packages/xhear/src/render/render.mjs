@@ -13,6 +13,8 @@ const remove = (arr, target) => {
     arr.splice(index, 1);
   }
 };
+const getRevokes = (target) => target.__revokes || (target.__revokes = []);
+const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
 const convertToFunc = (expr, data) => {
   const funcStr = `
@@ -45,7 +47,7 @@ export function render({
   const texts = target.querySelectorAll("xtext");
 
   const tasks = [];
-  const revokes = target.__revokes || (target.__revokes = []);
+  const revokes = getRevokes(target);
 
   Array.from(texts).forEach((el) => {
     const textEl = document.createTextNode("");
@@ -62,10 +64,12 @@ export function render({
     const textRevoke = () => {
       remove(revokes, textRevoke);
       remove(tasks, renderFunc);
-      delete textEl.__revoke;
+      remove(getRevokes(textEl), textRevoke);
+      // delete textEl.__revoke;
     };
     revokes.push(textRevoke);
-    textEl.__revoke = textRevoke;
+    addRevoke(textEl, textRevoke);
+    // textEl.__revoke = textRevoke;
   });
 
   const eles = searchEle(target, `[x-bind-data]`);
@@ -101,7 +105,8 @@ export function render({
             actionRevoke = () => {
               remove(revokes, actionRevoke);
               remove(tasks, func);
-              delete el.__revoke;
+              remove(getRevokes(el), actionRevoke);
+              // delete el.__revoke;
             };
           } else {
             const revokeFunc = func();
@@ -109,15 +114,17 @@ export function render({
             if (isFunction(revokeFunc)) {
               actionRevoke = () => {
                 remove(revokes, actionRevoke);
+                remove(getRevokes(el), actionRevoke);
                 revokeFunc();
-                delete el.__revoke;
+                // delete el.__revoke;
               };
             } else {
               console.warn(`${actionName} render method need return revoke`);
             }
 
             revokes.push(actionRevoke);
-            el.__revoke = actionRevoke;
+            addRevoke(el, actionRevoke);
+            // el.__revoke = actionRevoke;
           }
         } catch (error) {
           const err = new Error(

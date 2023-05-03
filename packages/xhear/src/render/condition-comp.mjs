@@ -22,8 +22,9 @@ const proto = {
 };
 
 const revokeAll = (target) => {
-  if (target.__revoke) {
-    target.__revoke();
+  if (target.__revokes) {
+    // target.__revoke();
+    Array.from(target.__revokes).forEach((f) => f && f());
   }
   target.childNodes &&
     Array.from(target.childNodes).forEach((el) => {
