@@ -3,7 +3,7 @@ import { getType } from "../../stanz/src/public.mjs";
 
 export const eleX = (ele) => {
   if (!ele) return null;
-  
+
   if (ele.__xhear__) {
     return ele.__xhear__;
   }
@@ -27,15 +27,25 @@ export const objToXEle = (obj) => {
   return $ele;
 };
 
-const temp = document.createElement("div");
+const temp = document.createElement("template");
 
 export const strToXEle = (str) => {
   temp.innerHTML = str;
-  const ele = temp.children[0] || temp.childNodes[0];
+  const ele = temp.content.children[0] || temp.content.childNodes[0];
   temp.innerHTML = "";
 
   return eleX(ele);
 };
+
+// const temp = document.createElement("div");
+
+// export const strToXEle = (str) => {
+//   temp.innerHTML = str;
+//   const ele = temp.children[0] || temp.childNodes[0];
+//   temp.innerHTML = "";
+
+//   return eleX(ele);
+// };
 
 export const createXEle = (expr, exprType) => {
   if (expr instanceof Xhear) {

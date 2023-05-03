@@ -17,12 +17,17 @@
     <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
     <div :else>I am ELSE div</div> -->
     <x-if :value="num % 4 > 2">
-      I am IF div {{num}}
-      <div>
-        <x-if :value="num % 4 > 1"> inner if {{num}} </x-if>
-      </div>
+      <div>I am IF div {{num}}</div>
     </x-if>
-    <!-- <x-else> asd </x-else> -->
+    <x-else-if :value="num % 4 > 1">
+      <div>I am IF ELSE ONE div {{num}}</div>
+    </x-else-if>
+    <x-else-if :value="num % 4 > 0">
+      <div>I am IF ELSE TWO div {{num}}</div>
+    </x-else-if>
+    <x-else>
+      <div>I am ELSE div {{num}}</div>
+    </x-else>
   </div>
   <br />
   <br />

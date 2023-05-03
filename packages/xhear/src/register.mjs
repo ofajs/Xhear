@@ -82,17 +82,6 @@ export const register = (opts = {}) => {
         });
       }
 
-      if (defaults.watch) {
-        const wen = Object.entries(defaults.watch);
-        $ele.watchTick((e) => {
-          for (let [name, func] of wen) {
-            if (e.hasModified(name)) {
-              func.call($ele, $ele[name]);
-            }
-          }
-        });
-      }
-
       const data = {
         ...defaults.data,
         ...defaults.attrs,
@@ -117,6 +106,17 @@ export const register = (opts = {}) => {
       }
 
       defaults.ready && defaults.ready.call($ele);
+
+      if (defaults.watch) {
+        const wen = Object.entries(defaults.watch);
+        $ele.watchTick((e) => {
+          for (let [name, func] of wen) {
+            if (e.hasModified(name)) {
+              func.call($ele, $ele[name]);
+            }
+          }
+        });
+      }
     }
 
     connectedCallback() {
