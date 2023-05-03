@@ -16,7 +16,12 @@
     <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
     <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
     <div :else>I am ELSE div</div> -->
-    <x-if :value="num % 4 > 2"> I am IF div {{num}} </x-if>
+    <x-if :value="num % 4 > 2">
+      I am IF div {{num}}
+      <div>
+        <x-if :value="num % 4 > 1"> inner if {{num}} </x-if>
+      </div>
+    </x-if>
     <!-- <x-else> asd </x-else> -->
   </div>
   <br />

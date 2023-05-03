@@ -121,11 +121,11 @@ export function render({
             } else {
               console.warn(`${actionName} render method need return revoke`);
             }
-
-            revokes.push(actionRevoke);
-            addRevoke(el, actionRevoke);
             // el.__revoke = actionRevoke;
           }
+
+          revokes.push(actionRevoke);
+          addRevoke(el, actionRevoke);
         } catch (error) {
           const err = new Error(
             `Execution of the ${actionName} method reports an error :\n ${error.stack}`

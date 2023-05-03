@@ -1,19 +1,19 @@
+import { nextTick } from "../../../stanz/src/public.mjs";
 import { register } from "../register.mjs";
 import { render } from "./render.mjs";
 
 const proto = {
   _getRenderData() {
-    const { parents } = this;
-    const t = parents.find((e) => {
-      return !!e.ele.__render_data;
-    });
+    let target = this.__marked_end;
+    while (target && !target.__render_data) {
+      target = target.parentNode;
+    }
 
-    if (t) {
-      const { ele } = t;
+    if (target) {
       return {
-        target: ele,
-        data: ele.__render_data,
-        temps: ele.__render_temps,
+        target,
+        data: target.__render_data,
+        temps: target.__render_temps,
       };
     }
 
@@ -43,10 +43,7 @@ register({
       const e = this._getRenderData();
 
       if (!e) {
-        const error = new Error(
-          `x-if is only allowed within register or render component`
-        );
-        throw error;
+        return;
       }
 
       const { target, data, temps } = e;
@@ -93,7 +90,10 @@ register({
 
     let markedText = this.__originHTML;
     if (markedText.length > 20) {
-      markedText = `x-if: ${markedText.slice(0, 20)} ...`;
+      markedText = `x-if: ${markedText
+        .trim()
+        .slice(0, 20)
+        .replace(/\n/g, "")} ...`;
     }
 
     const markedStart = document.createComment(markedText + " --start");
@@ -103,6 +103,19 @@ register({
     ele.parentNode.insertBefore(markedEnd, ele);
     this.__marked_start = markedStart;
     this.__marked_end = markedEnd;
+
+    Object.defineProperties(this.ele, {
+      __revokes: {
+        set(val) {
+          markedStart.__revokes = val;
+        },
+        get() {
+          return markedStart.__revokes;
+        },
+      },
+    });
+
+    nextTick(() => ele.remove());
     // ele.remove();
   },
 });

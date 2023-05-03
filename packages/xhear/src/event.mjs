@@ -12,6 +12,10 @@ export default {
 
     this.ele.addEventListener(name, func);
 
+    if (options) {
+      return () => this.ele.removeEventListener(name, func);
+    }
+
     return this;
   },
   one(name, func, options) {
