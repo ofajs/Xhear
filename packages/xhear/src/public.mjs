@@ -15,7 +15,7 @@ export const isArrayEqual = (arr1, arr2) => {
   if (arr1.length !== arr2.length) {
     return false;
   }
-  for (let i = 0; i < arr1.length; i++) {
+  for (let i = 0, len = arr1.length; i < len; i++) {
     if (arr1[i] !== arr2[i]) {
       return false;
     }
@@ -34,4 +34,34 @@ export const meetsEle = (ele, expr) => {
   const temp = document.createElement("template");
   temp.content.append(ele.cloneNode());
   return !!temp.content.querySelector(expr);
+};
+
+export function isEmptyObject(obj) {
+  if (!obj) {
+    return false;
+  }
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function moveArrayValue(arr, oldValue, newIndex) {
+  const oldIndex = arr.indexOf(oldValue);
+
+  if (oldIndex === -1) {
+    throw new Error("Value not found in array");
+  }
+
+  arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
+  return arr;
+}
+
+export const removeArrayValue = (arr, target) => {
+  const index = arr.indexOf(target);
+  if (index > -1) {
+    arr.splice(index, 1);
+  }
 };

@@ -1,3 +1,4 @@
+import { nextTick } from "../../stanz/src/public.mjs";
 import {
   hyphenToUpperCase,
   capitalizeFirstLetter,
@@ -82,17 +83,6 @@ export const register = (opts = {}) => {
         });
       }
 
-      if (defaults.watch) {
-        const wen = Object.entries(defaults.watch);
-        $ele.watchTick((e) => {
-          for (let [name, func] of wen) {
-            if (e.hasModified(name)) {
-              func($ele[name]);
-            }
-          }
-        });
-      }
-
       const data = {
         ...defaults.data,
         ...defaults.attrs,
@@ -117,6 +107,24 @@ export const register = (opts = {}) => {
       }
 
       defaults.ready && defaults.ready.call($ele);
+
+      if (defaults.watch) {
+        const wen = Object.entries(defaults.watch);
+
+        $ele.watchTick((e) => {
+          for (let [name, func] of wen) {
+            if (e.hasModified(name)) {
+              func.call($ele, $ele[name], {
+                watchers: e,
+              });
+            }
+          }
+        });
+
+        for (let [name, func] of wen) {
+          func.call($ele, $ele[name], {});
+        }
+      }
     }
 
     connectedCallback() {

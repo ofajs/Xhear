@@ -1,7 +1,16 @@
-import { isFunction, hyphenToUpperCase } from "../public.mjs";
+import {
+  isFunction,
+  hyphenToUpperCase,
+  meetsEle,
+  isEmptyObject,
+  removeArrayValue as remove,
+} from "../public.mjs";
 import { eleX } from "../util.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
+
+const getRevokes = (target) => target.__revokes || (target.__revokes = []);
+const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
 const convertToFunc = (expr, data) => {
   const funcStr = `
@@ -17,7 +26,14 @@ try{
   return new Function("...$args", funcStr).bind(data);
 };
 
-export function render({ data, target, template, temps, ...otherOpts }) {
+export function render({
+  data,
+  target,
+  template,
+  temps,
+  isRenderSelf,
+  ...otherOpts
+}) {
   const content = template && template.innerHTML;
 
   if (content) {
@@ -27,6 +43,7 @@ export function render({ data, target, template, temps, ...otherOpts }) {
   const texts = target.querySelectorAll("xtext");
 
   const tasks = [];
+  const revokes = getRevokes(target);
 
   Array.from(texts).forEach((el) => {
     const textEl = document.createTextNode("");
@@ -35,12 +52,25 @@ export function render({ data, target, template, temps, ...otherOpts }) {
     parentNode.removeChild(el);
 
     const func = convertToFunc(el.getAttribute("expr"), data);
-    tasks.push(() => {
+    const renderFunc = () => {
       textEl.textContent = func();
-    });
+    };
+    tasks.push(renderFunc);
+
+    const textRevoke = () => {
+      remove(revokes, textRevoke);
+      remove(tasks, renderFunc);
+      remove(getRevokes(textEl), textRevoke);
+    };
+    revokes.push(textRevoke);
+    addRevoke(textEl, textRevoke);
   });
 
   const eles = searchEle(target, `[x-bind-data]`);
+
+  if (isRenderSelf && meetsEle(target, `[x-bind-data]`)) {
+    eles.unshift(target);
+  }
 
   eles.forEach((el) => {
     const bindData = JSON.parse(el.getAttribute("x-bind-data"));
@@ -52,21 +82,44 @@ export function render({ data, target, template, temps, ...otherOpts }) {
         try {
           const { always } = $el[actionName];
 
-          const func = () => {
+          const func = () =>
             $el[actionName](...args, {
               isExpr: true,
               data,
               temps,
               ...otherOpts,
             });
-          };
+
+          let actionRevoke;
 
           if (always) {
             // Run every data update
             tasks.push(func);
+
+            actionRevoke = () => {
+              remove(revokes, actionRevoke);
+              remove(tasks, func);
+              remove(getRevokes(el), actionRevoke);
+              // delete el.__revoke;
+            };
           } else {
-            func();
+            const revokeFunc = func();
+
+            if (isFunction(revokeFunc)) {
+              actionRevoke = () => {
+                remove(revokes, actionRevoke);
+                remove(getRevokes(el), actionRevoke);
+                revokeFunc();
+                // delete el.__revoke;
+              };
+            } else {
+              console.warn(`${actionName} render method need return revoke`);
+            }
+            // el.__revoke = actionRevoke;
           }
+
+          revokes.push(actionRevoke);
+          addRevoke(el, actionRevoke);
         } catch (error) {
           const err = new Error(
             `Execution of the ${actionName} method reports an error :\n ${error.stack}`
@@ -80,20 +133,35 @@ export function render({ data, target, template, temps, ...otherOpts }) {
     el.removeAttribute("x-bind-data");
   });
 
+  if (!target.__render_temps && !isEmptyObject(temps)) {
+    target.__render_temps = temps;
+  }
+
   if (tasks.length) {
-    if (target.__render_data) {
-      console.warn(
-        `An old listener already exists and the rendering of this element may be wrong`,
-        { element: target, old: target.__render_data, new: data }
+    if (target.__render_data && target.__render_data !== data) {
+      const error = new Error(
+        `An old listener already exists and the rendering of this element may be wrong`
       );
+
+      Object.assign(error, {
+        element: target,
+        old: target.__render_data,
+        new: data,
+      });
+
+      throw error;
     }
 
     target.__render_data = data;
 
     tasks.forEach((func) => func());
 
-    data.watchTick((e) => {
-      tasks.forEach((func) => func());
+    const wid = data.watchTick((e) => {
+      if (tasks.length) {
+        tasks.forEach((func) => func());
+      } else {
+        data.unwatch(wid);
+      }
     });
   }
 }
@@ -120,7 +188,15 @@ export function convert(el) {
     const tempName = el.getAttribute("name");
 
     if (tempName) {
+      if (el.content.children.length > 1) {
+        console.warn({
+          target: el,
+          content: el.innerHTML,
+          desc: `Only the first child element inside the template will be used`,
+        });
+      }
       temps[tempName] = el;
+      el.remove();
     }
 
     temps = { ...temps, ...convert(el.content) };
@@ -181,20 +257,28 @@ const defaultData = {
 
     return convertToFunc(expr, data);
   },
-  prop(name, value, options) {
+  prop(...args) {
+    let [name, value, options] = args;
+
+    if (args.length === 1) {
+      return this[name];
+    }
+
     value = this._convertExpr(options, value);
     value = getVal(value);
     name = hyphenToUpperCase(name);
 
     this[name] = value;
   },
-  attr(name, value, options) {
-    value = this._convertExpr(options, value);
-    value = getVal(value);
+  attr(...args) {
+    let [name, value, options] = args;
 
-    if (value === undefined) {
+    if (args.length === 1) {
       return this.ele.getAttribute(name);
     }
+
+    value = this._convertExpr(options, value);
+    value = getVal(value);
 
     this.ele.setAttribute(name, value);
   },

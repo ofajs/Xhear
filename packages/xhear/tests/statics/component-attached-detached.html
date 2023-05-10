@@ -43,8 +43,8 @@
       </div>
     </template>
     <template id="compTwo">
-      <div fill:one="arr"></div>
-      <div fill:two="arr"></div>
+      <x-fill name="one" :value="arr"> </x-fill>
+      <x-fill name="two" :value="arr"> </x-fill>
       <template name="one">
         <test-one>{{$data}}</test-one>
       </template>
@@ -65,7 +65,7 @@
     </template>
 
     <script type="module">
-      //   import $ from "../../src/base.mjs";
+      // import $ from "../../src/base.mjs";
 
       test("attached and detached", async () => {
         let attachedCount = 0;

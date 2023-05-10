@@ -132,4 +132,48 @@ test.describe("render", () => {
       })
     ).toBe("I am 2,I am 0");
   });
+
+  test("Memory recovery within fill", async ({ page }) => {
+    await new Promise((res) => setTimeout(res, 500));
+
+    await expect(
+      await getData(page, async () => {
+        return data.owner.size;
+      })
+    ).toBe("5");
+
+    await page.waitForFunction(async () => {
+      data.arr.push({
+        val: "I am new",
+      });
+    });
+
+    await expect(
+      await getData(page, async () => {
+        return data.owner.size;
+      })
+    ).toBe("6");
+
+    await page.waitForFunction(async () => {
+      // data.arr[1].childs = null;
+      data.arr[1].childs = [];
+    });
+
+    await expect(
+      await getData(page, async () => {
+        return data.owner.size;
+      })
+    ).toBe("4");
+
+    await page.waitForFunction(async () => {
+      // data.arr = null;
+      data.arr = [];
+    });
+
+    await expect(
+      await getData(page, async () => {
+        return data.owner.size;
+      })
+    ).toBe("0");
+  });
 });

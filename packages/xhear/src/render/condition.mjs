@@ -1,134 +1,176 @@
-import { nextTick, clearTick } from "../../../stanz/src/public.mjs";
-import { eleX } from "../util.mjs";
+import { nextTick } from "../../../stanz/src/public.mjs";
+import { register } from "../register.mjs";
+import { render } from "./render.mjs";
+import { revokeAll } from "../util.mjs";
 
-const getNextNode = (ele) => {
-  let nextEle = ele;
-  do {
-    nextEle = nextEle.nextSibling;
-  } while (nextEle instanceof Text);
+function getConditionEles(_this, isEnd = true) {
+  const $eles = [];
 
-  return nextEle;
-};
-
-function eleIf({ ele, val }) {
-  if (val) {
-    const mark = this.__beforeMark;
-    if (!mark) {
-      return;
+  let target = isEnd ? _this.__marked_end : _this.__marked_start;
+  while (true) {
+    target = isEnd ? target.nextSibling : target.previousSibling;
+    if (target instanceof Comment) {
+      if (target.__$ele) {
+        $eles.push(target.__$ele);
+        target = isEnd ? target.__end : target.__start;
+      }
+    } else if (!(target instanceof Text)) {
+      break;
     }
-    const { parentNode } = mark;
-    parentNode.insertBefore(ele, mark);
-    this.__beforeMark = null;
-    parentNode.removeChild(mark);
-  } else {
+  }
+
+  return $eles;
+}
+export const proto = {
+  _getRenderData() {
+    let target = this.__marked_end;
+    while (target && !target.__render_data) {
+      target = target.parentNode;
+    }
+
+    if (target) {
+      return {
+        target,
+        data: target.__render_data,
+        temps: target.__render_temps,
+      };
+    }
+
+    return null;
+  },
+  _renderMarked() {
+    const { ele } = this;
     const { parentNode } = ele;
-    if (!parentNode) {
+
+    const markedText = `${this.tag}: ${this.__originHTML
+      .trim()
+      .slice(0, 20)
+      .replace(/\n/g, "")} ...`;
+
+    const markedStart = document.createComment(markedText + " --start");
+    const markedEnd = document.createComment(markedText + " --end");
+    markedStart.__end = markedEnd;
+    markedEnd.__start = markedStart;
+    markedEnd.__$ele = markedStart.__$ele = this;
+    parentNode.insertBefore(markedStart, ele);
+    parentNode.insertBefore(markedEnd, ele);
+    this.__marked_start = markedStart;
+    this.__marked_end = markedEnd;
+
+    Object.defineProperties(ele, {
+      __revokes: {
+        set(val) {
+          markedStart.__revokes = val;
+        },
+        get() {
+          return markedStart.__revokes;
+        },
+      },
+    });
+  },
+  _renderContent() {
+    const e = this._getRenderData();
+
+    if (!e) {
       return;
     }
-    const { __conditionType } = ele;
-    const text = ele.textContent.trim().slice(0, 30);
-    const comment = (this.__beforeMark = document.createComment(text));
-    comment.__conditionType = __conditionType;
-    parentNode.insertBefore(comment, ele);
-    parentNode.removeChild(ele);
-  }
-}
 
-function conditionJudge(ele, type) {
-  ele.__conditionType = type;
+    const { target, data, temps } = e;
 
-  // Determine if the previous one is an 'if' or 'elseIf'
-  let prevNode = ele;
-  do {
-    prevNode = prevNode.previousSibling;
-  } while (prevNode instanceof Text);
+    const markedEnd = this.__marked_end;
 
-  const prevType = prevNode.__conditionType;
-  if (!(prevType === "if" || prevType === "elseIf")) {
-    const err = new Error(`The previous element must be if or ifElse`);
-    err.target = ele;
-    err.prevNode = prevNode;
-    throw err;
-  }
-}
+    const temp = document.createElement("template");
+    temp.innerHTML = this.__originHTML;
+    markedEnd.parentNode.insertBefore(temp.content, markedEnd);
 
-// The "If" condition performs a single judgment
-function refreshCondition(ele) {
-  clearTick(ele.__tickid);
-  ele.__tickid = nextTick(() => {
-    let allConditionEles = ele.__allConditionEles;
+    render({ target, data, temps });
+  },
+  _revokeRender() {
+    const markedStart = this.__marked_start;
+    const markedEnd = this.__marked_end;
 
-    if (!allConditionEles) {
-      allConditionEles = [];
-      let target = ele;
+    let target = markedEnd.previousSibling;
 
-      while (target && target.__conditionType) {
-        allConditionEles.push(target);
-        target = getNextNode(target);
+    while (true) {
+      if (!target || target === markedStart) {
+        break;
       }
 
-      ele.__allConditionEles = allConditionEles;
+      revokeAll(target);
+      const oldTarget = target;
+      target = target.previousSibling;
+      oldTarget.remove();
+    }
+  },
+  _refreshCondition() {
+    const $eles = [this];
+
+    if (this._refreshing) {
+      return;
     }
 
-    let isOK = 0;
-    allConditionEles.forEach((el) => {
-      const $el = eleX(el);
+    switch (this.tag) {
+      case "x-if":
+        $eles.push(...getConditionEles(this));
+        break;
+      case "x-else-if":
+        $eles.unshift(...getConditionEles(this, false));
+        $eles.push(...getConditionEles(this));
+        break;
+    }
 
-      const { __conditionType, __condition } = el;
+    $eles.forEach((e) => (e._refreshing = true));
+    nextTick(() => {
+      let isOK = false;
+      $eles.forEach(($ele) => {
+        delete $ele._refreshing;
 
-      if (isOK) {
-        eleIf.call($el, {
-          ele: el,
-          val: false,
-        });
-        return;
-      } else if (!isOK && __conditionType === "else") {
-        eleIf.call($el, {
-          ele: el,
-          val: true,
-        });
-        return;
-      }
+        if (isOK) {
+          $ele._revokeRender();
+          return;
+        }
 
-      if (__condition) {
-        isOK = 1;
-      }
+        if ($ele.value || $ele.tag === "x-else") {
+          $ele._renderContent();
+          isOK = true;
+          return;
+        }
 
-      eleIf.call($el, {
-        ele: el,
-        val: __condition,
+        $ele._revokeRender();
       });
     });
-  });
-}
-
-export default {
-  set if(val) {
-    const { ele } = this;
-
-    ele.__conditionType = "if";
-    ele.__condition = val;
-    refreshCondition(ele);
-  },
-
-  set elseIf(val) {
-    const { ele } = this;
-
-    ele.__condition = val;
-    if (ele.__conditionType) {
-      return;
-    }
-
-    conditionJudge(ele, "elseIf");
-  },
-
-  set else(v) {
-    const { ele } = this;
-
-    if (ele.__conditionType) {
-      return;
-    }
-
-    conditionJudge(ele, "else");
   },
 };
+
+const xifComponentOpts = {
+  tag: "x-if",
+  data: {
+    value: null,
+  },
+  watch: {
+    value() {
+      this._refreshCondition();
+    },
+  },
+  proto,
+  ready() {
+    this.__originHTML = this.html;
+    this.html = "";
+    this._renderMarked();
+
+    nextTick(() => this.ele.remove());
+  },
+};
+
+register(xifComponentOpts);
+
+register({
+  ...xifComponentOpts,
+  tag: "x-else-if",
+});
+
+register({
+  tag: "x-else",
+  proto,
+  ready: xifComponentOpts.ready,
+});

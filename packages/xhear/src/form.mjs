@@ -10,10 +10,19 @@ const setKeys = (keys, $ele) => {
 
   keys.forEach((k) => {
     if (k in ele) {
+      let isNum = false;
       defineProperty($ele, k, {
         enumerable: true,
-        get: () => ele[k],
-        set: (val) => (ele[k] = val),
+        get: () => {
+          if (isNum) {
+            return Number(ele[k]);
+          }
+          return ele[k];
+        },
+        set: (val) => {
+          isNum = typeof val === "number";
+          ele[k] = val;
+        },
       });
     }
   });
@@ -80,10 +89,6 @@ const initInput = ($ele) => {
   const type = $ele.attr("type");
 
   switch (type) {
-    case "text":
-      setKeys(["placeholder", "value"], $ele);
-      bindProp($ele, { name: "value", type: "input" });
-      break;
     case "file":
       setKeys(["multiple", "files"], $ele);
       bindProp($ele, { name: "files", type: "change" });
@@ -96,7 +101,10 @@ const initInput = ($ele) => {
       setKeys(["checked"], $ele);
       bindProp($ele, { name: "checked", type: "change" });
       break;
+    case "text":
     default:
+      setKeys(["placeholder", "value"], $ele);
+      bindProp($ele, { name: "value", type: "input" });
       break;
   }
 };

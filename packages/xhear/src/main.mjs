@@ -2,8 +2,6 @@ import { eleX } from "./util.mjs";
 import { meetsEle } from "./public.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render/render.mjs";
-import fillFn from "./render/fill.mjs";
-import conditionFn from "./render/condition.mjs";
 import syncFn from "./render/sync.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
@@ -11,6 +9,8 @@ import formFn, { initFormEle } from "./form.mjs";
 import { getType, extend } from "../../stanz/src/public.mjs";
 import Stanz, { constructor } from "../../stanz/src/main.mjs";
 import watchFn from "../../stanz/src/watch.mjs";
+import "./render/condition.mjs";
+import "./render/fill.mjs";
 const { defineProperties } = Object;
 
 const init = ({ _this, ele, proxySelf }) => {
@@ -249,8 +249,6 @@ export default class Xhear extends LikeArray {
 const sfn = Stanz.prototype;
 const fn = Xhear.prototype;
 
-fn.extend(conditionFn);
-
 fn.extend(
   {
     get: sfn.get,
@@ -259,7 +257,6 @@ fn.extend(
     ...watchFn,
     ...eventFn,
     ...renderFn,
-    ...fillFn,
     ...syncFn,
     ...formFn,
   },
