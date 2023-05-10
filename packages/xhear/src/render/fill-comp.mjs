@@ -110,7 +110,7 @@ register({
         const cursorEl = childs[i];
 
         if (!cursorEl) {
-          const { ele, itemData } = createItem(
+          const { ele } = createItem(
             current,
             targetTemp,
             temps,

@@ -2,7 +2,6 @@ import { eleX } from "./util.mjs";
 import { meetsEle } from "./public.mjs";
 import { handler } from "./accessor.mjs";
 import renderFn from "./render/render.mjs";
-import fillFn from "./render/fill.mjs";
 import syncFn from "./render/sync.mjs";
 import eventFn from "./event.mjs";
 import LikeArray from "./array.mjs";
@@ -258,7 +257,6 @@ fn.extend(
     ...watchFn,
     ...eventFn,
     ...renderFn,
-    ...fillFn,
     ...syncFn,
     ...formFn,
   },
