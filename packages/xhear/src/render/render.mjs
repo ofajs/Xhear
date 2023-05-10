@@ -3,16 +3,12 @@ import {
   hyphenToUpperCase,
   meetsEle,
   isEmptyObject,
+  removeArrayValue as remove,
 } from "../public.mjs";
 import { eleX } from "../util.mjs";
 
 const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
-const remove = (arr, target) => {
-  const index = arr.indexOf(target);
-  if (index > -1) {
-    arr.splice(index, 1);
-  }
-};
+
 const getRevokes = (target) => target.__revokes || (target.__revokes = []);
 const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
@@ -65,11 +61,9 @@ export function render({
       remove(revokes, textRevoke);
       remove(tasks, renderFunc);
       remove(getRevokes(textEl), textRevoke);
-      // delete textEl.__revoke;
     };
     revokes.push(textRevoke);
     addRevoke(textEl, textRevoke);
-    // textEl.__revoke = textRevoke;
   });
 
   const eles = searchEle(target, `[x-bind-data]`);
@@ -198,6 +192,7 @@ export function convert(el) {
 
     if (tempName) {
       temps[tempName] = el;
+      el.remove();
     }
 
     temps = { ...temps, ...convert(el.content) };

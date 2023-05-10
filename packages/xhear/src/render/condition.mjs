@@ -1,16 +1,7 @@
 import { nextTick } from "../../../stanz/src/public.mjs";
 import { register } from "../register.mjs";
 import { render } from "./render.mjs";
-
-const revokeAll = (target) => {
-  if (target.__revokes) {
-    Array.from(target.__revokes).forEach((f) => f && f());
-  }
-  target.childNodes &&
-    Array.from(target.childNodes).forEach((el) => {
-      revokeAll(el);
-    });
-};
+import { revokeAll } from "../util.mjs";
 
 function getConditionEles(_this, isEnd = true) {
   const $eles = [];
@@ -30,7 +21,7 @@ function getConditionEles(_this, isEnd = true) {
 
   return $eles;
 }
-const proto = {
+export const proto = {
   _getRenderData() {
     let target = this.__marked_end;
     while (target && !target.__render_data) {
@@ -45,32 +36,29 @@ const proto = {
       };
     }
 
-    return null;
+    // return null;
+    return {};
   },
   _renderMarked() {
-    this.__originHTML = this.html;
-    this.html = "";
+    const { ele } = this;
+    const { parentNode } = ele;
 
-    let markedText = this.__originHTML;
-    if (markedText.length > 20) {
-      markedText = `${this.tag}: ${markedText
-        .trim()
-        .slice(0, 20)
-        .replace(/\n/g, "")} ...`;
-    }
+    const markedText = `${this.tag}: ${this.__originHTML
+      .trim()
+      .slice(0, 20)
+      .replace(/\n/g, "")} ...`;
 
     const markedStart = document.createComment(markedText + " --start");
     const markedEnd = document.createComment(markedText + " --end");
     markedStart.__end = markedEnd;
     markedEnd.__start = markedStart;
     markedEnd.__$ele = markedStart.__$ele = this;
-    const { ele } = this;
-    ele.parentNode.insertBefore(markedStart, ele);
-    ele.parentNode.insertBefore(markedEnd, ele);
+    parentNode.insertBefore(markedStart, ele);
+    parentNode.insertBefore(markedEnd, ele);
     this.__marked_start = markedStart;
     this.__marked_end = markedEnd;
 
-    Object.defineProperties(this.ele, {
+    Object.defineProperties(ele, {
       __revokes: {
         set(val) {
           markedStart.__revokes = val;
@@ -155,52 +143,37 @@ const proto = {
   },
 };
 
-register({
+const xifComponentOpts = {
   tag: "x-if",
   data: {
-    value: "",
+    value: null,
   },
   watch: {
     value() {
       this._refreshCondition();
     },
-    // value(val) {
-    //   if (val) {
-    //     this._renderContent();
-    //   } else {
-    //     this._revokeRender();
-    //   }
-    // },
   },
   proto,
   ready() {
-    this._renderMarked();
-    nextTick(() => this.ele.remove());
+    this.__originHTML = this.html;
+    this.html = "";
+
+    nextTick(() => {
+      this._renderMarked();
+      this.ele.remove();
+    });
   },
-});
+};
+
+register(xifComponentOpts);
 
 register({
+  ...xifComponentOpts,
   tag: "x-else-if",
-  data: {
-    value: "",
-  },
-  watch: {
-    value() {
-      this._refreshCondition();
-    },
-  },
-  proto,
-  ready() {
-    this._renderMarked();
-    nextTick(() => this.ele.remove());
-  },
 });
 
 register({
   tag: "x-else",
   proto,
-  ready() {
-    this._renderMarked();
-    nextTick(() => this.ele.remove());
-  },
+  ready: xifComponentOpts.ready,
 });

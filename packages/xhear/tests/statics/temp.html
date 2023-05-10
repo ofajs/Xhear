@@ -12,10 +12,6 @@
   <br />
   <span>{{num % 4}}</span>
   <div id="condition-container">
-    <!-- <div :if="num % 4 > 2">I am IF div</div>
-    <div :else-if="num % 4 > 1">I am IF ELSE ONE div</div>
-    <div :else-if="num % 4 > 0">I am IF ELSE TWO div</div>
-    <div :else>I am ELSE div</div> -->
     <x-if :value="num % 4 > 2">
       <div>I am IF div</div>
     </x-if>
@@ -33,12 +29,14 @@
   <br />
   <br />
   <br />
-  <x-fill></x-fill>
-  <div
+  <div id="fill-container" style="padding: 16px; background-color: #eee">
+    <x-fill name="testItem" :value="arr"></x-fill>
+  </div>
+  <!-- <div
     id="fill-container"
     fill:test-item="arr"
     style="padding: 16px; background-color: #eee"
-  ></div>
+  ></div> -->
 </div>
 <template name="testItem">
   <div
@@ -49,8 +47,9 @@
     <div class="sub-val">{{$data.val}}</div>
     <div>$host === <span class="host_num">{{$host.num}}</span></div>
 
-    <!-- <div :if="$host.num % 2"> -->
-    <div fill:test-item="$data.childs"></div>
-    <!-- </div> -->
+    <div>
+      <x-fill name="testItem" :value="$data.childs"></x-fill>
+    </div>
+    <!-- <div fill:test-item="$data.childs"></div> -->
   </div>
 </template>

@@ -37,16 +37,6 @@ export const strToXEle = (str) => {
   return eleX(ele);
 };
 
-// const temp = document.createElement("div");
-
-// export const strToXEle = (str) => {
-//   temp.innerHTML = str;
-//   const ele = temp.children[0] || temp.childNodes[0];
-//   temp.innerHTML = "";
-
-//   return eleX(ele);
-// };
-
 export const createXEle = (expr, exprType) => {
   if (expr instanceof Xhear) {
     return expr;
@@ -64,4 +54,14 @@ export const createXEle = (expr, exprType) => {
     case "string":
       return strToXEle(expr);
   }
+};
+
+export const revokeAll = (target) => {
+  if (target.__revokes) {
+    Array.from(target.__revokes).forEach((f) => f && f());
+  }
+  target.childNodes &&
+    Array.from(target.childNodes).forEach((el) => {
+      revokeAll(el);
+    });
 };
