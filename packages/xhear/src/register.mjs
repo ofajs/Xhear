@@ -121,11 +121,9 @@ export const register = (opts = {}) => {
           }
         });
 
-        // nextTick(() => {
-        //   for (let [name, func] of wen) {
-        //     func.call($ele, $ele[name], {});
-        //   }
-        // });
+        for (let [name, func] of wen) {
+          func.call($ele, $ele[name], {});
+        }
       }
     }
 

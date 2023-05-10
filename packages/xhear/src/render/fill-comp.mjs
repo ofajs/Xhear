@@ -51,7 +51,7 @@ const proto = {
     if (!__marked_start) {
       return [];
     }
-    
+
     let target = __marked_start;
 
     while (true) {
@@ -91,6 +91,10 @@ register({
       const tempName = this._name;
 
       const { data, temps } = this._getRenderData();
+
+      if (!temps) {
+        return;
+      }
 
       const targetTemp = temps[hyphenToUpperCase(tempName)];
 
@@ -152,10 +156,9 @@ register({
   ready() {
     this.__originHTML = "origin";
     this._name = this.attr("name");
-    nextTick(() => {
-      this._renderMarked();
-      this.ele.remove();
-    });
+    this._renderMarked();
+
+    nextTick(() => this.ele.remove());
 
     console.log("this => ", this);
   },

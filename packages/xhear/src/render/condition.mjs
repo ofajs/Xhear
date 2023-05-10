@@ -36,8 +36,7 @@ export const proto = {
       };
     }
 
-    // return null;
-    return {};
+    return null;
   },
   _renderMarked() {
     const { ele } = this;
@@ -157,11 +156,9 @@ const xifComponentOpts = {
   ready() {
     this.__originHTML = this.html;
     this.html = "";
+    this._renderMarked();
 
-    nextTick(() => {
-      this._renderMarked();
-      this.ele.remove();
-    });
+    nextTick(() => this.ele.remove());
   },
 };
 
