@@ -160,13 +160,10 @@ export function render({
       if (tasks.length) {
         tasks.forEach((func) => func());
       } else {
-        // debugger;
         data.unwatch(wid);
       }
     });
   }
-
-  console.log("revokes => ", revokes);
 }
 
 export function convert(el) {
@@ -191,6 +188,13 @@ export function convert(el) {
     const tempName = el.getAttribute("name");
 
     if (tempName) {
+      if (el.content.children.length > 1) {
+        console.warn({
+          target: el,
+          content: el.innerHTML,
+          desc: `Only the first child element inside the template will be used`,
+        });
+      }
       temps[tempName] = el;
       el.remove();
     }

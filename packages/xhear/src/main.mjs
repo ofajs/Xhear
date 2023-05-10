@@ -10,7 +10,7 @@ import { getType, extend } from "../../stanz/src/public.mjs";
 import Stanz, { constructor } from "../../stanz/src/main.mjs";
 import watchFn from "../../stanz/src/watch.mjs";
 import "./render/condition.mjs";
-import "./render/fill-comp.mjs";
+import "./render/fill.mjs";
 const { defineProperties } = Object;
 
 const init = ({ _this, ele, proxySelf }) => {

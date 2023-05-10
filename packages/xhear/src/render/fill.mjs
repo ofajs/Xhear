@@ -1,82 +1,15 @@
-import Stanz from "../../../stanz/src/main.mjs";
-import { hyphenToUpperCase, isArrayEqual } from "../public.mjs";
-import { createXEle } from "../util.mjs";
+import { register } from "../register.mjs";
 import { render } from "./render.mjs";
-
-export default {
-  fill(tempName, key, options) {
-    const { data, temps } = options;
-    const $host = options.$host || data;
-
-    const targetTemp = temps[hyphenToUpperCase(tempName)];
-
-    const _ele = this.ele;
-
-    data.watchTick((e) => {
-      if (e.hasReplaced(key)) {
-        replaceIt({ data, key, _ele, targetTemp, temps, $host });
-        return;
-      } else if (!e.hasModified(key)) {
-        return;
-      }
-
-      const target = data.get(key);
-
-      const { children } = _ele;
-
-      const backupChilds = Array.from(children);
-      const oldArray = backupChilds.map((e) => e.__render_data.$data);
-      const newArray = Array.from(target);
-
-      if (isArrayEqual(oldArray, newArray)) {
-        return;
-      }
-
-      for (let i = 0, len = target.length; i < len; i++) {
-        const current = target[i];
-        const cursorEl = children[i];
-
-        if (!cursorEl) {
-          const { ele } = createItem(current, targetTemp, temps, $host);
-          _ele.appendChild(ele);
-          continue;
-        }
-
-        const cursorData = cursorEl.__render_data.$data;
-
-        if (current === cursorData) {
-          continue;
-        }
-
-        if (oldArray.includes(current)) {
-          // Data displacement occurs
-          const oldEl = Array.from(children).find(
-            (e) => e.__render_data.$data === current
-          );
-          oldEl.__inArray = 1;
-          _ele.insertBefore(oldEl, cursorEl);
-          delete oldEl.__inArray;
-        } else {
-          // New elements added
-          const { ele } = createItem(current, targetTemp, temps, $host);
-          _ele.insertBefore(ele, cursorEl);
-        }
-      }
-
-      backupChilds.forEach((current, i) => {
-        const data = oldArray[i];
-
-        // need to be deleted
-        if (!newArray.includes(data)) {
-          revokeEl(current);
-          current.remove();
-        }
-      });
-    });
-
-    replaceIt({ data, key, _ele, targetTemp, temps, $host });
-  },
-};
+import { proto as conditionProto } from "./condition.mjs";
+import { getType, nextTick } from "../../../stanz/src/public.mjs";
+import Stanz from "../../../stanz/src/main.mjs";
+import { createXEle, revokeAll } from "../util.mjs";
+import {
+  hyphenToUpperCase,
+  moveArrayValue,
+  isArrayEqual,
+  removeArrayValue,
+} from "../public.mjs";
 
 const createItem = (d, targetTemp, temps, $host) => {
   const itemData = new Stanz({
@@ -95,35 +28,150 @@ const createItem = (d, targetTemp, temps, $host) => {
     isRenderSelf: true,
   });
 
-  ele.setAttribute("x-fill-item", 1);
+  const revokes = ele.__revokes;
+
+  const revoke = () => {
+    removeArrayValue(revokes, revoke);
+    itemData.revoke();
+  };
+
+  revokes.push(revoke);
 
   return { ele, itemData };
 };
 
-const revokeEl = (el) => {
-  const { __render_data } = el;
+const proto = {
+  _getRenderData: conditionProto._getRenderData,
+  _renderMarked: conditionProto._renderMarked,
+  _getChilds() {
+    const childs = [];
 
-  if (__render_data) {
-    __render_data.revoke();
-  }
+    const { __marked_end, __marked_start } = this;
 
-  Array.from(el.querySelectorAll("[x-fill-item]")).forEach(revokeEl);
+    if (!__marked_start) {
+      return [];
+    }
+
+    let target = __marked_start;
+
+    while (true) {
+      target = target.nextSibling;
+
+      if (!target || target === __marked_end) {
+        break;
+      }
+      if (target instanceof Element) {
+        childs.push(target);
+      }
+    }
+
+    return childs;
+  },
 };
 
-const replaceIt = ({ data, key, _ele, targetTemp, temps, $host }) => {
-  const target = data.get(key);
+register({
+  tag: "x-fill",
+  data: {
+    value: null,
+  },
+  watch: {
+    value(val) {
+      const childs = this._getChilds();
 
-  // clear old data
-  Array.from(_ele.children).forEach(revokeEl);
+      if (!val) {
+        childs &&
+          childs.forEach((el) => {
+            revokeAll(el);
+            el.remove();
+          });
+        return;
+      }
 
-  _ele.innerHTML = "";
+      if (!(val instanceof Array)) {
+        console.warn(
+          `The value of x-fill component must be of type Array, and the type of the current value is ${getType(
+            val
+          )}`
+        );
 
-  if (!target) {
-    return;
-  }
+        childs &&
+          childs.forEach((el) => {
+            revokeAll(el);
+            el.remove();
+          });
+        return;
+      }
 
-  target.forEach((d) => {
-    const { ele } = createItem(d, targetTemp, temps, $host);
-    _ele.appendChild(ele);
-  });
-};
+      const newVal = Array.from(val);
+      const oldVal = childs.map((e) => e.__render_data.$data);
+
+      if (isArrayEqual(oldVal, newVal)) {
+        return;
+      }
+
+      const tempName = this._name;
+
+      const { data, temps } = this._getRenderData();
+
+      if (!temps) {
+        return;
+      }
+
+      const targetTemp = temps[hyphenToUpperCase(tempName)];
+
+      const markEnd = this.__marked_end;
+      const parent = markEnd.parentNode;
+      const backupChilds = childs.slice();
+      const $host = data.$host || data;
+
+      for (let i = 0, len = val.length; i < len; i++) {
+        const current = val[i];
+        const cursorEl = childs[i];
+
+        if (!cursorEl) {
+          const { ele } = createItem(current, targetTemp, temps, $host);
+          parent.insertBefore(ele, markEnd);
+          continue;
+        }
+
+        const cursorData = cursorEl.__render_data.$data;
+
+        if (current === cursorData) {
+          continue;
+        }
+
+        if (oldVal.includes(current)) {
+          // Data displacement occurs
+          const oldEl = childs.find((e) => e.__render_data.$data === current);
+          oldEl.__inArray = 1;
+          parent.insertBefore(oldEl, cursorEl);
+          delete oldEl.__inArray;
+          moveArrayValue(childs, oldEl, i);
+        } else {
+          // New elements added
+          const { ele } = createItem(current, targetTemp, temps, $host);
+          parent.insertBefore(ele, cursorEl);
+          childs.splice(i, 0, ele);
+        }
+      }
+
+      backupChilds.forEach((current, i) => {
+        const data = oldVal[i];
+
+        // need to be deleted
+        if (!newVal.includes(data)) {
+          revokeAll(current);
+          current.remove();
+        }
+      });
+    },
+  },
+  proto,
+  ready() {
+    this.__originHTML = "origin";
+    this._name = this.attr("name");
+    this._renderMarked();
+
+    nextTick(() => this.ele.remove());
+  },
+});
