@@ -20,24 +20,22 @@
       const getKey = () => "a_" + Math.random().toString(16).slice(2);
 
       function require() {
-        const r = {
-          default: (obj) => {
-            const key = getKey();
+        const r = (obj) => {
+          const key = getKey();
 
-            const ele = document.createElement("div");
-            ele.innerHTML = key;
-            ele.style.display = "none";
-            document.body.appendChild(ele);
+          const ele = document.createElement("div");
+          ele.innerHTML = key;
+          ele.style.display = "none";
+          document.body.appendChild(ele);
 
-            const t1 = $(ele);
+          const t1 = $(ele);
 
-            t1[key] = obj;
+          t1[key] = obj;
 
-            return t1[key];
-          },
+          return t1[key];
         };
 
-        Object.assign(r.default, $.stanz);
+        Object.assign(r, $.stanz);
 
         return r;
       }

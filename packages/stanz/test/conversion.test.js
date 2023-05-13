@@ -1,4 +1,4 @@
-const { default: stanz } = require("../dist/stanz");
+const stanz = require("../dist/stanz");
 
 describe("Tests related to conversion data", () => {
   test("toJson test array", () => {

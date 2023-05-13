@@ -1,4 +1,4 @@
-const { default: stanz } = require("../dist/stanz");
+const stanz = require("../dist/stanz");
 
 describe("stanz test of access rights", () => {
   test("accessor test: set and get", () => {

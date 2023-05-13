@@ -1,4 +1,4 @@
-const { default: stanz } = require("../dist/stanz");
+const stanz = require("../dist/stanz");
 
 describe("Test the methods owned by the Stanz instance", () => {
   test("revoke test", () => {

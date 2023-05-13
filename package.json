@@ -1,13 +1,15 @@
 {
   "name": "xhear",
-  "version": "7.2.0",
+  "version": "7.2.1",
   "description": "a web components solution",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
+    "build": "npm run rollup && npm run terser && node scripts/addComments.js",
+    "terser": "terser dist/xhear.dev.js -c -m -o dist/xhear.js",
+    "rollup": "rollup packages/xhear/src/dist.mjs --file dist/xhear.dev.js --format iife",
     "dev": "node scripts/dev.js",
-    "build": "parcel build packages/xhear/src/dist.mjs -d dist --out-file xhear.js --no-source-maps --global global",
     "static-server": "node scripts/static-server",
-    "playwright": "npm run build && npx playwright test",
+    "playwright": "npx playwright test",
     "test": "node scripts/ci-test"
   },
   "author": {
@@ -21,12 +23,12 @@
     "jasmine-core": "^4.6.0",
     "koa": "^2.14.1",
     "koa-static": "^5.0.0",
-    "parcel-bundler": "^1.12.5",
-    "parcel-plugin-wrapper": "^0.2.3",
+    "rollup": "^3.21.6",
+    "terser": "^5.17.3",
     "shelljs": "^0.8.5",
     "sync-directory": "^6.0.4"
   },
-  "main": "dist/base.mjs",
+  "main": "dist/xhear.mjs",
   "directories": {
     "test": "test"
   },

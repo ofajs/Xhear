@@ -1,4 +1,4 @@
-const { default: stanz } = require("../dist/stanz");
+const stanz = require("../dist/stanz");
 
 describe("Test if the watch method of the instance is correct", () => {
   test("watch modified values", () => {
