@@ -20,28 +20,14 @@
       const getKey = () => "a_" + Math.random().toString(16).slice(2);
 
       function require() {
-        return {
-          default: $.stanz,
-        };
+        return $.stanz;
       }
 
       const test = it;
     </script>
-    <script
-      src="../../../stanz/test/accessor.test.js"
-      type="module"
-    ></script>
-    <script
-      src="../../../stanz/test/methods.test.js"
-      type="module"
-    ></script>
-    <script
-      src="../../../stanz/test/conversion.test.js"
-      type="module"
-    ></script>
-    <script
-      src="../../../stanz/test/watch.test.js"
-      type="module"
-    ></script>
+    <script src="../../../stanz/test/accessor.test.js" type="module"></script>
+    <script src="../../../stanz/test/methods.test.js" type="module"></script>
+    <script src="../../../stanz/test/conversion.test.js" type="module"></script>
+    <script src="../../../stanz/test/watch.test.js" type="module"></script>
   </body>
 </html>

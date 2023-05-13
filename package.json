@@ -9,7 +9,7 @@
     "rollup": "rollup packages/xhear/src/dist.mjs --file dist/xhear.dev.js --format iife",
     "dev": "node scripts/dev.js",
     "static-server": "node scripts/static-server",
-    "playwright": "npm run build && npx playwright test",
+    "playwright": "npx playwright test",
     "test": "node scripts/ci-test"
   },
   "author": {
