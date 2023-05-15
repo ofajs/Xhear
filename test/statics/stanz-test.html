@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>$.stanz test</title>
+    <link
+      rel="stylesheet"
+      href="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.css"
+    />
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine-html.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot0.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot1.js"></script>
+    <script src="../../dist/xhear.js"></script>
+  </head>
+  <body>
+    <script>
+      const getKey = () => "a_" + Math.random().toString(16).slice(2);
+
+      function require() {
+        return $.stanz;
+      }
+
+      const test = it;
+    </script>
+    <script src="../../node_modules/stanz/test/accessor.test.js" type="module"></script>
+    <script src="../../node_modules/stanz/test/methods.test.js" type="module"></script>
+    <script src="../../node_modules/stanz/test/conversion.test.js" type="module"></script>
+    <script src="../../node_modules/stanz/test/watch.test.js" type="module"></script>
+  </body>
+</html>
