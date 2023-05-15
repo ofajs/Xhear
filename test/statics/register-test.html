@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>register test</title>
+    <script src="../../dist/xhear.js"></script>
+    <style>
+      body > span {
+        color: red;
+      }
+      #target {
+        display: contents;
+      }
+    </style>
+  </head>
+  <body>
+    <test-ele></test-ele>
+    
+    <script type="module">
+      // import $ from "../../src/base.mjs";
+      // window.$ = $;
+
+      // $("test-ele").aaa = "aaa";
+
+      (async () => {
+        const temp = await fetch("./temp.html").then((e) => e.text());
+
+        $.register({
+          tag: "test-ele",
+          temp,
+          data: {
+            num: 100,
+            testAttr: "I am test attr",
+            obj: {
+              val: "I am obj",
+            },
+            arr: [
+              {
+                val: "I am 0",
+              },
+              {
+                val: "I am 1",
+                childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+              },
+              {
+                val: "I am 2",
+              },
+            ],
+          },
+          proto: {
+            testFun(e) {
+              this.num = this.num + 10;
+            },
+          },
+        });
+      })();
+    </script>
+  </body>
+</html>

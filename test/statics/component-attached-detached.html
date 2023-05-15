@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>register component attached and test</title>
+    <link
+      rel="stylesheet"
+      href="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.css"
+    />
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine-html.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot0.js"></script>
+    <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot1.js"></script>
+    <script src="../../dist/xhear.js"></script>
+    <script>
+      const test = it;
+    </script>
+  </head>
+  <body>
+    <div style="display: none">
+      <div id="target1">
+        <test-one>22</test-one>
+        <test-one>33</test-one>
+        <test-one>11</test-one>
+      </div>
+      <br />
+      <div id="target2">
+        <div><test-one>22</test-one></div>
+        <div><test-one>33</test-one></div>
+        <div><test-one>11</test-one></div>
+      </div>
+      <br />
+      <test-two></test-two>
+    </div>
+    <test-three id="test-3"></test-three>
+
+    <template id="compOne">
+      <div>
+        <input type="text" placeholder="I am i1" sync:value="val" />
+        <slot></slot>
+      </div>
+    </template>
+    <template id="compTwo">
+      <x-fill name="one" :value="arr"> </x-fill>
+      <x-fill name="two" :value="arr"> </x-fill>
+      <template name="one">
+        <test-one>{{$data}}</test-one>
+      </template>
+      <template name="two">
+        <div>
+          <test-one>{{$data}}</test-one>
+        </div>
+      </template>
+    </template>
+
+    <template id="compThree">
+      <div>
+        <div>
+          <input type="text" placeholder="I am i1" sync:value="val" />
+          <slot></slot>
+        </div>
+      </div>
+    </template>
+
+    <script type="module">
+      // import $ from "../../src/base.mjs";
+
+      test("attached and detached", async () => {
+        let attachedCount = 0;
+        let detachedCount = 0;
+
+        $.register({
+          tag: "test-three",
+          temp: $("#compThree").html,
+          data: {
+            val: "I am val",
+          },
+          attached() {
+            attachedCount++;
+          },
+          detached() {
+            detachedCount++;
+          },
+        });
+
+        expect(attachedCount).toBe(1);
+        expect(detachedCount).toBe(0);
+
+        const ele = $("#test-3");
+        ele.remove();
+        expect(detachedCount).toBe(1);
+
+        $("div").push(ele);
+        expect(attachedCount).toBe(2);
+        expect(detachedCount).toBe(1);
+      });
+
+      test("Array changes cannot trigger attached and detached", async () => {
+        let i = 0;
+
+        $.register({
+          tag: "test-one",
+          temp: $("#compOne").html,
+          data: {
+            val: "I am val",
+          },
+          attached() {
+            i++;
+            if (this.isAtt) {
+              throw "attached";
+            }
+            this._isAtt = 1;
+          },
+          detached() {
+            throw "detached";
+          },
+        });
+
+        $.register({
+          tag: "test-two",
+          temp: $("#compTwo").html,
+          data: {
+            arr: [555, 666, 444],
+          },
+        });
+
+        await new Promise((res) => setTimeout(res, 200));
+
+        $("#target1").reverse();
+        $("#target2").reverse();
+        $("test-two").arr.reverse();
+
+        $("#target1").sort((a, b) => {
+          return a.text - b.text;
+        });
+        $("#target2").sort((a, b) => {
+          return a.text - b.text;
+        });
+        $("test-two").arr.sort((a, b) => {
+          return a - b;
+        });
+
+        expect(i).toBe(12);
+      });
+    </script>
+  </body>
+</html>

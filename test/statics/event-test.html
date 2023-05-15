@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>event test</title>
+    <script src="../../dist/xhear.js"></script>
+    <!-- <script type="module">
+      import $ from "../../packages/main/base.mjs";
+
+      window.$ = $;
+    </script> -->
+  </head>
+  <body>
+    <div id="target" data-testid="target" style="background-color: #aaa">
+      parent -
+      <div id="target-sub" data-testid="target-sub">sub</div>
+    </div>
+    <div id="log">I am log</div>
+    <script type="module">
+      window.count = 0;
+
+      window.func = () => {
+        count++;
+        $("#log").text = "click" + count;
+      };
+
+      $("#target").on("custom-eve", (e) => {
+        $("#log").text = "custom event ok" + (e.data || "");
+      });
+    </script>
+  </body>
+</html>
