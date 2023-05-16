@@ -1,15 +1,12 @@
 {
   "name": "xhear",
-  "version": "7.2.3",
+  "version": "7.2.4",
   "description": "A very simple and easy to use web components library",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "build": "npm run rollup && npm run terser && node scripts/add-comments.js",
-    "rollup": "npm run rollup-umd && npm run rollup-esm",
+    "build": "node scripts/build",
     "terser": "npm run terser-umd && npm run terser-esm",
-    "rollup-umd": "rollup src/base.mjs --file dist/xhear.js --format umd --name '$'",
     "terser-umd": "terser dist/xhear.js -c -m -o dist/xhear.min.js",
-    "rollup-esm": "rollup src/base.mjs --file dist/xhear.mjs --format es",
     "terser-esm": "terser dist/xhear.mjs -c -m -o dist/xhear.min.mjs",
     "static-server": "node scripts/static-server",
     "playwright": "npx playwright test",
@@ -36,7 +33,7 @@
   "main": "dist/xhear.js",
   "exports": {
     "require": "./dist/xhear.js",
-    "import": "./dist/xhear.mjs"
+    "import": "./src/base.mjs"
   },
   "directories": {
     "test": "test"
