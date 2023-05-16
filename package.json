@@ -1,6 +1,6 @@
 {
   "name": "xhear",
-  "version": "7.2.4",
+  "version": "7.2.3",
   "description": "A very simple and easy to use web components library",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
