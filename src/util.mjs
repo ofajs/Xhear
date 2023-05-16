@@ -1,5 +1,5 @@
 import Xhear from "./main.mjs";
-import { getType } from "../node_modules/stanz/src/public.mjs";
+import { getType } from "stanz/src/public.mjs";
 
 export const eleX = (ele) => {
   if (!ele) return null;

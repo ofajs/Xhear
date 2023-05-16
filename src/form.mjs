@@ -1,5 +1,5 @@
-import stanz from "../node_modules/stanz/src/base.mjs";
-import { emitUpdate } from "../node_modules/stanz/src/watch.mjs";
+import stanz from "stanz/src/base.mjs";
+import { emitUpdate } from "stanz/src/watch.mjs";
 
 const { defineProperty, assign } = Object;
 

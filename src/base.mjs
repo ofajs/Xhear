@@ -1,8 +1,8 @@
 import { eleX, createXEle } from "./util.mjs";
 import { render, convert } from "./render/render.mjs";
 import Xhear from "./main.mjs";
-import stanz from "../node_modules/stanz/src/base.mjs";
-import { getType } from "../node_modules/stanz/src/public.mjs";
+import stanz from "stanz/src/base.mjs";
+import { getType } from "stanz/src/public.mjs";
 import { register } from "./register.mjs";
 
 export default function $(expr) {

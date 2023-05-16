@@ -1,4 +1,3 @@
-import { nextTick } from "../node_modules/stanz/src/public.mjs";
 import {
   hyphenToUpperCase,
   capitalizeFirstLetter,
