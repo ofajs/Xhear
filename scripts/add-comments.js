@@ -13,7 +13,7 @@ fs.readdirSync(dirPath).forEach(function (file) {
   const filePath = path.join(dirPath, file);
   const extName = path.extname(filePath);
 
-  if (extName === ".js") {
+  if (extName === ".js" || extName === ".mjs") {
     console.log(filePath);
     fs.writeFileSync(
       filePath,
