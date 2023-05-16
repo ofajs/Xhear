@@ -1,6 +1,6 @@
 import { isFunction } from "./public.mjs";
 import { createXEle, eleX } from "./util.mjs";
-import { emitUpdate } from "stanz/src/watch.mjs";
+import { emitUpdate } from "../node_modules/stanz/src/watch.mjs";
 
 const originSplice = (ele, start, count, ...items) => {
   const { children } = ele;

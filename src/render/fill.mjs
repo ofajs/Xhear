@@ -1,8 +1,8 @@
 import { register } from "../register.mjs";
 import { render } from "./render.mjs";
 import { proto as conditionProto } from "./condition.mjs";
-import { getType, nextTick } from "stanz/src/public.mjs";
-import Stanz from "stanz/src/main.mjs";
+import { getType, nextTick } from "../../node_modules/stanz/src/public.mjs";
+import Stanz from "../../node_modules/stanz/src/main.mjs";
 import { createXEle, revokeAll } from "../util.mjs";
 import {
   hyphenToUpperCase,
