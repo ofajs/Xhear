@@ -6,3 +6,4 @@ dist/xhear-dev.js.map
 /test-results/
 /playwright-report/
 /playwright/.cache/
+temp-src

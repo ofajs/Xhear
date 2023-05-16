@@ -4,8 +4,7 @@
   "description": "A very simple and easy to use web components library",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "build": "npm run rollup && npm run terser",
-    "rollup": "rollup --c",
+    "build": "node scripts/build",
     "terser": "npm run terser-umd && npm run terser-esm",
     "terser-umd": "terser dist/xhear.js -c -m -o dist/xhear.min.js",
     "terser-esm": "terser dist/xhear.mjs -c -m -o dist/xhear.min.mjs",
@@ -34,7 +33,7 @@
   "main": "dist/xhear.js",
   "exports": {
     "require": "./dist/xhear.js",
-    "import": "./dist/xhear.mjs"
+    "import": "./src/base.mjs"
   },
   "directories": {
     "test": "test"
