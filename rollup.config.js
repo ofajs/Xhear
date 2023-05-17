@@ -7,7 +7,7 @@ const banner = `//! ${PACKAGE.name} - v${PACKAGE.version} ${
 }  (c) ${PACKAGE.startyear}-${new Date().getFullYear()} ${PACKAGE.author.name}`;
 
 module.exports = {
-  input: "temp-src/base.mjs",
+  input: "packages/xhear/base.mjs",
   output: [
     {
       file: "dist/xhear.mjs",

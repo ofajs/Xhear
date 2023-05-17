@@ -1,5 +1,30 @@
-const fs = require("fs");
+const { copyDirectory, deleteDirectory } = require("./util");
 const path = require("path");
+const fs = require("fs");
+
+const packs = [
+  {
+    name: "stanz",
+    dirs: ["../stanz/src", "./node_modules/stanz/src"],
+  },
+];
+
+const cwd = process.cwd();
+
+packs.forEach(({ name, dirs }) => {
+  for (let dir of dirs) {
+    const directory = path.join(cwd, dir);
+    if (fs.existsSync(directory)) {
+      const targetDir = `packages/${name}`;
+      if (fs.existsSync(targetDir)) {
+        deleteDirectory(targetDir);
+      }
+
+      copyDirectory(directory, targetDir);
+      break;
+    }
+  }
+});
 
 function deleteDirectory(directory) {
   if (!fs.existsSync(directory)) {
@@ -49,11 +74,3 @@ function copyDirectory(source, destination, callback) {
     }
   }
 }
-function getRelativePath(from, to) {
-  const relativePath = path.relative(from, to);
-  return path.normalize(relativePath);
-}
-
-exports.deleteDirectory = deleteDirectory;
-exports.copyDirectory = copyDirectory;
-exports.getRelativePath = getRelativePath;
