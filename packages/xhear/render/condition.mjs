@@ -1,4 +1,4 @@
-import { nextTick } from "stanz/src/public.mjs";
+import { nextTick } from "../../stanz/public.mjs";
 import { register } from "../register.mjs";
 import { render } from "./render.mjs";
 import { revokeAll } from "../util.mjs";
