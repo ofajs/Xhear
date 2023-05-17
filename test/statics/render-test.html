@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>render test</title>
     <script src="../../dist/xhear.js"></script>
+    <!-- <script type="module">
+      import $ from "../../packages/xhear/base.mjs";
+      window.$ = $;
+    </script> -->
     <style>
       .sub-item {
         margin: 10px;
@@ -18,9 +22,6 @@
     <div id="target">render test</div>
     <template> </template>
     <script type="module">
-      // import $ from "../../src/base.mjs";
-      window.$ = $;
-
       (async () => {
         const tempContent = await fetch("./temp.html").then((e) => e.text());
 
