@@ -14,9 +14,7 @@ const getData = async (page, func) => {
 test.describe("register", () => {
   test.beforeEach(async ({ page }) => {
     // Go to the starting url before each test.
-    await page.goto(
-      "http://localhost:3398/test/statics/register-test.html"
-    );
+    await page.goto("http://localhost:3398/test/statics/register-test.html");
   });
 
   test("'{{text}}' and 'on'", async ({ page }) => {
@@ -91,9 +89,10 @@ test.describe("register", () => {
   });
 
   test("'fill'", async ({ page }) => {
-    await page.goto(
-      "http://localhost:3398/test/statics/register-test.html"
-    );
+    await page.goto("http://localhost:3398/test/statics/register-test.html");
+
+    await new Promise((res) => setTimeout(res, 500));
+
     await expect((await page.$$(".sub-item")).length).toBe(5);
 
     await expect(
@@ -163,9 +162,7 @@ test.describe("register", () => {
   });
 
   test("sync", async ({ page }) => {
-    await page.goto(
-      "http://localhost:3398/test/statics/sync-test.html"
-    );
+    await page.goto("http://localhost:3398/test/statics/sync-test.html");
 
     await expect(page.getByPlaceholder("I am i1")).toHaveValue("I am val");
     await expect(page.getByPlaceholder("I am i2")).toHaveValue("I am val");
