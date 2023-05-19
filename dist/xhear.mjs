@@ -1,4 +1,4 @@
-//! xhear - v7.2.5 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.6 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1560,7 +1560,13 @@ const register = (opts = {}) => {
         $ele.watchTick((e) => {
           attrKeys.forEach((key) => {
             if (e.hasModified(key)) {
-              this.setAttribute(toDashCase(key), $ele[key]);
+              const val = $ele[key];
+              const attrName = toDashCase(key);
+              if (val === null || val === undefined) {
+                this.removeAttribute(attrName);
+              } else {
+                this.setAttribute(attrName, val);
+              }
             }
           });
         });

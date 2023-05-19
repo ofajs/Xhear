@@ -1,4 +1,4 @@
-//! xhear - v7.2.5 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.6 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1566,7 +1566,13 @@ try{
           $ele.watchTick((e) => {
             attrKeys.forEach((key) => {
               if (e.hasModified(key)) {
-                this.setAttribute(toDashCase(key), $ele[key]);
+                const val = $ele[key];
+                const attrName = toDashCase(key);
+                if (val === null || val === undefined) {
+                  this.removeAttribute(attrName);
+                } else {
+                  this.setAttribute(attrName, val);
+                }
               }
             });
           });
