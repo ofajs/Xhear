@@ -1492,6 +1492,55 @@ var formFn = {
 
 const COMPS = {};
 
+const renderElement = ({ defaults, ele, template, temps }) => {
+  const data = {
+    ...defaults.data,
+    ...defaults.attrs,
+  };
+
+  const $ele = eleX(ele);
+
+  $ele.extend(defaults.proto, { enumerable: false });
+
+  for (let [key, value] of Object.entries(data)) {
+    if (!$ele.hasOwnProperty(key)) {
+      $ele[key] = value;
+    }
+  }
+
+  if (defaults.temp) {
+    const root = ele.attachShadow({ mode: "open" });
+
+    root.innerHTML = template.innerHTML;
+
+    render({
+      target: root,
+      data: $ele,
+      temps,
+    });
+  }
+
+  defaults.ready && defaults.ready.call($ele);
+
+  if (defaults.watch) {
+    const wen = Object.entries(defaults.watch);
+
+    $ele.watchTick((e) => {
+      for (let [name, func] of wen) {
+        if (e.hasModified(name)) {
+          func.call($ele, $ele[name], {
+            watchers: e,
+          });
+        }
+      }
+    });
+
+    for (let [name, func] of wen) {
+      func.call($ele, $ele[name], {});
+    }
+  }
+};
+
 const register = (opts = {}) => {
   const defaults = {
     // Registered component name
@@ -1542,7 +1591,6 @@ const register = (opts = {}) => {
 
     return attrKeys;
   };
-
   const XElement = (COMPS[name] = class extends HTMLElement {
     constructor(...args) {
       super(...args);
@@ -1550,8 +1598,6 @@ const register = (opts = {}) => {
       const $ele = eleX(this);
 
       defaults.created && defaults.created.call($ele);
-
-      $ele.extend(defaults.proto, { enumerable: false });
 
       if (defaults.attrs) {
         const attrKeys = getAttrKeys(defaults.attrs);
@@ -1572,48 +1618,12 @@ const register = (opts = {}) => {
         });
       }
 
-      const data = {
-        ...defaults.data,
-        ...defaults.attrs,
-      };
-
-      for (let [key, value] of Object.entries(data)) {
-        if (!$ele.hasOwnProperty(key)) {
-          $ele[key] = value;
-        }
-      }
-
-      if (defaults.temp) {
-        const root = this.attachShadow({ mode: "open" });
-
-        root.innerHTML = template.innerHTML;
-
-        render({
-          target: root,
-          data: $ele,
-          temps,
-        });
-      }
-
-      defaults.ready && defaults.ready.call($ele);
-
-      if (defaults.watch) {
-        const wen = Object.entries(defaults.watch);
-
-        $ele.watchTick((e) => {
-          for (let [name, func] of wen) {
-            if (e.hasModified(name)) {
-              func.call($ele, $ele[name], {
-                watchers: e,
-              });
-            }
-          }
-        });
-
-        for (let [name, func] of wen) {
-          func.call($ele, $ele[name], {});
-        }
-      }
+      renderElement({
+        defaults,
+        ele: this,
+        template,
+        temps,
+      });
     }
 
     connectedCallback() {
