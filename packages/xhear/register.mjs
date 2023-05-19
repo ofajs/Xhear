@@ -76,7 +76,13 @@ export const register = (opts = {}) => {
         $ele.watchTick((e) => {
           attrKeys.forEach((key) => {
             if (e.hasModified(key)) {
-              this.setAttribute(toDashCase(key), $ele[key]);
+              const val = $ele[key];
+              const attrName = toDashCase(key);
+              if (val === null || val === undefined) {
+                this.removeAttribute(attrName);
+              } else {
+                this.setAttribute(attrName, val);
+              }
             }
           });
         });
