@@ -1,4 +1,4 @@
-//! xhear - v7.2.5 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.6 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -599,6 +599,33 @@ class Stanz extends Array {
 
     return this[key];
   }
+  set(key, value) {
+    if (/\./.test(key)) {
+      const keys = key.split(".");
+      const lastKey = keys.pop();
+      let target = this;
+      for (let i = 0, len = keys.length; i < len; i++) {
+        try {
+          target = target[keys[i]];
+        } catch (error) {
+          const err = new Error(
+            `Failed to get data : ${keys.slice(0, i).join(".")} \n${
+              error.stack
+            }`
+          );
+          Object.assign(err, {
+            error,
+            target,
+          });
+          throw err;
+        }
+      }
+
+      return (target[lastKey] = value);
+    }
+
+    return (this[key] = value);
+  }
 }
 
 Stanz.prototype.extend(
@@ -1042,17 +1069,17 @@ var syncFn = {
 
     const { data } = options;
 
-    this[propName] = data[targetName];
+    this[propName] = data.get(targetName);
 
     const wid1 = this.watch((e) => {
       if (e.hasModified(propName)) {
-        data[targetName] = this[propName];
+        data.set(targetName, this.get(propName));
       }
     });
 
     const wid2 = data.watch((e) => {
       if (e.hasModified(targetName)) {
-        this[propName] = data[targetName];
+        this.set(propName, data.get(targetName));
       }
     });
 
@@ -1492,6 +1519,55 @@ var formFn = {
 
 const COMPS = {};
 
+const renderElement = ({ defaults, ele, template, temps }) => {
+  const data = {
+    ...defaults.data,
+    ...defaults.attrs,
+  };
+
+  const $ele = eleX(ele);
+
+  $ele.extend(defaults.proto, { enumerable: false });
+
+  for (let [key, value] of Object.entries(data)) {
+    if (!$ele.hasOwnProperty(key)) {
+      $ele[key] = value;
+    }
+  }
+
+  if (defaults.temp) {
+    const root = ele.attachShadow({ mode: "open" });
+
+    root.innerHTML = template.innerHTML;
+
+    render({
+      target: root,
+      data: $ele,
+      temps,
+    });
+  }
+
+  defaults.ready && defaults.ready.call($ele);
+
+  if (defaults.watch) {
+    const wen = Object.entries(defaults.watch);
+
+    $ele.watchTick((e) => {
+      for (let [name, func] of wen) {
+        if (e.hasModified(name)) {
+          func.call($ele, $ele[name], {
+            watchers: e,
+          });
+        }
+      }
+    });
+
+    for (let [name, func] of wen) {
+      func.call($ele, $ele[name], {});
+    }
+  }
+};
+
 const register = (opts = {}) => {
   const defaults = {
     // Registered component name
@@ -1542,7 +1618,6 @@ const register = (opts = {}) => {
 
     return attrKeys;
   };
-
   const XElement = (COMPS[name] = class extends HTMLElement {
     constructor(...args) {
       super(...args);
@@ -1551,8 +1626,6 @@ const register = (opts = {}) => {
 
       defaults.created && defaults.created.call($ele);
 
-      $ele.extend(defaults.proto, { enumerable: false });
-
       if (defaults.attrs) {
         const attrKeys = getAttrKeys(defaults.attrs);
 
@@ -1560,54 +1633,24 @@ const register = (opts = {}) => {
         $ele.watchTick((e) => {
           attrKeys.forEach((key) => {
             if (e.hasModified(key)) {
-              this.setAttribute(toDashCase(key), $ele[key]);
+              const val = $ele[key];
+              const attrName = toDashCase(key);
+              if (val === null || val === undefined) {
+                this.removeAttribute(attrName);
+              } else {
+                this.setAttribute(attrName, val);
+              }
             }
           });
         });
       }
 
-      const data = {
-        ...defaults.data,
-        ...defaults.attrs,
-      };
-
-      for (let [key, value] of Object.entries(data)) {
-        if (!$ele.hasOwnProperty(key)) {
-          $ele[key] = value;
-        }
-      }
-
-      if (defaults.temp) {
-        const root = this.attachShadow({ mode: "open" });
-
-        root.innerHTML = template.innerHTML;
-
-        render({
-          target: root,
-          data: $ele,
-          temps,
-        });
-      }
-
-      defaults.ready && defaults.ready.call($ele);
-
-      if (defaults.watch) {
-        const wen = Object.entries(defaults.watch);
-
-        $ele.watchTick((e) => {
-          for (let [name, func] of wen) {
-            if (e.hasModified(name)) {
-              func.call($ele, $ele[name], {
-                watchers: e,
-              });
-            }
-          }
-        });
-
-        for (let [name, func] of wen) {
-          func.call($ele, $ele[name], {});
-        }
-      }
+      renderElement({
+        defaults,
+        ele: this,
+        template,
+        temps,
+      });
     }
 
     connectedCallback() {
@@ -2259,6 +2302,7 @@ const fn = Xhear.prototype;
 fn.extend(
   {
     get: sfn.get,
+    set: sfn.set,
     toJSON: sfn.toJSON,
     toString: sfn.toString,
     ...watchFn,
