@@ -605,6 +605,33 @@
 
       return this[key];
     }
+    set(key, value) {
+      if (/\./.test(key)) {
+        const keys = key.split(".");
+        const lastKey = keys.pop();
+        let target = this;
+        for (let i = 0, len = keys.length; i < len; i++) {
+          try {
+            target = target[keys[i]];
+          } catch (error) {
+            const err = new Error(
+              `Failed to get data : ${keys.slice(0, i).join(".")} \n${
+              error.stack
+            }`
+            );
+            Object.assign(err, {
+              error,
+              target,
+            });
+            throw err;
+          }
+        }
+
+        return (target[lastKey] = value);
+      }
+
+      return (this[key] = value);
+    }
   }
 
   Stanz.prototype.extend(
@@ -1048,17 +1075,17 @@ try{
 
       const { data } = options;
 
-      this[propName] = data[targetName];
+      this[propName] = data.get(targetName);
 
       const wid1 = this.watch((e) => {
         if (e.hasModified(propName)) {
-          data[targetName] = this[propName];
+          data.set(targetName, this.get(propName));
         }
       });
 
       const wid2 = data.watch((e) => {
         if (e.hasModified(targetName)) {
-          this[propName] = data[targetName];
+          this.set(propName, data.get(targetName));
         }
       });
 
@@ -2281,6 +2308,7 @@ try{
   fn.extend(
     {
       get: sfn.get,
+      set: sfn.set,
       toJSON: sfn.toJSON,
       toString: sfn.toString,
       ...watchFn,

@@ -7,6 +7,13 @@
   <br />
   <button on:click="testFun" data-testid="num_pp">Click Me add 10</button>
   <br />
+  <div>
+    <input type="text" sync:value="testAttr" />
+    {{testAttr}}
+    <br />
+    <input type="text" sync:value="obj.val" />
+    {{obj}}
+  </div>
   <br />
   <input type="number" sync:value="num" />
   <br />
