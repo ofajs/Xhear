@@ -3,11 +3,10 @@ import {
   hyphenToUpperCase,
   meetsEle,
   isEmptyObject,
+  searchEle,
   removeArrayValue as remove,
 } from "../public.mjs";
 import { eleX } from "../util.mjs";
-
-const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
 const getRevokes = (target) => target.__revokes || (target.__revokes = []);
 const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
@@ -40,12 +39,12 @@ export function render({
     target.innerHTML = content;
   }
 
-  const texts = target.querySelectorAll("xtext");
+  const texts = searchEle(target, "xtext");
 
   const tasks = [];
   const revokes = getRevokes(target);
 
-  Array.from(texts).forEach((el) => {
+  texts.forEach((el) => {
     const textEl = document.createTextNode("");
     const { parentNode } = el;
     parentNode.insertBefore(textEl, el);
