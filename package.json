@@ -20,16 +20,16 @@
   },
   "license": "MIT",
   "dependencies": {
-    "stanz": "^8.1.9"
+    "stanz": "^8.1.10"
   },
   "devDependencies": {
     "@playwright/test": "^1.34.0",
     "jasmine-core": "^5.0.0",
     "koa": "^2.14.2",
     "koa-static": "^5.0.0",
-    "rollup": "^3.22.0",
+    "rollup": "^3.23.0",
     "shelljs": "^0.8.5",
-    "terser": "^5.17.4"
+    "terser": "^5.17.5"
   },
   "main": "dist/xhear.js",
   "exports": {
