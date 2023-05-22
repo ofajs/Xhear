@@ -1,4 +1,4 @@
-//! xhear - v7.2.6 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.7 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -55,7 +55,10 @@ function debounce(func, wait = 0) {
 
 // Enhanced methods for extending objects
 const extend = (_this, proto, descriptor = {}) => {
-  Object.keys(proto).forEach((k) => {
+  [
+    ...Object.getOwnPropertyNames(proto),
+    ...Object.getOwnPropertySymbols(proto),
+  ].forEach((k) => {
     const result = Object.getOwnPropertyDescriptor(proto, k);
     const { configurable, enumerable, writable, get, set, value } = result;
 
@@ -150,6 +153,8 @@ const removeArrayValue = (arr, target) => {
     arr.splice(index, 1);
   }
 };
+
+const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
 const { assign: assign$1, freeze } = Object;
 
@@ -781,8 +786,6 @@ const handler = {
   },
 };
 
-const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
-
 const getRevokes = (target) => target.__revokes || (target.__revokes = []);
 const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
@@ -814,12 +817,12 @@ function render({
     target.innerHTML = content;
   }
 
-  const texts = target.querySelectorAll("xtext");
+  const texts = searchEle(target, "xtext");
 
   const tasks = [];
   const revokes = getRevokes(target);
 
-  Array.from(texts).forEach((el) => {
+  texts.forEach((el) => {
     const textEl = document.createTextNode("");
     const { parentNode } = el;
     parentNode.insertBefore(textEl, el);
@@ -1483,12 +1486,10 @@ const getFormData = (target, expr) => {
     } else if (tag === "textarea") {
       data[name] = ele.value;
     } else if (tag === "select") {
-      const selectedsOpt = ele.querySelectorAll(`option:checked`);
+      const selectedsOpt = searchEle(ele, `option:checked`);
 
       if (ele.multiple) {
-        data[name] = Array.from(selectedsOpt).map(
-          (e) => e.value || e.textContent
-        );
+        data[name] = selectedsOpt.map((e) => e.value || e.textContent);
       } else {
         const [e] = selectedsOpt;
         data[name] = e.value || e.textContent;
@@ -2119,7 +2120,7 @@ class Xhear extends LikeArray {
   }
 
   all(expr) {
-    return Array.from(this.ele.querySelectorAll(expr)).map(eleX);
+    return searchEle(this.ele, expr).map(eleX);
   }
 
   extend(obj, desc) {
@@ -2397,7 +2398,7 @@ Object.assign($, {
   convert,
   register,
   fn: Xhear.prototype,
-  all: (expr) => Array.from(document.querySelectorAll(expr)).map(eleX),
+  all: (expr) => searchEle(document, expr).map(eleX),
 });
 
 export { $ as default };

@@ -1,4 +1,4 @@
-//! xhear - v7.2.6 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.7 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -61,7 +61,10 @@
 
   // Enhanced methods for extending objects
   const extend = (_this, proto, descriptor = {}) => {
-    Object.keys(proto).forEach((k) => {
+    [
+      ...Object.getOwnPropertyNames(proto),
+      ...Object.getOwnPropertySymbols(proto),
+    ].forEach((k) => {
       const result = Object.getOwnPropertyDescriptor(proto, k);
       const { configurable, enumerable, writable, get, set, value } = result;
 
@@ -156,6 +159,8 @@
       arr.splice(index, 1);
     }
   };
+
+  const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
 
   const { assign: assign$1, freeze } = Object;
 
@@ -787,8 +792,6 @@
     },
   };
 
-  const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
-
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
   const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
@@ -820,12 +823,12 @@ try{
       target.innerHTML = content;
     }
 
-    const texts = target.querySelectorAll("xtext");
+    const texts = searchEle(target, "xtext");
 
     const tasks = [];
     const revokes = getRevokes(target);
 
-    Array.from(texts).forEach((el) => {
+    texts.forEach((el) => {
       const textEl = document.createTextNode("");
       const { parentNode } = el;
       parentNode.insertBefore(textEl, el);
@@ -1489,12 +1492,10 @@ try{
       } else if (tag === "textarea") {
         data[name] = ele.value;
       } else if (tag === "select") {
-        const selectedsOpt = ele.querySelectorAll(`option:checked`);
+        const selectedsOpt = searchEle(ele, `option:checked`);
 
         if (ele.multiple) {
-          data[name] = Array.from(selectedsOpt).map(
-            (e) => e.value || e.textContent
-          );
+          data[name] = selectedsOpt.map((e) => e.value || e.textContent);
         } else {
           const [e] = selectedsOpt;
           data[name] = e.value || e.textContent;
@@ -2125,7 +2126,7 @@ try{
     }
 
     all(expr) {
-      return Array.from(this.ele.querySelectorAll(expr)).map(eleX);
+      return searchEle(this.ele, expr).map(eleX);
     }
 
     extend(obj, desc) {
@@ -2403,7 +2404,7 @@ try{
     convert,
     register,
     fn: Xhear.prototype,
-    all: (expr) => Array.from(document.querySelectorAll(expr)).map(eleX),
+    all: (expr) => searchEle(document, expr).map(eleX),
   });
 
   return $;
