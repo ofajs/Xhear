@@ -61,7 +61,10 @@
 
   // Enhanced methods for extending objects
   const extend = (_this, proto, descriptor = {}) => {
-    Object.keys(proto).forEach((k) => {
+    [
+      ...Object.getOwnPropertyNames(proto),
+      ...Object.getOwnPropertySymbols(proto),
+    ].forEach((k) => {
       const result = Object.getOwnPropertyDescriptor(proto, k);
       const { configurable, enumerable, writable, get, set, value } = result;
 
