@@ -1,4 +1,4 @@
-//! xhear - v7.2.7 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.8 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1133,13 +1133,16 @@ try{
       this.ele.removeEventListener(name, func);
       return this;
     },
-    emit(name, options) {
+    emit(name, data, opts) {
       let event;
-      if (name) {
-        event = new Event(name);
+
+      if (name instanceof Event) {
+        event = name;
+      } else if (name) {
+        event = new Event(name, { bubbles: true, ...opts });
       }
 
-      options && Object.assign(event, options);
+      data && Object.assign(event, data);
 
       this.ele.dispatchEvent(event);
 
@@ -1534,7 +1537,7 @@ try{
 
     const $ele = eleX(ele);
 
-    $ele.extend(defaults.proto, { enumerable: false });
+    defaults.proto && $ele.extend(defaults.proto, { enumerable: false });
 
     for (let [key, value] of Object.entries(data)) {
       if (!$ele.hasOwnProperty(key)) {
