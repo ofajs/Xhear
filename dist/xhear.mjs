@@ -1,4 +1,4 @@
-//! xhear - v7.2.8 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.9 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1676,7 +1676,7 @@ const register = (opts = {}) => {
         newValue = Number(newValue);
       }
 
-      $ele[name] = newValue;
+      $ele[hyphenToUpperCase(name)] = newValue;
     }
 
     static get observedAttributes() {
