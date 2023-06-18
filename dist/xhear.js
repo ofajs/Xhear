@@ -1,4 +1,4 @@
-//! xhear - v7.2.11 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.12 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1690,7 +1690,19 @@ try{
       }
     });
 
-    customElements.define(defaults.tag, XElement);
+    if (document.readyState !== "loading") {
+      customElements.define(defaults.tag, XElement);
+    } else {
+      const READYSTATE = "readystatechange";
+      let f;
+      document.addEventListener(
+        READYSTATE,
+        (f = () => {
+          customElements.define(defaults.tag, XElement);
+          document.removeEventListener(READYSTATE, f);
+        })
+      );
+    }
   };
 
   function isInArray(ele) {
