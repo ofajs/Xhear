@@ -1,4 +1,4 @@
-//! xhear - v7.2.12 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.13 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -647,8 +647,11 @@ const setData = ({ target, key, value, receiver, type, succeed }) => {
   if (isxdata(data)) {
     data._owner.push(receiver);
   } else if (isObject(value)) {
-    data = new Stanz(value);
-    data._owner.push(receiver);
+    const desc = Object.getOwnPropertyDescriptor(target, key);
+    if (!desc || desc.hasOwnProperty("value")) {
+      data = new Stanz(value);
+      data._owner.push(receiver);
+    }
   }
 
   const oldValue = receiver[key];
@@ -2373,7 +2376,7 @@ const createXEle = (expr, exprType) => {
     return expr;
   }
 
-  if (expr instanceof Element) {
+  if (expr instanceof Node) {
     return eleX(expr);
   }
 
