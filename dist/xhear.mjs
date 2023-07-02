@@ -1,4 +1,4 @@
-//! xhear - v7.2.13 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.14 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -154,7 +154,12 @@ const removeArrayValue = (arr, target) => {
   }
 };
 
-const searchEle = (el, expr) => Array.from(el.querySelectorAll(expr));
+const searchEle = (el, expr) => {
+  if (el instanceof HTMLTemplateElement) {
+    return Array.from(el.content.querySelectorAll(expr));
+  }
+  return Array.from(el.querySelectorAll(expr));
+};
 
 const { assign: assign$1, freeze } = Object;
 
@@ -2133,7 +2138,12 @@ class Xhear extends LikeArray {
   }
 
   $(expr) {
-    const target = this.ele.querySelector(expr);
+    let { ele } = this;
+    if (ele instanceof HTMLTemplateElement) {
+      ele = ele.content;
+    }
+
+    const target = ele.querySelector(expr);
     return target ? eleX(target) : null;
   }
 
@@ -2313,6 +2323,10 @@ class Xhear extends LikeArray {
   remove() {
     this.ele.remove();
   }
+
+  clone(bool = true) {
+    return eleX(this.ele.cloneNode(bool));
+  }
 }
 
 const sfn = Stanz.prototype;
@@ -2376,7 +2390,7 @@ const createXEle = (expr, exprType) => {
     return expr;
   }
 
-  if (expr instanceof Node) {
+  if (expr instanceof Node || expr === window) {
     return eleX(expr);
   }
 
