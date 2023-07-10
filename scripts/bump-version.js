@@ -32,8 +32,12 @@ function incrementLastVersion(versionString) {
 function incrementMiddleVersion(versionString) {
   const parts = versionString.split(".");
   const middlePartIndex = Math.floor(parts.length / 2);
-  parts[middlePartIndex] = String(Number(parts[middlePartIndex]) + 1);
-  return parts.join(".");
+  let newParts = parts.slice(0, middlePartIndex + 1);
+  newParts[middlePartIndex] = String(Number(newParts[middlePartIndex]) + 1);
+  for (let i = middlePartIndex + 1; i < parts.length; i++) {
+    newParts.push("0");
+  }
+  return newParts.join(".");
 }
 
 incrementPackageVersion();
