@@ -18,50 +18,51 @@
     <template> </template>
     <script type="module">
       import $ from "../../packages/xhear/base.mjs";
+
       window.$ = $;
 
-      (async () => {
-        const tempContent = await fetch("./statics/temp.html").then((e) =>
-          e.text()
-        );
+      // (async () => {
+      //   const tempContent = await fetch("./statics/temp.html").then((e) =>
+      //     e.text()
+      //   );
 
-        $("template").html = tempContent;
+      //   $("template").html = tempContent;
 
-        const temps = $.convert($("template").ele);
+      //   const temps = $.convert($("template").ele);
 
-        const d = (window.d = $.stanz({
-          num: 100,
-          testAttr: "I am test attr",
-          obj: {
-            val: "I am obj",
-            // func(e) {
-            //   console.log("I am obj", e);
-            // },
-          },
-          arr: [
-            {
-              val: "I am 0",
-            },
-            {
-              val: "I am 1",
-              childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
-            },
-            {
-              val: "I am 2",
-            },
-          ],
-          testFun(e) {
-            this.num = this.num + 10;
-          },
-        }));
+      //   const d = (window.d = $.stanz({
+      //     num: 100,
+      //     testAttr: "I am test attr",
+      //     obj: {
+      //       val: "I am obj",
+      //       // func(e) {
+      //       //   console.log("I am obj", e);
+      //       // },
+      //     },
+      //     arr: [
+      //       {
+      //         val: "I am 0",
+      //       },
+      //       {
+      //         val: "I am 1",
+      //         childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+      //       },
+      //       {
+      //         val: "I am 2",
+      //       },
+      //     ],
+      //     testFun(e) {
+      //       this.num = this.num + 10;
+      //     },
+      //   }));
 
-        $.render({
-          target: $("#target").ele,
-          data: d,
-          temps,
-          template: $("template").ele,
-        });
-      })();
+      //   $.render({
+      //     target: $("#target").ele,
+      //     data: d,
+      //     temps,
+      //     template: $("template").ele,
+      //   });
+      // })();
     </script>
   </body>
 </html>
