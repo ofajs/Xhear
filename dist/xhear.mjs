@@ -794,6 +794,28 @@ const handler = {
   },
 };
 
+function $(expr) {
+  if (getType(expr) === "string" && !/<.+>/.test(expr)) {
+    const ele = document.querySelector(expr);
+
+    return eleX(ele);
+  }
+
+  return createXEle(expr);
+}
+
+const extensions = {
+  render: (e) => {
+    console.log("extensions => ", e);
+  },
+};
+
+Object.defineProperties($, {
+  extensions: {
+    value: extensions,
+  },
+});
+
 const getRevokes = (target) => target.__revokes || (target.__revokes = []);
 const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
@@ -949,6 +971,8 @@ function render({
       }
     });
   }
+
+  extensions.render({ target });
 }
 
 function convert(el) {
@@ -1985,6 +2009,8 @@ register({
   ready: xifComponentOpts.ready,
 });
 
+// import { extensions } from "../dollar.mjs";
+
 const createItem = (d, targetTemp, temps, $host) => {
   const itemData = new Stanz({
     $data: d,
@@ -2494,24 +2520,6 @@ const revokeAll = (target) => {
       revokeAll(el);
     });
 };
-
-function $(expr) {
-  if (getType(expr) === "string" && !/<.+>/.test(expr)) {
-    const ele = document.querySelector(expr);
-
-    return eleX(ele);
-  }
-
-  return createXEle(expr);
-}
-
-Object.defineProperties($, {
-  extensions: {
-    value: {
-      // link: (val) => val,
-    },
-  },
-});
 
 Object.assign($, {
   stanz,
