@@ -16,6 +16,12 @@ export default function $(expr) {
   return createXEle(expr);
 }
 
+Object.defineProperties($, {
+  extensions: {
+    value: {},
+  },
+});
+
 Object.assign($, {
   stanz,
   render,

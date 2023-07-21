@@ -2505,6 +2505,14 @@ function $(expr) {
   return createXEle(expr);
 }
 
+Object.defineProperties($, {
+  extensions: {
+    value: {
+      // link: (val) => val,
+    },
+  },
+});
+
 Object.assign($, {
   stanz,
   render,
