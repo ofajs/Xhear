@@ -1,4 +1,4 @@
-//! xhear - v7.2.16 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.17 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -812,7 +812,7 @@
 
   const extensions = {
     render: (e) => {
-      console.log("extensions => ", e);
+      // console.log("extensions => ", e);
     },
   };
 
@@ -895,13 +895,23 @@ try{
           try {
             const { always } = $el[actionName];
 
-            const func = () =>
-              $el[actionName](...args, {
+            const func = () => {
+              const revoker = $el[actionName](...args, {
                 isExpr: true,
                 data,
                 temps,
                 ...otherOpts,
               });
+
+              extensions.render({
+                step: "refresh",
+                args,
+                name: actionName,
+                target: $el,
+              });
+
+              return revoker;
+            };
 
             let actionRevoke;
 
@@ -977,8 +987,6 @@ try{
         }
       });
     }
-
-    extensions.render({ target });
   }
 
   function convert(el) {

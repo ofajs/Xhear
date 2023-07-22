@@ -1,4 +1,4 @@
-//! xhear - v7.2.16 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.17 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -806,7 +806,7 @@ function $(expr) {
 
 const extensions = {
   render: (e) => {
-    console.log("extensions => ", e);
+    // console.log("extensions => ", e);
   },
 };
 
@@ -889,13 +889,23 @@ function render({
         try {
           const { always } = $el[actionName];
 
-          const func = () =>
-            $el[actionName](...args, {
+          const func = () => {
+            const revoker = $el[actionName](...args, {
               isExpr: true,
               data,
               temps,
               ...otherOpts,
             });
+
+            extensions.render({
+              step: "refresh",
+              args,
+              name: actionName,
+              target: $el,
+            });
+
+            return revoker;
+          };
 
           let actionRevoke;
 
@@ -971,8 +981,6 @@ function render({
       }
     });
   }
-
-  extensions.render({ target });
 }
 
 function convert(el) {
