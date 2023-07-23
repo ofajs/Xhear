@@ -2,7 +2,6 @@ export default {
   on(name, func, options) {
     if (options && options.isExpr && !/[^\d\w_\$\.]/.test(func)) {
       const oriName = func;
-      
       func = options.data.get(func);
 
       if (!func) {
