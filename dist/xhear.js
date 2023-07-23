@@ -800,27 +800,9 @@
     },
   };
 
-  function $(expr) {
-    if (getType(expr) === "string" && !/<.+>/.test(expr)) {
-      const ele = document.querySelector(expr);
-
-      return eleX(ele);
-    }
-
-    return createXEle(expr);
-  }
-
-  const extensions = {
-    render: (e) => {
-      // console.log("extensions => ", e);
-    },
+  const renderExtends = {
+    render() {},
   };
-
-  Object.defineProperties($, {
-    extensions: {
-      value: extensions,
-    },
-  });
 
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
   const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
@@ -903,7 +885,7 @@ try{
                 ...otherOpts,
               });
 
-              extensions.render({
+              renderExtends.render({
                 step: "refresh",
                 args,
                 name: actionName,
@@ -2023,8 +2005,6 @@ try{
     ready: xifComponentOpts.ready,
   });
 
-  // import { extensions } from "../dollar.mjs";
-
   const createItem = (d, targetTemp, temps, $host) => {
     const itemData = new Stanz({
       $data: d,
@@ -2534,6 +2514,23 @@ try{
         revokeAll(el);
       });
   };
+
+  function $(expr) {
+    if (getType(expr) === "string" && !/<.+>/.test(expr)) {
+      const ele = document.querySelector(expr);
+
+      return eleX(ele);
+    }
+
+    return createXEle(expr);
+  }
+
+  Object.defineProperties($, {
+    // Convenient objects for use as extensions
+    extensions: {
+      value: {},
+    },
+  });
 
   Object.assign($, {
     stanz,
