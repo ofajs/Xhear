@@ -8,6 +8,10 @@ import {
 } from "../public.mjs";
 import { eleX } from "../util.mjs";
 
+export const renderExtends = {
+  render() {},
+};
+
 const getRevokes = (target) => target.__revokes || (target.__revokes = []);
 const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
@@ -81,13 +85,23 @@ export function render({
         try {
           const { always } = $el[actionName];
 
-          const func = () =>
-            $el[actionName](...args, {
+          const func = () => {
+            const revoker = $el[actionName](...args, {
               isExpr: true,
               data,
               temps,
               ...otherOpts,
             });
+
+            renderExtends.render({
+              step: "refresh",
+              args,
+              name: actionName,
+              target: $el,
+            });
+
+            return revoker;
+          };
 
           let actionRevoke;
 
@@ -163,6 +177,8 @@ export function render({
       }
     });
   }
+
+  renderExtends.render({ step: "init", target });
 }
 
 export function convert(el) {

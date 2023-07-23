@@ -1,4 +1,4 @@
-//! xhear - v7.2.16 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.17 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -794,6 +794,10 @@ const handler = {
   },
 };
 
+const renderExtends = {
+  render() {},
+};
+
 const getRevokes = (target) => target.__revokes || (target.__revokes = []);
 const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
@@ -867,13 +871,23 @@ function render({
         try {
           const { always } = $el[actionName];
 
-          const func = () =>
-            $el[actionName](...args, {
+          const func = () => {
+            const revoker = $el[actionName](...args, {
               isExpr: true,
               data,
               temps,
               ...otherOpts,
             });
+
+            renderExtends.render({
+              step: "refresh",
+              args,
+              name: actionName,
+              target: $el,
+            });
+
+            return revoker;
+          };
 
           let actionRevoke;
 
@@ -2504,6 +2518,13 @@ function $(expr) {
 
   return createXEle(expr);
 }
+
+Object.defineProperties($, {
+  // Convenient objects for use as extensions
+  extensions: {
+    value: {},
+  },
+});
 
 Object.assign($, {
   stanz,
