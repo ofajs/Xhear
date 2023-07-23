@@ -1081,10 +1081,27 @@ const defaultData = {
 
     this.ele.setAttribute(name, value);
   },
+  class(...args) {
+    let [name, value, options] = args;
+
+    if (args.length === 1) {
+      return this.ele.classList.contains(name);
+    }
+
+    value = this._convertExpr(options, value);
+    value = getVal(value);
+
+    if (value) {
+      this.ele.classList.add(name);
+    } else {
+      this.ele.classList.remove(name);
+    }
+  },
 };
 
 defaultData.prop.always = true;
 defaultData.attr.always = true;
+defaultData.class.always = true;
 
 var syncFn = {
   sync(propName, targetName, options) {
@@ -1118,7 +1135,13 @@ var syncFn = {
 var eventFn = {
   on(name, func, options) {
     if (options && options.isExpr && !/[^\d\w_\$\.]/.test(func)) {
+      const oriName = func;
+      
       func = options.data.get(func);
+
+      if (!func) {
+        throw new Error(`${oriName} method does not exist`);
+      }
     } else {
       func = this._convertExpr(options, func);
     }
@@ -2000,13 +2023,14 @@ register({
 });
 
 const createItem = (d, targetTemp, temps, $host) => {
-  const itemData = new Stanz({
-    $data: d,
-    $host,
-  });
-
   const $ele = createXEle(targetTemp.innerHTML);
   const { ele } = $ele;
+
+  const itemData = new Stanz({
+    $data: d,
+    $ele,
+    $host,
+  });
 
   render({
     target: ele,
