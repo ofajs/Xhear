@@ -9,7 +9,8 @@
     "build": "rollup --c",
     "static-server": "node scripts/static-server",
     "playwright": "npx playwright test",
-    "test": "node scripts/ci-test"
+    "test": "node scripts/ci-test",
+    "ncu": "ncu -u stanz && npm i"
   },
   "author": {
     "name": "YAO",
@@ -18,7 +19,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "stanz": "^8.1.15"
+    "stanz": "^8.1.17"
   },
   "devDependencies": {
     "@playwright/test": "^1.34.0",
