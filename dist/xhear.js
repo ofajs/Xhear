@@ -1,4 +1,4 @@
-//! xhear - v7.2.19 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.20 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2251,7 +2251,7 @@ try{
     }
 
     get length() {
-      return this.ele.children.length;
+      return this.ele && this.ele.children.length;
     }
 
     $(expr) {
