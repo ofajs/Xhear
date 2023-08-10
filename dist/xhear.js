@@ -1,4 +1,4 @@
-//! xhear - v7.2.21 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.22 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -775,7 +775,7 @@
 
   const handler = {
     set(target, key, value, receiver) {
-      if (!/\D/.test(key)) {
+      if (!/\D/.test(String(key))) {
         return Reflect.set(target, key, value, receiver);
       }
 
@@ -1868,6 +1868,17 @@ try{
     return true;
   }
 
+  /**
+   * `x-if` first replaces all neighboring conditional elements with token elements and triggers the rendering process once; the rendering process is triggered again after each `value` change.
+   * The rendering process is as follows:
+   * 1. First, collect all conditional elements adjacent to `x-if`.
+   * 2. Mark these elements and wait for the `value` of each conditional element to be set successfully before proceeding to the next step.
+   * 3. Based on the marking, perform a judgment operation asynchronously, the element that satisfies the condition first will be rendered; after successful rendering, the subsequent conditional elements will clear the rendered content.
+   */
+
+
+  const RENDERED = Symbol("already-rendered");
+
   function getConditionEles(_this, isEnd = true) {
     const $eles = [];
 
@@ -1934,6 +1945,10 @@ try{
       });
     },
     _renderContent() {
+      if (this[RENDERED]) {
+        return;
+      }
+
       const e = this._getRenderData();
 
       if (!e) {
@@ -1949,6 +1964,8 @@ try{
       markedEnd.parentNode.insertBefore(temp.content, markedEnd);
 
       render({ target, data, temps });
+
+      this[RENDERED] = true;
     },
     _revokeRender() {
       const markedStart = this.__marked_start;
@@ -1966,14 +1983,18 @@ try{
         target = target.previousSibling;
         oldTarget.remove();
       }
+
+      this[RENDERED] = false;
     },
     _refreshCondition() {
+      // Used to store adjacent conditional elements
       const $eles = [this];
 
       if (this._refreshing) {
         return;
       }
 
+      // Pull in the remaining sibling conditional elements as well
       switch (this.tag) {
         case "x-if":
           $eles.push(...getConditionEles(this));
