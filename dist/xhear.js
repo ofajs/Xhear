@@ -2453,6 +2453,10 @@ try{
 
       const { ele } = this;
 
+      if (!ele.parentNode) {
+        throw `The target has a sibling element, so you can't use unwrap`;
+      }
+
       ele.parentNode.insertBefore($el.ele, ele);
 
       ele.__internal = 1;
@@ -2470,7 +2474,7 @@ try{
       const target = ele.parentNode;
 
       if (target.children.length > 1) {
-        throw `The target has a sibling element, so you can't use unwrap.`;
+        throw `The element itself must have a parent`;
       }
 
       ele.__internal = 1;
