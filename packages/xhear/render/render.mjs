@@ -186,7 +186,11 @@ export function render({
 
 const fixSingleXfill = (template) => {
   template.content.querySelectorAll("x-fill:not([name])").forEach((fillEl) => {
-    const tid = `t-${getRandomId()}`;
+    if (fillEl.querySelector("x-fill:not([name])")) {
+      throw `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`;
+    }
+
+    const tid = `t${getRandomId()}`;
     fillEl.setAttribute("name", tid);
 
     const temp = document.createElement("template");

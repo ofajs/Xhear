@@ -18,14 +18,19 @@
     <template>
       <!-- <x-fill :value="arr" name="haha"> -->
       <x-fill :value="arr">
-        <div>{{$data.val}}</div>
+        <div style="margin: 10px; background-color: rgba(0, 0, 255, 0.334)">
+          {{$data.val}}
+          <x-fill :value="$data.childs" name="haha"> </x-fill>
+        </div>
       </x-fill>
 
-      <!-- <template name="haha">
-        <div>
+      <template name="haha">
+        <div
+          style="margin-left: 10px; background-color: rgba(255, 0, 0, 0.316)"
+        >
           {{$data.val}}
         </div>
-      </template> -->
+      </template>
     </template>
     <script type="module">
       import $ from "../../packages/xhear/base.mjs";
