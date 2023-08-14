@@ -1,4 +1,4 @@
-//! xhear - v7.2.23 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.24 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -980,6 +980,23 @@ try{
     }
   }
 
+  const fixSingleXfill = (template) => {
+    template.content.querySelectorAll("x-fill:not([name])").forEach((fillEl) => {
+      if (fillEl.querySelector("x-fill:not([name])")) {
+        throw `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`;
+      }
+
+      const tid = `t${getRandomId()}`;
+      fillEl.setAttribute("name", tid);
+
+      const temp = document.createElement("template");
+      temp.setAttribute("name", tid);
+      temp.innerHTML = fillEl.innerHTML;
+      fillEl.innerHTML = "";
+      fillEl.appendChild(temp);
+    });
+  };
+
   function convert(el) {
     let temps = {};
 
@@ -1011,10 +1028,14 @@ try{
         }
         temps[tempName] = el;
         el.remove();
+      } else {
+        // The initialized template can be run here
+        fixSingleXfill(el);
       }
 
       temps = { ...temps, ...convert(el.content) };
     } else if (tagName) {
+      // Converting elements
       const obj = {};
 
       Array.from(el.attributes).forEach((attr) => {
@@ -1045,6 +1066,7 @@ try{
     }
 
     if (el.children) {
+      // template content
       Array.from(el.children).forEach((el) => {
         temps = { ...temps, ...convert(el) };
       });
@@ -2168,7 +2190,8 @@ try{
           return;
         }
 
-        const targetTemp = temps[hyphenToUpperCase(tempName)];
+        // const targetTemp = temps[hyphenToUpperCase(tempName)];
+        const targetTemp = temps[tempName];
 
         const markEnd = this.__marked_end;
         const parent = markEnd.parentNode;
