@@ -46,17 +46,14 @@
         <slot></slot>
       </div>
     </template>
+    
     <template id="compTwo">
-      <x-fill name="one" :value="arr"> </x-fill>
-      <x-fill name="two" :value="arr"> </x-fill>
-      <template name="one">
-        <test-one>{{$data}}</test-one>
-      </template>
-      <template name="two">
+      <x-fill :value="arr"> <test-one> {{$data}} </test-one> </x-fill>
+      <x-fill :value="arr">
         <div>
           <test-one>{{$data}}</test-one>
         </div>
-      </template>
+      </x-fill>
     </template>
 
     <template id="compThree">
