@@ -1901,6 +1901,8 @@ try{
 
   const RENDERED = Symbol("already-rendered");
 
+  // Find other condition elements before and after
+  // isEnd: Retrieves the subsequent condition element
   function getConditionEles(_this, isEnd = true) {
     const $eles = [];
 
@@ -2102,6 +2104,7 @@ try{
       this.__init_rendered_res();
 
       this._refreshCondition();
+      // this.ele.remove();
 
       nextTick(() => this.ele.remove());
     },
@@ -2122,6 +2125,18 @@ try{
     },
     attached(...args) {
       xifComponentOpts.attached.call(this, ...args);
+
+      nextTick(() => {
+        const others = getConditionEles(this, false);
+
+        if (!others.length) {
+          const err = new Error(
+            `The x-else component must be immediately preceded by the x-if or x-else-if component\n${this.ele.outerHTML}`
+          );
+
+          console.warn(err);
+        }
+      });
     },
   });
 
