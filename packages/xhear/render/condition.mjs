@@ -20,12 +20,32 @@ function getConditionEles(_this, isEnd = true) {
   while (true) {
     target = isEnd ? target.nextSibling : target.previousSibling;
     if (target instanceof Comment) {
-      if (target.__$ele) {
-        $eles.push(target.__$ele);
+      const { __$ele } = target;
+      if (__$ele) {
+        const eleTag = __$ele.tag;
+
+        if (isEnd) {
+          if (eleTag === "x-else-if" || eleTag === "x-else") {
+            $eles.push(__$ele);
+          }
+        } else if (
+          eleTag === "x-if" ||
+          eleTag === "x-else-if" ||
+          eleTag === "x-else"
+        ) {
+          $eles.unshift(__$ele);
+        }
+
         target = isEnd ? target.__end : target.__start;
       }
-    } else if (!(target instanceof Text)) {
-      break;
+    } else {
+      if (target instanceof Text) {
+        if (target.data.replace(/\n/g, "").trim()) {
+          break;
+        }
+      } else {
+        break;
+      }
     }
   }
 
@@ -188,7 +208,7 @@ const xifComponentOpts = {
 
     this.__originHTML = this.html;
     this.html = "";
-    
+
     // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
     this.__init_rendered_res();
@@ -209,6 +229,10 @@ register({
 register({
   tag: "x-else",
   proto,
-  ready: xifComponentOpts.ready,
-  attached: xifComponentOpts.attached,
+  ready(...args) {
+    xifComponentOpts.ready.call(this, ...args);
+  },
+  attached(...args) {
+    xifComponentOpts.attached.call(this, ...args);
+  },
 });

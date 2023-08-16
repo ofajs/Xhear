@@ -1908,12 +1908,32 @@ try{
     while (true) {
       target = isEnd ? target.nextSibling : target.previousSibling;
       if (target instanceof Comment) {
-        if (target.__$ele) {
-          $eles.push(target.__$ele);
+        const { __$ele } = target;
+        if (__$ele) {
+          const eleTag = __$ele.tag;
+
+          if (isEnd) {
+            if (eleTag === "x-else-if" || eleTag === "x-else") {
+              $eles.push(__$ele);
+            }
+          } else if (
+            eleTag === "x-if" ||
+            eleTag === "x-else-if" ||
+            eleTag === "x-else"
+          ) {
+            $eles.unshift(__$ele);
+          }
+
           target = isEnd ? target.__end : target.__start;
         }
-      } else if (!(target instanceof Text)) {
-        break;
+      } else {
+        if (target instanceof Text) {
+          if (target.data.replace(/\n/g, "").trim()) {
+            break;
+          }
+        } else {
+          break;
+        }
       }
     }
 
@@ -2076,7 +2096,7 @@ try{
 
       this.__originHTML = this.html;
       this.html = "";
-      
+
       // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
       this._renderMarked();
       this.__init_rendered_res();
@@ -2097,11 +2117,15 @@ try{
   register({
     tag: "x-else",
     proto: proto$1,
-    ready: xifComponentOpts.ready,
-    attached: xifComponentOpts.attached,
+    ready(...args) {
+      xifComponentOpts.ready.call(this, ...args);
+    },
+    attached(...args) {
+      xifComponentOpts.attached.call(this, ...args);
+    },
   });
 
-  const createItem = (d, targetTemp, temps, $host) => {
+  const createItem = (d, targetTemp, temps, $host, index) => {
     const $ele = createXEle(targetTemp.innerHTML);
     const { ele } = $ele;
 
@@ -2109,6 +2133,7 @@ try{
       $data: d,
       $ele,
       $host,
+      $index: index,
     });
 
     render({
@@ -2229,7 +2254,7 @@ try{
           const cursorEl = childs[i];
 
           if (!cursorEl) {
-            const { ele } = createItem(current, targetTemp, temps, $host);
+            const { ele } = createItem(current, targetTemp, temps, $host, i);
             parent.insertBefore(ele, markEnd);
             continue;
           }
@@ -2249,7 +2274,7 @@ try{
             moveArrayValue(childs, oldEl, i);
           } else {
             // New elements added
-            const { ele } = createItem(current, targetTemp, temps, $host);
+            const { ele } = createItem(current, targetTemp, temps, $host, i);
             parent.insertBefore(ele, cursorEl);
             childs.splice(i, 0, ele);
           }
