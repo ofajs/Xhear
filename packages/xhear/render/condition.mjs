@@ -13,6 +13,8 @@ import { revokeAll } from "../util.mjs";
 
 const RENDERED = Symbol("already-rendered");
 
+// Find other condition elements before and after
+// isEnd: Retrieves the subsequent condition element
 function getConditionEles(_this, isEnd = true) {
   const $eles = [];
 
@@ -20,12 +22,32 @@ function getConditionEles(_this, isEnd = true) {
   while (true) {
     target = isEnd ? target.nextSibling : target.previousSibling;
     if (target instanceof Comment) {
-      if (target.__$ele) {
-        $eles.push(target.__$ele);
+      const { __$ele } = target;
+      if (__$ele) {
+        const eleTag = __$ele.tag;
+
+        if (isEnd) {
+          if (eleTag === "x-else-if" || eleTag === "x-else") {
+            $eles.push(__$ele);
+          }
+        } else if (
+          eleTag === "x-if" ||
+          eleTag === "x-else-if" ||
+          eleTag === "x-else"
+        ) {
+          $eles.unshift(__$ele);
+        }
+
         target = isEnd ? target.__end : target.__start;
       }
-    } else if (!(target instanceof Text)) {
-      break;
+    } else {
+      if (target instanceof Text) {
+        if (target.data.replace(/\n/g, "").trim()) {
+          break;
+        }
+      } else {
+        break;
+      }
     }
   }
 
@@ -168,15 +190,33 @@ const xifComponentOpts = {
     value: null,
   },
   watch: {
-    value() {
+    async value() {
+      await this.__init_rendered;
+
       this._refreshCondition();
     },
   },
   proto,
   ready() {
+    let resolve;
+    this.__init_rendered = new Promise((res) => (resolve = res));
+    this.__init_rendered_res = resolve;
+  },
+  attached() {
+    if (this.__runned_render) {
+      return;
+    }
+    this.__runned_render = 1;
+
     this.__originHTML = this.html;
     this.html = "";
+
+    // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
+    this.__init_rendered_res();
+
+    this._refreshCondition();
+    // this.ele.remove();
 
     nextTick(() => this.ele.remove());
   },
@@ -192,5 +232,22 @@ register({
 register({
   tag: "x-else",
   proto,
-  ready: xifComponentOpts.ready,
+  ready(...args) {
+    xifComponentOpts.ready.call(this, ...args);
+  },
+  attached(...args) {
+    xifComponentOpts.attached.call(this, ...args);
+
+    nextTick(() => {
+      const others = getConditionEles(this, false);
+
+      if (!others.length) {
+        const err = new Error(
+          `The x-else component must be immediately preceded by the x-if or x-else-if component\n${this.ele.outerHTML}`
+        );
+
+        console.warn(err);
+      }
+    });
+  },
 });

@@ -1,4 +1,4 @@
-//! xhear - v7.2.24 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.25 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1895,6 +1895,8 @@ function validateTagName(str) {
 
 const RENDERED = Symbol("already-rendered");
 
+// Find other condition elements before and after
+// isEnd: Retrieves the subsequent condition element
 function getConditionEles(_this, isEnd = true) {
   const $eles = [];
 
@@ -1902,12 +1904,32 @@ function getConditionEles(_this, isEnd = true) {
   while (true) {
     target = isEnd ? target.nextSibling : target.previousSibling;
     if (target instanceof Comment) {
-      if (target.__$ele) {
-        $eles.push(target.__$ele);
+      const { __$ele } = target;
+      if (__$ele) {
+        const eleTag = __$ele.tag;
+
+        if (isEnd) {
+          if (eleTag === "x-else-if" || eleTag === "x-else") {
+            $eles.push(__$ele);
+          }
+        } else if (
+          eleTag === "x-if" ||
+          eleTag === "x-else-if" ||
+          eleTag === "x-else"
+        ) {
+          $eles.unshift(__$ele);
+        }
+
         target = isEnd ? target.__end : target.__start;
       }
-    } else if (!(target instanceof Text)) {
-      break;
+    } else {
+      if (target instanceof Text) {
+        if (target.data.replace(/\n/g, "").trim()) {
+          break;
+        }
+      } else {
+        break;
+      }
     }
   }
 
@@ -2050,15 +2072,33 @@ const xifComponentOpts = {
     value: null,
   },
   watch: {
-    value() {
+    async value() {
+      await this.__init_rendered;
+
       this._refreshCondition();
     },
   },
   proto: proto$1,
   ready() {
+    let resolve;
+    this.__init_rendered = new Promise((res) => (resolve = res));
+    this.__init_rendered_res = resolve;
+  },
+  attached() {
+    if (this.__runned_render) {
+      return;
+    }
+    this.__runned_render = 1;
+
     this.__originHTML = this.html;
     this.html = "";
+
+    // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
+    this.__init_rendered_res();
+
+    this._refreshCondition();
+    // this.ele.remove();
 
     nextTick(() => this.ele.remove());
   },
@@ -2074,10 +2114,27 @@ register({
 register({
   tag: "x-else",
   proto: proto$1,
-  ready: xifComponentOpts.ready,
+  ready(...args) {
+    xifComponentOpts.ready.call(this, ...args);
+  },
+  attached(...args) {
+    xifComponentOpts.attached.call(this, ...args);
+
+    nextTick(() => {
+      const others = getConditionEles(this, false);
+
+      if (!others.length) {
+        const err = new Error(
+          `The x-else component must be immediately preceded by the x-if or x-else-if component\n${this.ele.outerHTML}`
+        );
+
+        console.warn(err);
+      }
+    });
+  },
 });
 
-const createItem = (d, targetTemp, temps, $host) => {
+const createItem = (d, targetTemp, temps, $host, index) => {
   const $ele = createXEle(targetTemp.innerHTML);
   const { ele } = $ele;
 
@@ -2085,6 +2142,7 @@ const createItem = (d, targetTemp, temps, $host) => {
     $data: d,
     $ele,
     $host,
+    $index: index,
   });
 
   render({
@@ -2142,7 +2200,9 @@ register({
     value: null,
   },
   watch: {
-    value(val) {
+    async value(val) {
+      await this.__init_rendered;
+
       const childs = this._getChilds();
 
       if (!val) {
@@ -2178,7 +2238,13 @@ register({
 
       const tempName = this._name;
 
-      const { data, temps } = this._getRenderData();
+      const rData = this._getRenderData();
+
+      if (!rData) {
+        return;
+      }
+
+      const { data, temps } = rData;
 
       if (!temps) {
         return;
@@ -2197,7 +2263,7 @@ register({
         const cursorEl = childs[i];
 
         if (!cursorEl) {
-          const { ele } = createItem(current, targetTemp, temps, $host);
+          const { ele } = createItem(current, targetTemp, temps, $host, i);
           parent.insertBefore(ele, markEnd);
           continue;
         }
@@ -2217,7 +2283,7 @@ register({
           moveArrayValue(childs, oldEl, i);
         } else {
           // New elements added
-          const { ele } = createItem(current, targetTemp, temps, $host);
+          const { ele } = createItem(current, targetTemp, temps, $host, i);
           parent.insertBefore(ele, cursorEl);
           childs.splice(i, 0, ele);
         }
@@ -2236,9 +2302,21 @@ register({
   },
   proto,
   ready() {
+    let resolve;
+    this.__init_rendered = new Promise((res) => (resolve = res));
+    this.__init_rendered_res = resolve;
+  },
+  attached() {
+    if (this.__runned_render) {
+      return;
+    }
+    this.__runned_render = 1;
+
     this.__originHTML = "origin";
     this._name = this.attr("name");
     this._renderMarked();
+
+    this.__init_rendered_res();
 
     nextTick(() => this.ele.remove());
   },
