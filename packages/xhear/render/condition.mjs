@@ -168,16 +168,31 @@ const xifComponentOpts = {
     value: null,
   },
   watch: {
-    value() {
+    async value() {
+      await this.__init_rendered;
+
       this._refreshCondition();
     },
   },
   proto,
   ready() {
+    let resolve;
+    this.__init_rendered = new Promise((res) => (resolve = res));
+    this.__init_rendered_res = resolve;
+  },
+  attached() {
+    if (this.__runned_render) {
+      return;
+    }
+    this.__runned_render = 1;
+
     this.__originHTML = this.html;
     this.html = "";
+    
+    // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
 
+    this.__init_rendered_res();
     nextTick(() => this.ele.remove());
   },
 };

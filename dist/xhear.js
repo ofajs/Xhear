@@ -2056,16 +2056,31 @@ try{
       value: null,
     },
     watch: {
-      value() {
+      async value() {
+        await this.__init_rendered;
+
         this._refreshCondition();
       },
     },
     proto: proto$1,
     ready() {
+      let resolve;
+      this.__init_rendered = new Promise((res) => (resolve = res));
+      this.__init_rendered_res = resolve;
+    },
+    attached() {
+      if (this.__runned_render) {
+        return;
+      }
+      this.__runned_render = 1;
+
       this.__originHTML = this.html;
       this.html = "";
+      
+      // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
       this._renderMarked();
 
+      this.__init_rendered_res();
       nextTick(() => this.ele.remove());
     },
   };
@@ -2148,7 +2163,9 @@ try{
       value: null,
     },
     watch: {
-      value(val) {
+      async value(val) {
+        await this.__init_rendered;
+
         const childs = this._getChilds();
 
         if (!val) {
@@ -2184,7 +2201,13 @@ try{
 
         const tempName = this._name;
 
-        const { data, temps } = this._getRenderData();
+        const rData = this._getRenderData();
+
+        if (!rData) {
+          return;
+        }
+
+        const { data, temps } = rData;
 
         if (!temps) {
           return;
@@ -2242,9 +2265,21 @@ try{
     },
     proto,
     ready() {
+      let resolve;
+      this.__init_rendered = new Promise((res) => (resolve = res));
+      this.__init_rendered_res = resolve;
+    },
+    attached() {
+      if (this.__runned_render) {
+        return;
+      }
+      this.__runned_render = 1;
+
       this.__originHTML = "origin";
       this._name = this.attr("name");
       this._renderMarked();
+
+      this.__init_rendered_res();
 
       nextTick(() => this.ele.remove());
     },
