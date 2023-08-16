@@ -2073,8 +2073,10 @@ const xifComponentOpts = {
     
     // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
-
     this.__init_rendered_res();
+
+    this._refreshCondition();
+
     nextTick(() => this.ele.remove());
   },
 };
@@ -2090,6 +2092,7 @@ register({
   tag: "x-else",
   proto: proto$1,
   ready: xifComponentOpts.ready,
+  attached: xifComponentOpts.attached,
 });
 
 const createItem = (d, targetTemp, temps, $host) => {
