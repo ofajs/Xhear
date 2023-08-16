@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>x-if bug1</title>
+    <!-- <script src="../../dist/xhear.js"></script> -->
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      // x-fill 的模板也不能是 x-if 为第一个元素
+
+      $.register({
+        tag: "template-demo",
+        temp: `
+        <div id="condition-container">
+          <div>
+            <button on:click="sw">switch</button>
+          </div>
+          <br>
+          <x-if :value="showContent">
+              <x-fill :value="arr">
+                <div attr:data-testid="'item-' + $index">
+                  {{$data.val}}
+                  <x-if :value="$host.count >= 2 || $index >= 1">
+                    <span style="color:red;" attr:data-testid="'item-' + $index + '-span'">{{$host.count}}</span>
+                  </x-if>
+                </div>
+              </x-fill>  
+          </x-if> 
+          <x-if :value="showContent">
+            <div data-testid="other-item">asdasd</div>
+          </x-if>
+        </div>
+        `,
+        data: {
+          showContent: true,
+          count: 0,
+          arr: [
+            {
+              val: "A",
+            },
+            {
+              val: "B",
+            },
+          ],
+        },
+        proto: {
+          sw() {
+            this.count++;
+            this.showContent = !this.showContent;
+          },
+        },
+      });
+
+      window.$ = $;
+    </script>
+  </head>
+  <body>
+    <template-demo></template-demo>
+  </body>
+</html>
