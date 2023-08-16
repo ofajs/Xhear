@@ -2032,6 +2032,10 @@ const proto$1 = {
       return;
     }
 
+    if (this.parent) {
+      this.remove();
+    }
+
     // Pull in the remaining sibling conditional elements as well
     switch (this.tag) {
       case "x-if":
@@ -2040,6 +2044,9 @@ const proto$1 = {
       case "x-else-if":
         $eles.unshift(...getConditionEles(this, false));
         $eles.push(...getConditionEles(this));
+        break;
+      case "x-else":
+        $eles.unshift(...getConditionEles(this, false));
         break;
     }
 
@@ -2096,11 +2103,6 @@ const xifComponentOpts = {
     // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
     this.__init_rendered_res();
-
-    this._refreshCondition();
-    // this.ele.remove();
-
-    nextTick(() => this.ele.remove());
   },
 };
 
@@ -2114,11 +2116,12 @@ register({
 register({
   tag: "x-else",
   proto: proto$1,
-  ready(...args) {
-    xifComponentOpts.ready.call(this, ...args);
+  ready() {
+    xifComponentOpts.ready.call(this);
   },
-  attached(...args) {
-    xifComponentOpts.attached.call(this, ...args);
+  attached() {
+    xifComponentOpts.attached.call(this);
+    // this._refreshCondition();
 
     nextTick(() => {
       const others = getConditionEles(this, false);
@@ -2431,7 +2434,7 @@ class Xhear extends LikeArray {
   get host() {
     let root = this.ele.getRootNode();
     let { host } = root;
-    return host ? eleX(host) : null;
+    return host instanceof Node ? eleX(host) : null;
   }
 
   get parent() {
