@@ -1,4 +1,4 @@
-//! xhear - v7.2.25 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.26 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -809,6 +809,9 @@
 
   const renderExtends = {
     render() {},
+    renderable(el) {
+      return true;
+    },
   };
 
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
@@ -850,6 +853,10 @@ try{
     const revokes = getRevokes(target);
 
     texts.forEach((el) => {
+      if (!renderExtends.renderable(el)) {
+        return;
+      }
+
       const textEl = document.createTextNode("");
       const { parentNode } = el;
       parentNode.insertBefore(textEl, el);
@@ -878,6 +885,10 @@ try{
 
     eles.forEach((el) => {
       const bindData = JSON.parse(el.getAttribute("x-bind-data"));
+
+      if (!renderExtends.renderable(el)) {
+        return;
+      }
 
       const $el = eleX(el);
 
@@ -978,6 +989,8 @@ try{
         }
       });
     }
+
+    renderExtends.render({ step: "init", target });
   }
 
   const fixSingleXfill = (template) => {
@@ -1901,37 +1914,72 @@ try{
 
   const RENDERED = Symbol("already-rendered");
 
+  const oldRenderable = renderExtends.renderable;
+  renderExtends.renderable = (el) => {
+    const bool = oldRenderable(el);
+
+    if (!bool) {
+      return false;
+    }
+
+    let t = el;
+    while (true) {
+      t = t.parentNode;
+      if (!t) {
+        break;
+      }
+
+      let tag = t.tagName;
+
+      if (tag && (tag === "X-IF" || tag === "X-ELSE-IF" || tag === "X-ELSE")) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   // Find other condition elements before and after
   // isEnd: Retrieves the subsequent condition element
-  function getConditionEles(_this, isEnd = true) {
+  function getConditionEles(_this) {
     const $eles = [];
 
-    let target = isEnd ? _this.__marked_end : _this.__marked_start;
+    if (_this.parent) {
+      _this.remove();
+    }
+
+    let target = _this.__marked_end;
     while (true) {
-      target = isEnd ? target.nextSibling : target.previousSibling;
+      if (!target) {
+        break;
+      }
+
+      target = target.nextSibling;
       if (target instanceof Comment) {
         const { __$ele } = target;
         if (__$ele) {
           const eleTag = __$ele.tag;
 
-          if (isEnd) {
-            if (eleTag === "x-else-if" || eleTag === "x-else") {
-              $eles.push(__$ele);
-            }
-          } else if (
-            eleTag === "x-if" ||
-            eleTag === "x-else-if" ||
-            eleTag === "x-else"
-          ) {
-            $eles.unshift(__$ele);
+          if (eleTag === "x-else-if" || eleTag === "x-else") {
+            $eles.push(__$ele);
           }
 
-          target = isEnd ? target.__end : target.__start;
+          target = target.__end;
         }
       } else {
-        if (target instanceof Text) {
-          if (target.data.replace(/\n/g, "").trim()) {
-            break;
+        if (target) {
+          const $target = $(target);
+          const targetTag = $target.tag;
+
+          if (target instanceof Text) {
+            if (target.data.replace(/\n/g, "").trim()) {
+              break;
+            }
+          } else if (targetTag === "x-else-if" || targetTag === "x-else") {
+            $target._renderMarked();
+            $target.remove();
+            target = $target.__marked_start;
+            $target._xif = _this;
           }
         } else {
           break;
@@ -1959,6 +2007,10 @@ try{
       return null;
     },
     _renderMarked() {
+      if (this.__marked_start) {
+        return;
+      }
+
       const { ele } = this;
       const { parentNode } = ele;
 
@@ -2030,31 +2082,30 @@ try{
 
       this[RENDERED] = false;
     },
-    _refreshCondition() {
-      // Used to store adjacent conditional elements
-      const $eles = [this];
+  };
 
-      if (this._refreshing) {
-        return;
-      }
+  const xifComponentOpts = {
+    tag: "x-if",
+    data: {
+      value: null,
+    },
+    watch: {
+      async value() {
+        this._refreshCondition();
+      },
+    },
+    proto: {
+      async _refreshCondition() {
+        await this.__init_rendered;
 
-      // Pull in the remaining sibling conditional elements as well
-      switch (this.tag) {
-        case "x-if":
-          $eles.push(...getConditionEles(this));
-          break;
-        case "x-else-if":
-          $eles.unshift(...getConditionEles(this, false));
-          $eles.push(...getConditionEles(this));
-          break;
-      }
+        // Used to store adjacent conditional elements
+        const $eles = [this];
 
-      $eles.forEach((e) => (e._refreshing = true));
-      nextTick(() => {
+        // Pull in the remaining sibling conditional elements as well
+        $eles.push(...getConditionEles(this));
+
         let isOK = false;
         $eles.forEach(($ele) => {
-          delete $ele._refreshing;
-
           if (isOK) {
             $ele._revokeRender();
             return;
@@ -2068,76 +2119,42 @@ try{
 
           $ele._revokeRender();
         });
-      });
-    },
-  };
-
-  const xifComponentOpts = {
-    tag: "x-if",
-    data: {
-      value: null,
-    },
-    watch: {
-      async value() {
-        await this.__init_rendered;
-
-        this._refreshCondition();
       },
+      ...proto$1,
     },
-    proto: proto$1,
+    created() {
+      this.__originHTML = this.html;
+      this.html = "";
+    },
     ready() {
       let resolve;
       this.__init_rendered = new Promise((res) => (resolve = res));
       this.__init_rendered_res = resolve;
     },
     attached() {
-      if (this.__runned_render) {
-        return;
-      }
-      this.__runned_render = 1;
-
-      this.__originHTML = this.html;
-      this.html = "";
-
-      // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
+      // Because it needs to have a parent element, the logo is added after attached.
       this._renderMarked();
       this.__init_rendered_res();
-
-      this._refreshCondition();
-      // this.ele.remove();
-
-      nextTick(() => this.ele.remove());
     },
   };
 
   register(xifComponentOpts);
 
   register({
-    ...xifComponentOpts,
     tag: "x-else-if",
+    watch: {
+      value() {
+        this._xif && this._xif._refreshCondition();
+      },
+    },
+    created: xifComponentOpts.created,
+    proto: proto$1,
   });
 
   register({
     tag: "x-else",
+    created: xifComponentOpts.created,
     proto: proto$1,
-    ready(...args) {
-      xifComponentOpts.ready.call(this, ...args);
-    },
-    attached(...args) {
-      xifComponentOpts.attached.call(this, ...args);
-
-      nextTick(() => {
-        const others = getConditionEles(this, false);
-
-        if (!others.length) {
-          const err = new Error(
-            `The x-else component must be immediately preceded by the x-if or x-else-if component\n${this.ele.outerHTML}`
-          );
-
-          console.warn(err);
-        }
-      });
-    },
   });
 
   const createItem = (d, targetTemp, temps, $host, index) => {
@@ -2437,7 +2454,7 @@ try{
     get host() {
       let root = this.ele.getRootNode();
       let { host } = root;
-      return host ? eleX(host) : null;
+      return host instanceof Node ? eleX(host) : null;
     }
 
     get parent() {
@@ -2677,7 +2694,7 @@ try{
       });
   };
 
-  function $(expr) {
+  function $$1(expr) {
     if (getType(expr) === "string" && !/<.+>/.test(expr)) {
       const ele = document.querySelector(expr);
 
@@ -2687,14 +2704,14 @@ try{
     return createXEle(expr);
   }
 
-  Object.defineProperties($, {
+  Object.defineProperties($$1, {
     // Convenient objects for use as extensions
     extensions: {
       value: {},
     },
   });
 
-  Object.assign($, {
+  Object.assign($$1, {
     stanz,
     render,
     convert,
@@ -2703,6 +2720,6 @@ try{
     all: (expr) => searchEle(document, expr).map(eleX),
   });
 
-  return $;
+  return $$1;
 
 }));
