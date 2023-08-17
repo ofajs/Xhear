@@ -7,10 +7,35 @@
  */
 
 import { register } from "../register.mjs";
-import { render } from "./render.mjs";
+import { render, renderExtends } from "./render.mjs";
 import { revokeAll } from "../util.mjs";
 
 const RENDERED = Symbol("already-rendered");
+
+const oldRenderable = renderExtends.renderable;
+renderExtends.renderable = (el) => {
+  const bool = oldRenderable(el);
+
+  if (!bool) {
+    return false;
+  }
+
+  let t = el;
+  while (true) {
+    t = t.parentNode;
+    if (!t) {
+      break;
+    }
+
+    let tag = t.tagName;
+
+    if (tag && (tag === "X-IF" || tag === "X-ELSE-IF" || tag === "X-ELSE")) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 // Find other condition elements before and after
 // isEnd: Retrieves the subsequent condition element
@@ -201,11 +226,6 @@ const xifComponentOpts = {
     this.__init_rendered_res = resolve;
   },
   attached() {
-    if (this.__runned_render) {
-      return;
-    }
-    this.__runned_render = 1;
-
     // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
     this._renderMarked();
     this.__init_rendered_res();

@@ -809,6 +809,9 @@
 
   const renderExtends = {
     render() {},
+    renderable(el) {
+      return true;
+    },
   };
 
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
@@ -850,6 +853,10 @@ try{
     const revokes = getRevokes(target);
 
     texts.forEach((el) => {
+      if (!renderExtends.renderable(el)) {
+        return;
+      }
+
       const textEl = document.createTextNode("");
       const { parentNode } = el;
       parentNode.insertBefore(textEl, el);
@@ -878,6 +885,10 @@ try{
 
     eles.forEach((el) => {
       const bindData = JSON.parse(el.getAttribute("x-bind-data"));
+
+      if (!renderExtends.renderable(el)) {
+        return;
+      }
 
       const $el = eleX(el);
 
@@ -978,6 +989,8 @@ try{
         }
       });
     }
+
+    renderExtends.render({ step: "init", target });
   }
 
   const fixSingleXfill = (template) => {
@@ -1761,10 +1774,6 @@ try{
     template.innerHTML = defaults.temp;
     const temps = convert(template);
 
-    // if (defaults.tag === "template-demo") {
-    //   debugger;
-    // }
-
     const getAttrKeys = (attrs) => {
       let attrKeys;
 
@@ -1904,6 +1913,31 @@ try{
 
 
   const RENDERED = Symbol("already-rendered");
+
+  const oldRenderable = renderExtends.renderable;
+  renderExtends.renderable = (el) => {
+    const bool = oldRenderable(el);
+
+    if (!bool) {
+      return false;
+    }
+
+    let t = el;
+    while (true) {
+      t = t.parentNode;
+      if (!t) {
+        break;
+      }
+
+      let tag = t.tagName;
+
+      if (tag && (tag === "X-IF" || tag === "X-ELSE-IF" || tag === "X-ELSE")) {
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   // Find other condition elements before and after
   // isEnd: Retrieves the subsequent condition element
@@ -2094,11 +2128,6 @@ try{
       this.__init_rendered_res = resolve;
     },
     attached() {
-      if (this.__runned_render) {
-        return;
-      }
-      this.__runned_render = 1;
-
       // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
       this._renderMarked();
       this.__init_rendered_res();
@@ -2308,7 +2337,7 @@ try{
 
       this.__init_rendered_res();
 
-      // nextTick(() => this.ele.remove());
+      nextTick(() => this.ele.remove());
     },
   });
 
