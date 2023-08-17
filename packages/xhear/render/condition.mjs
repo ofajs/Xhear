@@ -6,7 +6,6 @@
  * 3. Based on the marking, perform a judgment operation asynchronously, the element that satisfies the condition first will be rendered; after successful rendering, the subsequent conditional elements will clear the rendered content.
  */
 
-import { nextTick } from "../../stanz/public.mjs";
 import { register } from "../register.mjs";
 import { render } from "./render.mjs";
 import { revokeAll } from "../util.mjs";
@@ -152,23 +151,30 @@ export const proto = {
 
     this[RENDERED] = false;
   },
-  _refreshCondition() {
-    // Used to store adjacent conditional elements
-    const $eles = [this];
+};
 
-    if (this._refreshing) {
-      return;
-    }
+const xifComponentOpts = {
+  tag: "x-if",
+  data: {
+    value: null,
+  },
+  watch: {
+    async value() {
+      this._refreshCondition();
+    },
+  },
+  proto: {
+    async _refreshCondition() {
+      await this.__init_rendered;
 
-    // Pull in the remaining sibling conditional elements as well
-    $eles.push(...getConditionEles(this));
+      // Used to store adjacent conditional elements
+      const $eles = [this];
 
-    $eles.forEach((e) => (e._refreshing = true));
-    nextTick(() => {
+      // Pull in the remaining sibling conditional elements as well
+      $eles.push(...getConditionEles(this));
+
       let isOK = false;
       $eles.forEach(($ele) => {
-        delete $ele._refreshing;
-
         if (isOK) {
           $ele._revokeRender();
           return;
@@ -182,23 +188,9 @@ export const proto = {
 
         $ele._revokeRender();
       });
-    });
-  },
-};
-
-const xifComponentOpts = {
-  tag: "x-if",
-  data: {
-    value: null,
-  },
-  watch: {
-    async value() {
-      await this.__init_rendered;
-
-      this._refreshCondition();
     },
+    ...proto,
   },
-  proto,
   created() {
     this.__originHTML = this.html;
     this.html = "";
@@ -229,18 +221,12 @@ register({
       this._xif._refreshCondition();
     },
   },
-  created() {
-    this.__originHTML = this.html;
-    this.html = "";
-  },
+  created: xifComponentOpts.created,
   proto,
 });
 
 register({
   tag: "x-else",
-  created() {
-    this.__originHTML = this.html;
-    this.html = "";
-  },
+  created: xifComponentOpts.created,
   proto,
 });

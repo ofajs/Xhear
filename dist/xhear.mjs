@@ -2038,23 +2038,30 @@ const proto$1 = {
 
     this[RENDERED] = false;
   },
-  _refreshCondition() {
-    // Used to store adjacent conditional elements
-    const $eles = [this];
+};
 
-    if (this._refreshing) {
-      return;
-    }
+const xifComponentOpts = {
+  tag: "x-if",
+  data: {
+    value: null,
+  },
+  watch: {
+    async value() {
+      this._refreshCondition();
+    },
+  },
+  proto: {
+    async _refreshCondition() {
+      await this.__init_rendered;
 
-    // Pull in the remaining sibling conditional elements as well
-    $eles.push(...getConditionEles(this));
+      // Used to store adjacent conditional elements
+      const $eles = [this];
 
-    $eles.forEach((e) => (e._refreshing = true));
-    nextTick(() => {
+      // Pull in the remaining sibling conditional elements as well
+      $eles.push(...getConditionEles(this));
+
       let isOK = false;
       $eles.forEach(($ele) => {
-        delete $ele._refreshing;
-
         if (isOK) {
           $ele._revokeRender();
           return;
@@ -2068,23 +2075,9 @@ const proto$1 = {
 
         $ele._revokeRender();
       });
-    });
-  },
-};
-
-const xifComponentOpts = {
-  tag: "x-if",
-  data: {
-    value: null,
-  },
-  watch: {
-    async value() {
-      await this.__init_rendered;
-
-      this._refreshCondition();
     },
+    ...proto$1,
   },
-  proto: proto$1,
   created() {
     this.__originHTML = this.html;
     this.html = "";
@@ -2115,19 +2108,13 @@ register({
       this._xif._refreshCondition();
     },
   },
-  created() {
-    this.__originHTML = this.html;
-    this.html = "";
-  },
+  created: xifComponentOpts.created,
   proto: proto$1,
 });
 
 register({
   tag: "x-else",
-  created() {
-    this.__originHTML = this.html;
-    this.html = "";
-  },
+  created: xifComponentOpts.created,
   proto: proto$1,
 });
 
