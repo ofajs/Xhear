@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("bug: x-fill with x-if", async ({ page }) => {
+test("bug: x-fill in x-if", async ({ page }) => {
   await page.goto(
     "http://localhost:3398/test/histories/230816/fill-in-if.html"
   );
@@ -27,4 +27,43 @@ test("bug: x-fill with x-if", async ({ page }) => {
   expect(!!(await page.$('[data-testid="item-1-span"]'))).toBe(true);
 
   await page.getByTestId("other-item").click();
+});
+
+test("x-if in x-fill", async ({ page }) => {
+  await page.goto(
+    "http://localhost:3398/test/histories/230816/if-in-fill.html"
+  );
+
+  await new Promise((res) => setTimeout(res), 100);
+
+  expect((await page.$$("d-item")).length).toBe(4);
+  expect((await page.$$("a[olink]")).length).toBe(3);
+
+  await page.getByRole("button", { name: "Add Item" }).click();
+  await new Promise((res) => setTimeout(res), 100);
+
+  expect((await page.$$("d-item")).length).toBe(5);
+  expect((await page.$$("a[olink]")).length).toBe(4);
+});
+
+test("x-if in x-if", async ({ page }) => {
+  await page.goto("http://localhost:3398/test/histories/230816/if-in-if.html");
+
+  await new Promise((res) => setTimeout(res), 100);
+
+  expect((await page.getByTestId("target").textContent()).trim()).toBe(
+    "length not ok - 1"
+  );
+
+  await page.getByTestId("additem").click();
+
+  expect((await page.getByTestId("target").textContent()).trim()).toBe(
+    "length ok - 2"
+  );
+
+  await page.getByTestId("additem").click();
+
+  expect((await page.getByTestId("target").textContent()).trim()).toBe(
+    "length ok - 3"
+  );
 });

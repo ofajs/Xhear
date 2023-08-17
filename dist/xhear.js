@@ -1950,6 +1950,10 @@ try{
 
     let target = _this.__marked_end;
     while (true) {
+      if (!target) {
+        break;
+      }
+
       target = target.nextSibling;
       if (target instanceof Comment) {
         const { __$ele } = target;
@@ -1972,9 +1976,9 @@ try{
               break;
             }
           } else if (targetTag === "x-else-if" || targetTag === "x-else") {
-            target = target.previousSibling;
             $target._renderMarked();
             $target.remove();
+            target = $target.__marked_start;
             $target._xif = _this;
           }
         } else {
@@ -2128,7 +2132,7 @@ try{
       this.__init_rendered_res = resolve;
     },
     attached() {
-      // 必须要要父元素，才能添加标识，所以在 attached 后渲染标识
+      // Because it needs to have a parent element, the logo is added after attached.
       this._renderMarked();
       this.__init_rendered_res();
     },
@@ -2140,7 +2144,7 @@ try{
     tag: "x-else-if",
     watch: {
       value() {
-        this._xif._refreshCondition();
+        this._xif && this._xif._refreshCondition();
       },
     },
     created: xifComponentOpts.created,

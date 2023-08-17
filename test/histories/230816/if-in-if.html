@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>if-in-if</title>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      // x-fill 的模板也不能是 x-if 为第一个元素
+
+      $.register({
+        tag: "template-demo",
+        temp: `
+        <div>
+            <button on:click="addItem" data-testid="additem">addItem</button>
+        </div>
+
+        <div data-testid="target">
+            <x-if :value="arr.length">
+                <x-if :value="arr.length > 1"> length ok - {{arr.length}} </x-if>    
+                <x-else>
+                    length not ok - {{arr.length}}
+                </x-else>
+            </x-if>
+            <x-else>
+                length not ok - zero
+            </x-else>
+        </div>
+        
+        <br>
+        <div>{{arr}}</div>
+        `,
+        data: {
+          arr: [
+            {
+              val: "A",
+            },
+          ],
+        },
+        proto: {
+          addItem() {
+            this.arr.push({
+              val: "after-" + Math.random(),
+            });
+          },
+        },
+      });
+
+      window.$ = $;
+    </script>
+  </head>
+  <body>
+    <template-demo></template-demo>
+  </body>
+</html>

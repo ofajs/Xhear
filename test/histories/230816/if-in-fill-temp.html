@@ -1,0 +1,35 @@
+<style>
+  d-nav {
+    display: block;
+    padding: 10px;
+    background-color: rgba(165, 42, 42, 0.3);
+  }
+  d-item {
+    display: block;
+    padding: 5px;
+    margin: 5px;
+    background-color: rgba(0, 0, 255, 0.2);
+  }
+  a {
+    color: red;
+  }
+</style>
+
+<button on:click="addItem">Add Item</button>
+<br />
+<x-fill name="item" :value="navs"></x-fill>
+
+<template name="item">
+  <d-item>
+    <x-if :value="$data.href">
+      <a attr:href="$data.href" olink>{{$data.name}}</a>
+    </x-if>
+    <x-else>
+      {{$data.name}}
+      <d-nav slot="nav">
+        <div attr:haha="$data.name">haha {{$data.childs}}</div>
+        <x-fill :value="$data.childs" name="item"></x-fill>
+      </d-nav>
+    </x-else>
+  </d-item>
+</template>
