@@ -190,6 +190,6 @@ register({
 
     this.__init_rendered_res();
 
-    nextTick(() => this.ele.remove());
+    // nextTick(() => this.ele.remove());
   },
 });

@@ -96,6 +96,10 @@ export const register = (opts = {}) => {
   template.innerHTML = defaults.temp;
   const temps = convert(template);
 
+  // if (defaults.tag === "template-demo") {
+  //   debugger;
+  // }
+
   const getAttrKeys = (attrs) => {
     let attrKeys;
 
