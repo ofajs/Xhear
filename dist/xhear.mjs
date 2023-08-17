@@ -1,4 +1,4 @@
-//! xhear - v7.2.26 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.2.27 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -819,9 +819,10 @@ try{
     return ${expr};
   }
 }catch(error){
-  if(this.ele.isConnectd){
-    console.error(error);
+  if(this.ele && !this.ele.isConnectd){
+    return;
   }
+  console.error(error);
 }
 `;
   return new Function("...$args", funcStr).bind(data);
