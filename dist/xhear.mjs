@@ -2519,6 +2519,16 @@ class Xhear extends LikeArray {
     return nextEle ? eleX(nextEle) : null;
   }
 
+  after(val) {
+    const { next: nextEl } = this;
+
+    if (nextEl) {
+      nextEl.prev = val;
+    } else {
+      this.parent.push(val);
+    }
+  }
+
   get nexts() {
     const { parent } = this;
     const selfIndex = this.index;
@@ -2528,6 +2538,11 @@ class Xhear extends LikeArray {
   get prev() {
     const prevEle = this.ele.previousElementSibling;
     return prevEle ? eleX(prevEle) : null;
+  }
+
+  before(val) {
+    const $el = createXEle(val);
+    this.parent.ele.insertBefore($el.ele, this.ele);
   }
 
   get prevs() {
