@@ -1682,34 +1682,44 @@ var cssFn = {
 const COMPS = {};
 
 const renderElement = ({ defaults, ele, template, temps }) => {
-  const data = {
-    ...defaults.data,
-    ...defaults.attrs,
-  };
+  let $ele;
 
-  const $ele = eleX(ele);
+  try {
+    const data = {
+      ...deepCopyData(defaults.data),
+      ...defaults.attrs,
+    };
 
-  defaults.proto && $ele.extend(defaults.proto, { enumerable: false });
+    $ele = eleX(ele);
 
-  for (let [key, value] of Object.entries(data)) {
-    if (!$ele.hasOwnProperty(key)) {
-      $ele[key] = value;
+    defaults.proto && $ele.extend(defaults.proto, { enumerable: false });
+
+    for (let [key, value] of Object.entries(data)) {
+      if (!$ele.hasOwnProperty(key)) {
+        $ele[key] = value;
+      }
     }
+
+    if (defaults.temp) {
+      const root = ele.attachShadow({ mode: "open" });
+
+      root.innerHTML = template.innerHTML;
+
+      render({
+        target: root,
+        data: $ele,
+        temps,
+      });
+    }
+
+    defaults.ready && defaults.ready.call($ele);
+  } catch (error) {
+    const err = new Error(
+      `Render element error: ${ele.tagName} \n  ${error.stack}`
+    );
+    err.error = error;
+    throw err;
   }
-
-  if (defaults.temp) {
-    const root = ele.attachShadow({ mode: "open" });
-
-    root.innerHTML = template.innerHTML;
-
-    render({
-      target: root,
-      data: $ele,
-      temps,
-    });
-  }
-
-  defaults.ready && defaults.ready.call($ele);
 
   if (defaults.watch) {
     const wen = Object.entries(defaults.watch);
@@ -1757,17 +1767,29 @@ const register = (opts = {}) => {
     ...opts,
   };
 
-  validateTagName(defaults.tag);
+  let template, temps;
 
-  const name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
+  try {
+    validateTagName(defaults.tag);
 
-  if (COMPS[name]) {
-    throw `Component ${name} already exists`;
+    defaults.data = deepCopyData(defaults.data);
+
+    const name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
+
+    if (COMPS[name]) {
+      throw `Component ${name} already exists`;
+    }
+
+    template = document.createElement("template");
+    template.innerHTML = defaults.temp;
+    temps = convert(template);
+  } catch (error) {
+    const err = new Error(
+      `Register COmponent Error: ${defaults.tag} \n  ${error.stack}`
+    );
+    err.error = error;
+    throw err;
   }
-
-  const template = document.createElement("template");
-  template.innerHTML = defaults.temp;
-  const temps = convert(template);
 
   const getAttrKeys = (attrs) => {
     let attrKeys;
@@ -1780,6 +1802,7 @@ const register = (opts = {}) => {
 
     return attrKeys;
   };
+
   const XElement = (COMPS[name] = class extends HTMLElement {
     constructor(...args) {
       super(...args);
@@ -1896,6 +1919,30 @@ function validateTagName(str) {
   }
 
   return true;
+}
+
+function deepCopyData(obj) {
+  if (obj instanceof Set || obj instanceof Map) {
+    throw "The data of the registered component should contain only regular data types such as String, Number, Object and Array. for other data types, please set them after ready.";
+  }
+
+  if (obj instanceof Function) {
+    throw `Please write the function in the 'proto' property object.`;
+  }
+
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
+  }
+
+  const copy = Array.isArray(obj) ? [] : {};
+
+  for (let key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      copy[key] = deepCopyData(obj[key]);
+    }
+  }
+
+  return copy;
 }
 
 /**
