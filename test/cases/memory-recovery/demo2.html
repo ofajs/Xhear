@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>recovery 2</title>
+  </head>
+  <body>
+    <button onclick="$('#logger').text = outerData.owner.size">
+      refresh length
+    </button>
+    <button onclick="$('temp-demo').remove()">remove demo</button>
+    <div id="logger"></div>
+
+    <temp-demo></temp-demo>
+    <temp-demo></temp-demo>
+    <temp-demo></temp-demo>
+
+    <template id="temp">
+      <div style="padding: 5px; margin: 5px; border: #ff0000 solid 1px">
+        <demo-two :outer="outer"></demo-two>
+        <demo-two :outer="outer.sub"></demo-two>
+      </div>
+    </template>
+
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      window.outerData = $.stanz({
+        value: "I am outer",
+        sub: {
+          value: "I am sub",
+        },
+      });
+
+      $.register({
+        tag: "temp-demo",
+        temp: $("#temp").html,
+        data: {},
+        proto: {},
+        attached() {
+          this.outer = outerData;
+        },
+        detached() {
+          this.outer = null;
+        },
+      });
+
+      $.register({
+        tag: "demo-two",
+        data: {
+          outer: {},
+        },
+        temp: `<div style="display:inline-block;padding:10px;margin:10px;border:#aaa solid 1px;">{{outer.value}}</div>`,
+      });
+
+      window.$ = $;
+    </script>
+  </body>
+</html>
