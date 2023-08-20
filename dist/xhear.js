@@ -2529,7 +2529,7 @@ try{
       const { next: nextEl } = this;
 
       if (nextEl) {
-        nextEl.prev = val;
+        nextEl.before(val);
       } else {
         this.parent.push(val);
       }
