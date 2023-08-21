@@ -128,7 +128,6 @@ export function render({
               remove(revokes, actionRevoke);
               remove(tasks, func);
               remove(getRevokes(el), actionRevoke);
-              // delete el.__revoke;
             };
           } else {
             const revokeFunc = func();
@@ -138,12 +137,10 @@ export function render({
                 remove(revokes, actionRevoke);
                 remove(getRevokes(el), actionRevoke);
                 revokeFunc();
-                // delete el.__revoke;
               };
             } else {
               console.warn(`${actionName} render method need return revoke`);
             }
-            // el.__revoke = actionRevoke;
           }
 
           revokes.push(actionRevoke);

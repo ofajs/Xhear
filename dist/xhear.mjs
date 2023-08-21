@@ -897,7 +897,6 @@ function render({
               removeArrayValue(revokes, actionRevoke);
               removeArrayValue(tasks, func);
               removeArrayValue(getRevokes(el), actionRevoke);
-              // delete el.__revoke;
             };
           } else {
             const revokeFunc = func();
@@ -907,12 +906,10 @@ function render({
                 removeArrayValue(revokes, actionRevoke);
                 removeArrayValue(getRevokes(el), actionRevoke);
                 revokeFunc();
-                // delete el.__revoke;
               };
             } else {
               console.warn(`${actionName} render method need return revoke`);
             }
-            // el.__revoke = actionRevoke;
           }
 
           revokes.push(actionRevoke);

@@ -55,3 +55,26 @@ test("transmit data recovery", async ({ page }) => {
   });
   expect(afterSize).toBe("1");
 });
+
+test("fill data recovery", async ({ page }) => {
+  await page.goto(
+    "http://localhost:3398/test/cases/memory-recovery/demo3.html"
+  );
+
+  await new Promise((res) => setTimeout(res), 30);
+
+  const { _preview: beforeSize } = await page.waitForFunction(async () => {
+    return outerData.arr.owner.size;
+  });
+
+  expect(beforeSize).toBe("2");
+
+  await page.getByRole("button", { name: "remove demo" }).click();
+  await new Promise((res) => setTimeout(res), 30);
+
+  const { _preview: afterSize } = await page.waitForFunction(async () => {
+    return outerData.arr.owner.size;
+  });
+
+  expect(afterSize).toBe("1");
+});
