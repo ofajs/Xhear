@@ -112,7 +112,7 @@ export const register = (opts = {}) => {
     temps = convert(template);
   } catch (error) {
     const err = new Error(
-      `Register COmponent Error: ${defaults.tag} \n  ${error.stack}`
+      `Register Component Error: ${defaults.tag} \n  ${error.stack}`
     );
     err.error = error;
     throw err;

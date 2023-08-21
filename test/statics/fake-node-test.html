@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fake Node Test</title>
+    <script src="../../dist/xhear.js"></script>
+  </head>
+  <body>
+    <div>Other1</div>
+
+    <script type="module">
+      import { FakeNode } from "../../packages/xhear/render/fake-node.mjs";
+
+      window.ele = new FakeNode("xfill");
+
+      document.body.append(ele);
+      ele.init();
+
+      //   ele.appendChild($(`<div>a1</div>`).ele);
+      //   ele.appendChild($(`<div>a2</div>`).ele);
+      //   ele.appendChild($(`<div>a3</div>`).ele);
+
+      //   console.log(ele.children);
+
+      //   console.log("innerHTML => ", ele.innerHTML);
+
+      //   ele.innerHTML = `
+      //   <div style="color:red;">a444</div>
+      //   <div style="color:blue;" id="ha">
+      //     <div>a55</div>
+      //   </div>
+      //   `;
+
+      //   ele.insertBefore($(`<div>a4-mid</div>`).ele, $("#ha").ele);
+
+      //   console.log("innerHTML2 => ", ele.innerHTML);
+
+      window.$ele = $(ele);
+
+      $ele.push("<div>a1</div>");
+      $ele.push("<div>a2</div>");
+      $ele.push("<div>a3</div>");
+
+      $ele.splice(1, 0, "<div>insert div</div>");
+    </script>
+  </body>
+</html>

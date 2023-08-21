@@ -159,6 +159,9 @@ export function render({
     }
 
     el.removeAttribute("x-bind-data");
+
+    el._bindingRendered = true;
+    el.dispatchEvent(new Event("binding-rendered"));
   });
 
   if (!target.__render_temps && !isEmptyObject(temps)) {

@@ -2,14 +2,14 @@
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
-const getType = (value) =>
+const getType$1 = (value) =>
   objectToString
     .call(value)
     .toLowerCase()
     .replace(/(\[object )|(])/g, "");
 
 const isObject = (obj) => {
-  const type = getType(obj);
+  const type = getType$1(obj);
   return type === "array" || type === "object";
 };
 
@@ -88,7 +88,7 @@ const extend = (_this, proto, descriptor = {}) => {
   return _this;
 };
 
-const isFunction = (val) => getType(val).includes("function");
+const isFunction = (val) => getType$1(val).includes("function");
 
 const hyphenToUpperCase = (str) =>
   str.replace(/-([a-z])/g, (match, p1) => {
@@ -98,18 +98,6 @@ const hyphenToUpperCase = (str) =>
 function capitalizeFirstLetter(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
-
-const isArrayEqual = (arr1, arr2) => {
-  if (arr1.length !== arr2.length) {
-    return false;
-  }
-  for (let i = 0, len = arr1.length; i < len; i++) {
-    if (arr1[i] !== arr2[i]) {
-      return false;
-    }
-  }
-  return true;
-};
 
 const toDashCase = (str) => {
   return str.replace(/[A-Z]/g, function (match) {
@@ -134,17 +122,6 @@ function isEmptyObject(obj) {
     }
   }
   return true;
-}
-
-function moveArrayValue(arr, oldValue, newIndex) {
-  const oldIndex = arr.indexOf(oldValue);
-
-  if (oldIndex === -1) {
-    throw new Error("Value not found in array");
-  }
-
-  arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
-  return arr;
 }
 
 const removeArrayValue = (arr, target) => {
@@ -951,6 +928,9 @@ function render({
     }
 
     el.removeAttribute("x-bind-data");
+
+    el._bindingRendered = true;
+    el.dispatchEvent(new Event("binding-rendered"));
   });
 
   if (!target.__render_temps && !isEmptyObject(temps)) {
@@ -1658,7 +1638,7 @@ var cssFn = {
     return new XhearCSS(this);
   },
   set css(d) {
-    if (getType(d) == "string") {
+    if (getType$1(d) == "string") {
       this.ele.style = d;
       return;
     }
@@ -1785,7 +1765,7 @@ const register = (opts = {}) => {
     temps = convert(template);
   } catch (error) {
     const err = new Error(
-      `Register COmponent Error: ${defaults.tag} \n  ${error.stack}`
+      `Register Component Error: ${defaults.tag} \n  ${error.stack}`
     );
     err.error = error;
     throw err;
@@ -2031,7 +2011,7 @@ function getConditionEles(_this) {
 
   return $eles;
 }
-const proto$1 = {
+const proto = {
   _getRenderData() {
     let target = this.__marked_end;
     while (target && !target.__render_data) {
@@ -2162,7 +2142,7 @@ const xifComponentOpts = {
         $ele._revokeRender();
       });
     },
-    ...proto$1,
+    ...proto,
   },
   created() {
     this.__originHTML = this.html;
@@ -2190,74 +2170,126 @@ register({
     },
   },
   created: xifComponentOpts.created,
-  proto: proto$1,
+  proto,
 });
 
 register({
   tag: "x-else",
   created: xifComponentOpts.created,
-  proto: proto$1,
+  proto,
 });
 
-const createItem = (d, targetTemp, temps, $host, index) => {
-  const $ele = createXEle(targetTemp.innerHTML);
-  const { ele } = $ele;
+class FakeNode extends Comment {
+  constructor(tagname) {
+    const tagText = `Fake Node${tagname ? ": " + tagname : ""}`;
 
-  const itemData = new Stanz({
-    $data: d,
-    $ele,
-    $host,
-    $index: index,
-  });
+    super(` ${tagText} --end `);
 
-  render({
-    target: ele,
-    data: itemData,
-    temps,
-    $host,
-    isRenderSelf: true,
-  });
+    this._inited = false;
 
-  const revokes = ele.__revokes;
+    Object.defineProperty(this, "_start", {
+      value: new Comment(` ${tagText} --start `),
+    });
+  }
 
-  const revoke = () => {
-    removeArrayValue(revokes, revoke);
-    itemData.revoke();
-  };
-
-  revokes.push(revoke);
-
-  return { ele, itemData };
-};
-
-const proto = {
-  _getRenderData: proto$1._getRenderData,
-  _renderMarked: proto$1._renderMarked,
-  _getChilds() {
-    const childs = [];
-
-    const { __marked_end, __marked_start } = this;
-
-    if (!__marked_start) {
-      return [];
+  init() {
+    if (this._inited) {
+      return;
     }
 
-    let target = __marked_start;
+    this.parentNode.insertBefore(this._start, this);
+    this._inited = true;
+  }
 
-    while (true) {
-      target = target.nextSibling;
+  querySelector(expr) {
+    return this.__searchEl(expr, "find");
+  }
 
-      if (!target || target === __marked_end) {
-        break;
+  querySelectorAll(expr) {
+    return this.__searchEl(expr);
+  }
+
+  __searchEl(expr, funcName = "filter") {
+    const startParent = this.parentNode;
+    if (!startParent) return [];
+
+    const childs = this.children;
+
+    return Array.from(startParent.querySelectorAll(expr))[funcName]((e) => {
+      let par = e;
+      while (true) {
+        if (childs.includes(par)) {
+          return true;
+        }
+
+        par = par.parentNode;
+
+        if (!par) {
+          break;
+        }
       }
-      if (target instanceof Element) {
-        childs.push(target);
+    });
+  }
+
+  insertBefore(newEle, target) {
+    const { parentNode } = this;
+
+    if (Array.from(parentNode.children).includes(target)) {
+      parentNode.insertBefore(newEle, target);
+    } else {
+      parentNode.insertBefore(newEle, this);
+    }
+  }
+
+  appendChild(newEle) {
+    this.parentNode.insertBefore(newEle, this);
+  }
+
+  get children() {
+    const childs = [];
+
+    let prev = this;
+    while (true) {
+      prev = prev.previousSibling;
+
+      if (prev) {
+        if (prev instanceof HTMLElement) {
+          childs.unshift(prev);
+        } else if (prev === this._start) {
+          break;
+        }
+      } else {
+        throw `This is an unclosed FakeNode`;
       }
     }
 
     return childs;
-  },
-};
+  }
+
+  set innerHTML(val) {
+    this.children.forEach((e) => {
+      e.remove();
+    });
+
+    const temp = document.createElement("template");
+    temp.innerHTML = val;
+
+    Array.from(temp.content.children).forEach((e) => {
+      this.appendChild(e);
+    });
+  }
+
+  get innerHTML() {
+    const { children } = this;
+    let content = "";
+
+    children.forEach((e) => {
+      content += e.outerHTML + "\n";
+    });
+
+    return content;
+  }
+}
 
 register({
   tag: "x-fill",
@@ -2265,17 +2297,23 @@ register({
     value: null,
   },
   watch: {
-    async value(val) {
-      await this.__init_rendered;
+    value() {
+      this.refreshValue();
+    },
+  },
+  proto: {
+    refreshValue() {
+      const val = this.value;
 
-      const childs = this._getChilds();
+      if (!this._bindend) {
+        return;
+      }
+
+      const childs = this._fake.children;
 
       if (!val) {
-        childs &&
-          childs.forEach((el) => {
-            revokeAll(el);
-            el.remove();
-          });
+        childs.forEach((e) => revokeAll(e));
+        this._fake.innerHTML = "";
         return;
       }
 
@@ -2294,98 +2332,134 @@ register({
         return;
       }
 
-      const newVal = Array.from(val);
-      const oldVal = childs.map((e) => e.__render_data.$data);
+      const regData = getRenderData(this._fake);
 
-      if (isArrayEqual(oldVal, newVal)) {
-        return;
-      }
+      const xids = childs.map((e) => e._data_xid);
 
-      const tempName = this._name;
+      const { data, temps } = regData;
 
-      const rData = this._getRenderData();
+      const targetTemp = temps[this._name];
 
-      if (!rData) {
-        return;
-      }
+      // Adjustment of elements in order
+      const len = val.length;
+      let currentEl;
+      for (let i = 0; i < len; i++) {
+        const e = val[i];
 
-      const { data, temps } = rData;
+        const oldIndex = xids.indexOf(e.xid);
 
-      if (!temps) {
-        return;
-      }
+        if (oldIndex > -1) {
+          if (oldIndex === i) {
+            // No data changes
+            currentEl = childs[i];
+            continue;
+          }
 
-      // const targetTemp = temps[hyphenToUpperCase(tempName)];
-      const targetTemp = temps[tempName];
-
-      const markEnd = this.__marked_end;
-      const parent = markEnd.parentNode;
-      const backupChilds = childs.slice();
-      const $host = data.$host || data;
-
-      for (let i = 0, len = val.length; i < len; i++) {
-        const current = val[i];
-        const cursorEl = childs[i];
-
-        if (!cursorEl) {
-          const { ele } = createItem(current, targetTemp, temps, $host, i);
-          parent.insertBefore(ele, markEnd);
+          // position change
+          const target = childs[oldIndex];
+          const $target = eleX(target);
+          // fix data index
+          $target.__item.$index = i;
+          this._fake.insertBefore(target, currentEl.nextElementSibling);
+          currentEl = target;
           continue;
         }
 
-        const cursorData = cursorEl.__render_data.$data;
-
-        if (current === cursorData) {
-          continue;
-        }
-
-        if (oldVal.includes(current)) {
-          // Data displacement occurs
-          const oldEl = childs.find((e) => e.__render_data.$data === current);
-          oldEl.__internal = 1;
-          parent.insertBefore(oldEl, cursorEl);
-          delete oldEl.__internal;
-          moveArrayValue(childs, oldEl, i);
+        // new data
+        const $ele = createItem(e, temps, targetTemp, data.$host || data, i);
+        if (!currentEl) {
+          if (childs.length) {
+            this._fake.insertBefore($ele.ele, childs[0]);
+          } else {
+            this._fake.appendChild($ele.ele);
+          }
         } else {
-          // New elements added
-          const { ele } = createItem(current, targetTemp, temps, $host, i);
-          parent.insertBefore(ele, cursorEl);
-          childs.splice(i, 0, ele);
+          this._fake.insertBefore($ele.ele, currentEl.nextElementSibling);
         }
+        currentEl = $ele.ele;
       }
 
-      backupChilds.forEach((current, i) => {
-        const data = oldVal[i];
+      const newChilds = this._fake.children;
 
-        // need to be deleted
-        if (!newVal.includes(data)) {
-          revokeAll(current);
-          current.remove();
-        }
-      });
+      if (len < newChilds.length) {
+        newChilds.slice(len).forEach((e) => {
+          e.remove();
+          revokeAll(e);
+        });
+      }
+    },
+    init() {
+      if (this._bindend) {
+        return;
+      }
+      this._bindend = true;
+      const fake = (this._fake = new FakeNode("x-fill"));
+      this.before(fake);
+      fake.init();
+      this.remove();
+
+      this.refreshValue();
     },
   },
-  proto,
   ready() {
-    let resolve;
-    this.__init_rendered = new Promise((res) => (resolve = res));
-    this.__init_rendered_res = resolve;
-  },
-  attached() {
-    if (this.__runned_render) {
-      return;
-    }
-    this.__runned_render = 1;
-
-    this.__originHTML = "origin";
     this._name = this.attr("name");
-    this._renderMarked();
 
-    this.__init_rendered_res();
-
-    nextTick(() => this.ele.remove());
+    if (this.ele._bindingRendered) {
+      this.init();
+    } else {
+      this.one("binding-rendered", () => this.init());
+    }
   },
 });
+
+const createItem = (data, temps, targetTemp, $host, $index) => {
+  const $ele = createXEle(targetTemp.innerHTML);
+
+  const itemData = new Stanz({
+    $data: data,
+    $ele,
+    $host,
+    $index,
+  });
+
+  render({
+    target: $ele.ele,
+    data: itemData,
+    temps,
+    $host,
+    isRenderSelf: true,
+  });
+
+  const revokes = $ele.ele.__revokes;
+
+  const revoke = () => {
+    removeArrayValue(revokes, revoke);
+    itemData.revoke();
+  };
+
+  revokes.push(revoke);
+
+  $ele.__item = itemData;
+  $ele.ele._data_xid = data.xid;
+
+  return $ele;
+};
+
+const getRenderData = (target) => {
+  while (target && !target.__render_data) {
+    target = target.parentNode;
+  }
+
+  if (target) {
+    return {
+      target,
+      data: target.__render_data,
+      temps: target.__render_temps,
+    };
+  }
+
+  return null;
+};
 
 const { defineProperties } = Object;
 
@@ -2731,7 +2805,7 @@ const createXEle = (expr, exprType) => {
     return eleX(expr);
   }
 
-  const type = getType(expr);
+  const type = getType$1(expr);
 
   switch (type) {
     case "object":
@@ -2752,7 +2826,7 @@ const revokeAll = (target) => {
 };
 
 function $$1(expr) {
-  if (getType(expr) === "string" && !/<.+>/.test(expr)) {
+  if (getType$1(expr) === "string" && !/<.+>/.test(expr)) {
     const ele = document.querySelector(expr);
 
     return eleX(ele);
