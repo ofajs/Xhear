@@ -4,6 +4,7 @@ import { FakeNode } from "./fake-node.mjs";
 import Stanz from "../../stanz/main.mjs";
 import { createXEle, eleX, revokeAll } from "../util.mjs";
 import { removeArrayValue } from "../public.mjs";
+import { getRenderData } from "./condition.mjs";
 
 register({
   tag: "x-fill",
@@ -163,20 +164,4 @@ const createItem = (data, temps, targetTemp, $host, $index) => {
   $ele.ele._data_xid = data.xid;
 
   return $ele;
-};
-
-const getRenderData = (target) => {
-  while (target && !target.__render_data) {
-    target = target.parentNode;
-  }
-
-  if (target) {
-    return {
-      target,
-      data: target.__render_data,
-      temps: target.__render_temps,
-    };
-  }
-
-  return null;
 };

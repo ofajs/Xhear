@@ -12,7 +12,7 @@
     <script type="module">
       import { FakeNode } from "../../packages/xhear/render/fake-node.mjs";
 
-      window.ele = new FakeNode("xfill");
+      window.ele = new FakeNode("xfill1");
 
       document.body.append(ele);
       ele.init();
@@ -43,6 +43,18 @@
       $ele.push("<div>a3</div>");
 
       $ele.splice(1, 0, "<div>insert div</div>");
+
+      const e2 = new FakeNode("xfill2");
+      document.body.append(e2);
+      e2.init();
+
+      const e3 = new FakeNode("xfill3");
+      document.body.append(e3);
+      e3.init();
+
+      const e4 = document.createElement("div");
+      e4.innerHTML = "e4444";
+      document.body.append(e4);
     </script>
   </body>
 </html>

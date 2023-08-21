@@ -1922,270 +1922,20 @@ function deepCopyData(obj) {
   return copy;
 }
 
-/**
- * `x-if` first replaces all neighboring conditional elements with token elements and triggers the rendering process once; the rendering process is triggered again after each `value` change.
- * The rendering process is as follows:
- * 1. First, collect all conditional elements adjacent to `x-if`.
- * 2. Mark these elements and wait for the `value` of each conditional element to be set successfully before proceeding to the next step.
- * 3. Based on the marking, perform a judgment operation asynchronously, the element that satisfies the condition first will be rendered; after successful rendering, the subsequent conditional elements will clear the rendered content.
- */
-
-
-const RENDERED = Symbol("already-rendered");
-
-const oldRenderable = renderExtends.renderable;
-renderExtends.renderable = (el) => {
-  const bool = oldRenderable(el);
-
-  if (!bool) {
-    return false;
-  }
-
-  let t = el;
-  while (true) {
-    t = t.parentNode;
-    if (!t) {
-      break;
-    }
-
-    let tag = t.tagName;
-
-    if (tag && (tag === "X-IF" || tag === "X-ELSE-IF" || tag === "X-ELSE")) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-// Find other condition elements before and after
-// isEnd: Retrieves the subsequent condition element
-function getConditionEles(_this) {
-  const $eles = [];
-
-  if (_this.parent) {
-    _this.remove();
-  }
-
-  let target = _this.__marked_end;
-  while (true) {
-    if (!target) {
-      break;
-    }
-
-    target = target.nextSibling;
-    if (target instanceof Comment) {
-      const { __$ele } = target;
-      if (__$ele) {
-        const eleTag = __$ele.tag;
-
-        if (eleTag === "x-else-if" || eleTag === "x-else") {
-          $eles.push(__$ele);
-        }
-
-        target = target.__end;
-      }
-    } else {
-      if (target) {
-        const $target = $(target);
-        const targetTag = $target.tag;
-
-        if (target instanceof Text) {
-          if (target.data.replace(/\n/g, "").trim()) {
-            break;
-          }
-        } else if (targetTag === "x-else-if" || targetTag === "x-else") {
-          $target._renderMarked();
-          $target.remove();
-          target = $target.__marked_start;
-          $target._xif = _this;
-        }
-      } else {
-        break;
-      }
-    }
-  }
-
-  return $eles;
-}
-const proto = {
-  _getRenderData() {
-    let target = this.__marked_end;
-    while (target && !target.__render_data) {
-      target = target.parentNode;
-    }
-
-    if (target) {
-      return {
-        target,
-        data: target.__render_data,
-        temps: target.__render_temps,
-      };
-    }
-
-    return null;
-  },
-  _renderMarked() {
-    if (this.__marked_start) {
-      return;
-    }
-
-    const { ele } = this;
-    const { parentNode } = ele;
-
-    const markedText = `${this.tag}: ${this.__originHTML
-      .trim()
-      .slice(0, 20)
-      .replace(/\n/g, "")} ...`;
-
-    const markedStart = document.createComment(markedText + " --start");
-    const markedEnd = document.createComment(markedText + " --end");
-    markedStart.__end = markedEnd;
-    markedEnd.__start = markedStart;
-    markedEnd.__$ele = markedStart.__$ele = this;
-    parentNode.insertBefore(markedStart, ele);
-    parentNode.insertBefore(markedEnd, ele);
-    this.__marked_start = markedStart;
-    this.__marked_end = markedEnd;
-
-    Object.defineProperties(ele, {
-      __revokes: {
-        set(val) {
-          markedStart.__revokes = val;
-        },
-        get() {
-          return markedStart.__revokes;
-        },
-      },
-    });
-  },
-  _renderContent() {
-    if (this[RENDERED]) {
-      return;
-    }
-
-    const e = this._getRenderData();
-
-    if (!e) {
-      return;
-    }
-
-    const { target, data, temps } = e;
-
-    const markedEnd = this.__marked_end;
-
-    const temp = document.createElement("template");
-    temp.innerHTML = this.__originHTML;
-    markedEnd.parentNode.insertBefore(temp.content, markedEnd);
-
-    render({ target, data, temps });
-
-    this[RENDERED] = true;
-  },
-  _revokeRender() {
-    const markedStart = this.__marked_start;
-    const markedEnd = this.__marked_end;
-
-    let target = markedEnd.previousSibling;
-
-    while (true) {
-      if (!target || target === markedStart) {
-        break;
-      }
-
-      revokeAll(target);
-      const oldTarget = target;
-      target = target.previousSibling;
-      oldTarget.remove();
-    }
-
-    this[RENDERED] = false;
-  },
-};
-
-const xifComponentOpts = {
-  tag: "x-if",
-  data: {
-    value: null,
-  },
-  watch: {
-    async value() {
-      this._refreshCondition();
-    },
-  },
-  proto: {
-    async _refreshCondition() {
-      await this.__init_rendered;
-
-      // Used to store adjacent conditional elements
-      const $eles = [this];
-
-      // Pull in the remaining sibling conditional elements as well
-      $eles.push(...getConditionEles(this));
-
-      let isOK = false;
-      $eles.forEach(($ele) => {
-        if (isOK) {
-          $ele._revokeRender();
-          return;
-        }
-
-        if ($ele.value || $ele.tag === "x-else") {
-          $ele._renderContent();
-          isOK = true;
-          return;
-        }
-
-        $ele._revokeRender();
-      });
-    },
-    ...proto,
-  },
-  created() {
-    this.__originHTML = this.html;
-    this.html = "";
-  },
-  ready() {
-    let resolve;
-    this.__init_rendered = new Promise((res) => (resolve = res));
-    this.__init_rendered_res = resolve;
-  },
-  attached() {
-    // Because it needs to have a parent element, the logo is added after attached.
-    this._renderMarked();
-    this.__init_rendered_res();
-  },
-};
-
-register(xifComponentOpts);
-
-register({
-  tag: "x-else-if",
-  watch: {
-    value() {
-      this._xif && this._xif._refreshCondition();
-    },
-  },
-  created: xifComponentOpts.created,
-  proto,
-});
-
-register({
-  tag: "x-else",
-  created: xifComponentOpts.created,
-  proto,
-});
-
 class FakeNode extends Comment {
-  constructor(tagname) {
-    const tagText = `Fake Node${tagname ? ": " + tagname : ""}`;
+  constructor(markname) {
+    const tagText = `Fake Node${markname ? ": " + markname : ""}`;
 
     super(` ${tagText} --end `);
 
+    this._mark = markname;
     this._inited = false;
 
+    const startCom = new Comment(` ${tagText} --start `);
+    startCom.__fake_end = this;
+
     Object.defineProperty(this, "_start", {
-      value: new Comment(` ${tagText} --start `),
+      value: startCom,
     });
   }
 
@@ -2263,15 +2013,35 @@ class FakeNode extends Comment {
     return childs;
   }
 
+  get childNodes() {
+    const childs = [];
+
+    let prev = this;
+    while (true) {
+      prev = prev.previousSibling;
+
+      if (prev) {
+        if (prev === this._start) {
+          break;
+        }
+        childs.unshift(prev);
+      } else {
+        throw `This is an unclosed FakeNode`;
+      }
+    }
+
+    return childs;
+  }
+
   set innerHTML(val) {
-    this.children.forEach((e) => {
+    this.childNodes.forEach((e) => {
       e.remove();
     });
 
     const temp = document.createElement("template");
     temp.innerHTML = val;
 
-    Array.from(temp.content.children).forEach((e) => {
+    Array.from(temp.content.childNodes).forEach((e) => {
       this.appendChild(e);
     });
   }
@@ -2286,7 +2056,222 @@ class FakeNode extends Comment {
 
     return content;
   }
+
+  get nextElementSibling() {
+    let next = this.nextSibling;
+
+    if (next.__fake_end) {
+      return next.__fake_end;
+    }
+
+    if (next && !(next instanceof Element)) {
+      next = next.nextElementSibling;
+    }
+
+    return next;
+  }
+
+  get previousElementSibling() {
+    const { _start } = this;
+    let prev = _start.previousSibling;
+
+    if (prev instanceof FakeNode) {
+      return prev;
+    }
+
+    return _start.previousElementSibling;
+  }
 }
+
+/**
+ * `x-if` first replaces all neighboring conditional elements with token elements and triggers the rendering process once; the rendering process is triggered again after each `value` change.
+ * The rendering process is as follows:
+ * 1. First, collect all conditional elements adjacent to `x-if`.
+ * 2. Mark these elements and wait for the `value` of each conditional element to be set successfully before proceeding to the next step.
+ * 3. Based on the marking, perform a judgment operation asynchronously, the element that satisfies the condition first will be rendered; after successful rendering, the subsequent conditional elements will clear the rendered content.
+ */
+
+
+const oldRenderable = renderExtends.renderable;
+renderExtends.renderable = (el) => {
+  const bool = oldRenderable(el);
+
+  if (!bool) {
+    return false;
+  }
+
+  let t = el;
+  while (true) {
+    t = t.parentNode;
+    if (!t) {
+      break;
+    }
+
+    let tag = t.tagName;
+
+    if (tag && (tag === "X-IF" || tag === "X-ELSE-IF" || tag === "X-ELSE")) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const regOptions = {
+  data: {
+    value: null,
+  },
+  watch: {
+    value() {
+      if (!this._bindend) {
+        return;
+      }
+
+      this.refreshValue();
+    },
+  },
+  proto: {
+    refreshValue() {
+      clearTimeout(this._timer);
+      this._timer = setTimeout(() => {
+        const conditions = [this, ...this._others];
+
+        let isOK = false;
+
+        conditions.forEach((conditionEl) => {
+          if (isOK) {
+            // 前面已经有成功的条件，后面的条件元素都应该撤销
+            conditionEl._clearContent();
+            return;
+          }
+
+          if (conditionEl.value || conditionEl.tag === "x-else") {
+            isOK = true;
+            conditionEl._renderContent();
+          } else {
+            conditionEl._clearContent();
+          }
+        });
+      }, 0);
+    },
+    _renderContent() {
+      const { target, data, temps } = getRenderData(this._fake);
+
+      this._fake.innerHTML = this.__originHTML;
+
+      render({ target, data, temps });
+    },
+    _clearContent() {
+      revokeAll(this._fake);
+      this._fake.innerHTML = "";
+    },
+    init() {
+      if (this._bindend) {
+        return;
+      }
+
+      this._bindend = true;
+      const fake = (this._fake = new FakeNode(this.tag));
+      this.before(fake);
+      fake.init();
+      this.remove();
+
+      // 给 else-if 添加 _xif，给 else 初始化
+      if (this.tag === "x-if") {
+        const others = (this._others = []);
+
+        let next = fake;
+        while (true) {
+          next = next.nextElementSibling;
+
+          if (!next) {
+            break;
+          }
+
+          switch (next.tagName) {
+            case "X-ELSE": {
+              const $el = eleX(next);
+              if ($el.init) {
+                $el.init();
+              } else {
+                $el._if_ready = 1;
+              }
+
+              others.push($el);
+              return;
+            }
+            case "X-ELSE-IF": {
+              const $el = eleX(next);
+
+              $el._xif = this;
+
+              others.push($el);
+              break;
+            }
+          }
+        }
+      }
+    },
+  },
+  created() {
+    this.__originHTML = this.html;
+  },
+  ready() {
+    if (this.ele._bindingRendered) {
+      this.init();
+    } else {
+      this.one("binding-rendered", () => this.init());
+    }
+  },
+};
+
+register({
+  tag: "x-if",
+  ...regOptions,
+});
+
+register({
+  tag: "x-else-if",
+  ...regOptions,
+  watch: {
+    value() {
+      if (!this._bindend) {
+        return;
+      }
+
+      if (this._xif) {
+        this._xif.refreshValue();
+      }
+    },
+  },
+});
+
+register({
+  tag: "x-else",
+  ...regOptions,
+  watch: {},
+  ready() {
+    if (this._if_ready) {
+      this.init();
+    }
+  },
+});
+
+const getRenderData = (target) => {
+  while (target && !target.__render_data) {
+    target = target.parentNode;
+  }
+
+  if (target) {
+    return {
+      target,
+      data: target.__render_data,
+      temps: target.__render_temps,
+    };
+  }
+
+  return null;
+};
 
 register({
   tag: "x-fill",
@@ -2446,22 +2431,6 @@ const createItem = (data, temps, targetTemp, $host, $index) => {
   $ele.ele._data_xid = data.xid;
 
   return $ele;
-};
-
-const getRenderData = (target) => {
-  while (target && !target.__render_data) {
-    target = target.parentNode;
-  }
-
-  if (target) {
-    return {
-      target,
-      data: target.__render_data,
-      temps: target.__render_temps,
-    };
-  }
-
-  return null;
 };
 
 const { defineProperties } = Object;
@@ -2828,7 +2797,7 @@ const revokeAll = (target) => {
     });
 };
 
-function $$1(expr) {
+function $(expr) {
   if (getType$1(expr) === "string" && !/<.+>/.test(expr)) {
     const ele = document.querySelector(expr);
 
@@ -2838,14 +2807,14 @@ function $$1(expr) {
   return createXEle(expr);
 }
 
-Object.defineProperties($$1, {
+Object.defineProperties($, {
   // Convenient objects for use as extensions
   extensions: {
     value: {},
   },
 });
 
-Object.assign($$1, {
+Object.assign($, {
   stanz,
   render,
   convert,
@@ -2854,4 +2823,4 @@ Object.assign($$1, {
   all: (expr) => searchEle(document, expr).map(eleX),
 });
 
-export { $$1 as default };
+export { $ as default };

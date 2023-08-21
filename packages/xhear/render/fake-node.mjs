@@ -1,13 +1,17 @@
 export class FakeNode extends Comment {
-  constructor(tagname) {
-    const tagText = `Fake Node${tagname ? ": " + tagname : ""}`;
+  constructor(markname) {
+    const tagText = `Fake Node${markname ? ": " + markname : ""}`;
 
     super(` ${tagText} --end `);
 
+    this._mark = markname;
     this._inited = false;
 
+    const startCom = new Comment(` ${tagText} --start `);
+    startCom.__fake_end = this;
+
     Object.defineProperty(this, "_start", {
-      value: new Comment(` ${tagText} --start `),
+      value: startCom,
     });
   }
 
@@ -85,15 +89,35 @@ export class FakeNode extends Comment {
     return childs;
   }
 
+  get childNodes() {
+    const childs = [];
+
+    let prev = this;
+    while (true) {
+      prev = prev.previousSibling;
+
+      if (prev) {
+        if (prev === this._start) {
+          break;
+        }
+        childs.unshift(prev);
+      } else {
+        throw `This is an unclosed FakeNode`;
+      }
+    }
+
+    return childs;
+  }
+
   set innerHTML(val) {
-    this.children.forEach((e) => {
+    this.childNodes.forEach((e) => {
       e.remove();
     });
 
     const temp = document.createElement("template");
     temp.innerHTML = val;
 
-    Array.from(temp.content.children).forEach((e) => {
+    Array.from(temp.content.childNodes).forEach((e) => {
       this.appendChild(e);
     });
   }
@@ -107,5 +131,30 @@ export class FakeNode extends Comment {
     });
 
     return content;
+  }
+
+  get nextElementSibling() {
+    let next = this.nextSibling;
+
+    if (next.__fake_end) {
+      return next.__fake_end;
+    }
+
+    if (next && !(next instanceof Element)) {
+      next = next.nextElementSibling;
+    }
+
+    return next;
+  }
+
+  get previousElementSibling() {
+    const { _start } = this;
+    let prev = _start.previousSibling;
+
+    if (prev instanceof FakeNode) {
+      return prev;
+    }
+
+    return _start.previousElementSibling;
   }
 }
