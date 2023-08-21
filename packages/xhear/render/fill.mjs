@@ -74,8 +74,14 @@ register({
           const $target = eleX(target);
           // fix data index
           $target.__item.$index = i;
-          this._fake.insertBefore(target, currentEl.nextElementSibling);
+          target.__internal = 1;
+          if (i === 0) {
+            this._fake.insertBefore(target, childs[0]);
+          } else {
+            this._fake.insertBefore(target, currentEl.nextElementSibling);
+          }
           currentEl = target;
+          delete target.__internal;
           continue;
         }
 
