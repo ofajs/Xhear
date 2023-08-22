@@ -125,26 +125,51 @@ export function render({
             tasks.push(func);
 
             actionRevoke = () => {
+              // const { revoke: methodRevoke } = $el[actionName];
+
+              // if (methodRevoke) {
+              //   methodRevoke({
+              //     target: $el,
+              //     args,
+              //   });
+              // }
+
               remove(revokes, actionRevoke);
-              remove(tasks, func);
               remove(getRevokes(el), actionRevoke);
+              remove(tasks, func);
             };
+
+            // console.log($el, actionName, args);
           } else {
             const revokeFunc = func();
 
-            if (isFunction(revokeFunc)) {
-              actionRevoke = () => {
-                remove(revokes, actionRevoke);
-                remove(getRevokes(el), actionRevoke);
+            actionRevoke = () => {
+              // const { revoke: methodRevoke } = $el[actionName];
+
+              // if (methodRevoke) {
+              //   methodRevoke({
+              //     target: $el,
+              //     args,
+              //   });
+              //   console.log($el, actionName, args);
+              //   debugger;
+              // }
+
+              remove(revokes, actionRevoke);
+              remove(getRevokes(el), actionRevoke);
+
+              if (isFunction(revokeFunc)) {
                 revokeFunc();
-              };
-            } else {
-              console.warn(`${actionName} render method need return revoke`);
-            }
+              } else {
+                console.warn(`${actionName} render method need return revoke`);
+              }
+            };
           }
 
           revokes.push(actionRevoke);
-          addRevoke(el, actionRevoke);
+          if (el !== target) {
+            addRevoke(el, actionRevoke);
+          }
         } catch (error) {
           const err = new Error(
             `Execution of the ${actionName} method reports an error :\n ${error.stack}`
@@ -359,5 +384,10 @@ const defaultData = {
 defaultData.prop.always = true;
 defaultData.attr.always = true;
 defaultData.class.always = true;
+
+// defaultData.prop.revoke = ({ target, args }) => {
+//   // debugger;
+//   console.log("revoke => ", target, args);
+// };
 
 export default defaultData;

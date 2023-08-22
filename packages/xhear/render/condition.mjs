@@ -39,6 +39,7 @@ renderExtends.renderable = (el) => {
 const regOptions = {
   data: {
     value: null,
+    __rendered: false,
   },
   watch: {
     value() {
@@ -74,6 +75,11 @@ const regOptions = {
       }, 0);
     },
     _renderContent() {
+      if (this.__rendered) {
+        return;
+      }
+      this.__rendered = true;
+
       const { target, data, temps } = getRenderData(this._fake);
 
       this._fake.innerHTML = this.__originHTML;
@@ -81,6 +87,8 @@ const regOptions = {
       render({ target, data, temps });
     },
     _clearContent() {
+      this.__rendered = false;
+
       revokeAll(this._fake);
       this._fake.innerHTML = "";
     },

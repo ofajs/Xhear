@@ -898,26 +898,51 @@ function render({
             tasks.push(func);
 
             actionRevoke = () => {
+              // const { revoke: methodRevoke } = $el[actionName];
+
+              // if (methodRevoke) {
+              //   methodRevoke({
+              //     target: $el,
+              //     args,
+              //   });
+              // }
+
               removeArrayValue(revokes, actionRevoke);
-              removeArrayValue(tasks, func);
               removeArrayValue(getRevokes(el), actionRevoke);
+              removeArrayValue(tasks, func);
             };
+
+            // console.log($el, actionName, args);
           } else {
             const revokeFunc = func();
 
-            if (isFunction(revokeFunc)) {
-              actionRevoke = () => {
-                removeArrayValue(revokes, actionRevoke);
-                removeArrayValue(getRevokes(el), actionRevoke);
+            actionRevoke = () => {
+              // const { revoke: methodRevoke } = $el[actionName];
+
+              // if (methodRevoke) {
+              //   methodRevoke({
+              //     target: $el,
+              //     args,
+              //   });
+              //   console.log($el, actionName, args);
+              //   debugger;
+              // }
+
+              removeArrayValue(revokes, actionRevoke);
+              removeArrayValue(getRevokes(el), actionRevoke);
+
+              if (isFunction(revokeFunc)) {
                 revokeFunc();
-              };
-            } else {
-              console.warn(`${actionName} render method need return revoke`);
-            }
+              } else {
+                console.warn(`${actionName} render method need return revoke`);
+              }
+            };
           }
 
           revokes.push(actionRevoke);
-          addRevoke(el, actionRevoke);
+          if (el !== target) {
+            addRevoke(el, actionRevoke);
+          }
         } catch (error) {
           const err = new Error(
             `Execution of the ${actionName} method reports an error :\n ${error.stack}`
@@ -1162,7 +1187,7 @@ var syncFn = {
   },
 };
 
-var eventFn = {
+const eventFn = {
   on(name, func, options) {
     if (options && options.isExpr && !/[^\d\w_\$\.]/.test(func)) {
       const oriName = func;
@@ -2128,6 +2153,7 @@ renderExtends.renderable = (el) => {
 const regOptions = {
   data: {
     value: null,
+    __rendered: false,
   },
   watch: {
     value() {
@@ -2163,6 +2189,11 @@ const regOptions = {
       }, 0);
     },
     _renderContent() {
+      if (this.__rendered) {
+        return;
+      }
+      this.__rendered = true;
+
       const { target, data, temps } = getRenderData(this._fake);
 
       this._fake.innerHTML = this.__originHTML;
@@ -2170,6 +2201,8 @@ const regOptions = {
       render({ target, data, temps });
     },
     _clearContent() {
+      this.__rendered = false;
+
       revokeAll(this._fake);
       this._fake.innerHTML = "";
     },
