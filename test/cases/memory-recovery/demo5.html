@@ -7,7 +7,12 @@
   </head>
   <body>
     <button onclick="$('#logger').html = $('temp-demo').owner.size">
-      refresh count
+      refresh owner size
+    </button>
+    <button
+      onclick="$('#logger').html = $('temp-demo').arr.map(e=>e.owner.size)"
+    >
+      refresh arr owner size
     </button>
     <div id="logger"></div>
     <temp-demo></temp-demo>
@@ -17,8 +22,10 @@
         {{count}} <button on:click="count++">add count</button>
         <x-if :value="count % 3">
           <x-fill :value="arr">
-            <demo-two :outer="$data"> {{$host.count}} </demo-two>
-            <!-- <demo-two :outer="$data" :ha="$host"> </demo-two> -->
+            <div>
+              <demo-two :outer="$data"> {{$host.count}} </demo-two>
+              <demo-two :outer="$data" :ha="$host"> </demo-two>
+            </div>
           </x-fill>
         </x-if>
       </div>

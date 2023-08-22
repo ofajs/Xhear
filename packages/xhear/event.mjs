@@ -1,4 +1,4 @@
-const eventFn = {
+export default {
   on(name, func, options) {
     if (options && options.isExpr && !/[^\d\w_\$\.]/.test(func)) {
       const oriName = func;
@@ -53,9 +53,3 @@ const eventFn = {
     return this;
   },
 };
-
-// eventFn.on.revoke = ({ target, args }) => {
-//   debugger;
-// };
-
-export default eventFn;

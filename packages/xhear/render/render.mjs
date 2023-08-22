@@ -120,22 +120,28 @@ export function render({
 
           let actionRevoke;
 
+          let clearRevs = () => {
+            const { revoke: methodRevoke } = $el[actionName];
+
+            if (methodRevoke) {
+              methodRevoke({
+                actionName,
+                target: $el,
+                args,
+              });
+            }
+
+            remove(revokes, actionRevoke);
+            remove(getRevokes(el), actionRevoke);
+            clearRevs = null;
+          };
+
           if (always) {
             // Run every data update
             tasks.push(func);
 
             actionRevoke = () => {
-              // const { revoke: methodRevoke } = $el[actionName];
-
-              // if (methodRevoke) {
-              //   methodRevoke({
-              //     target: $el,
-              //     args,
-              //   });
-              // }
-
-              remove(revokes, actionRevoke);
-              remove(getRevokes(el), actionRevoke);
+              clearRevs();
               remove(tasks, func);
             };
 
@@ -144,19 +150,7 @@ export function render({
             const revokeFunc = func();
 
             actionRevoke = () => {
-              // const { revoke: methodRevoke } = $el[actionName];
-
-              // if (methodRevoke) {
-              //   methodRevoke({
-              //     target: $el,
-              //     args,
-              //   });
-              //   console.log($el, actionName, args);
-              //   debugger;
-              // }
-
-              remove(revokes, actionRevoke);
-              remove(getRevokes(el), actionRevoke);
+              clearRevs();
 
               if (isFunction(revokeFunc)) {
                 revokeFunc();
@@ -385,9 +379,9 @@ defaultData.prop.always = true;
 defaultData.attr.always = true;
 defaultData.class.always = true;
 
-// defaultData.prop.revoke = ({ target, args }) => {
-//   // debugger;
-//   console.log("revoke => ", target, args);
-// };
+defaultData.prop.revoke = ({ target, args }) => {
+  const propName = args[0];
+  target[propName] = null;
+};
 
 export default defaultData;

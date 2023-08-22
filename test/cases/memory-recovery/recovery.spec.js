@@ -1,4 +1,4 @@
-// npx playwright codegen http://localhost:3398/test/cases/memory-recovery/demo1.html
+// npx playwright codegen http://localhost:3398/test/cases/memory-recovery/demo5.html
 
 import { test, expect } from "@playwright/test";
 
@@ -103,4 +103,39 @@ test("condition data recovery", async ({ page }) => {
     return outerData.owner.size;
   });
   expect(afterSize).toBe("0");
+});
+
+test("component data owner size", async ({ page }) => {
+  await page.goto(
+    "http://localhost:3398/test/cases/memory-recovery/demo5.html"
+  );
+
+  await new Promise((res) => setTimeout(res), 30);
+
+  await page.getByRole("button", { name: "refresh owner size" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("10");
+  await page.getByRole("button", { name: "refresh arr owner size" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
+    "[4,4,4]"
+  );
+
+  await page.getByRole("button", { name: "add count" }).click();
+  await new Promise((res) => setTimeout(res), 30);
+
+  await page.getByRole("button", { name: "refresh owner size" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("10");
+  await page.getByRole("button", { name: "refresh arr owner size" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
+    "[4,4,4]"
+  );
+
+  await page.getByRole("button", { name: "add count" }).click();
+  await new Promise((res) => setTimeout(res), 30);
+
+  await page.getByRole("button", { name: "refresh owner size" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+  await page.getByRole("button", { name: "refresh arr owner size" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
+    "[1,1,1]"
+  );
 });

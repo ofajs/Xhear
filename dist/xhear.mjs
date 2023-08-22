@@ -893,22 +893,28 @@ function render({
 
           let actionRevoke;
 
+          let clearRevs = () => {
+            const { revoke: methodRevoke } = $el[actionName];
+
+            if (methodRevoke) {
+              methodRevoke({
+                actionName,
+                target: $el,
+                args,
+              });
+            }
+
+            removeArrayValue(revokes, actionRevoke);
+            removeArrayValue(getRevokes(el), actionRevoke);
+            clearRevs = null;
+          };
+
           if (always) {
             // Run every data update
             tasks.push(func);
 
             actionRevoke = () => {
-              // const { revoke: methodRevoke } = $el[actionName];
-
-              // if (methodRevoke) {
-              //   methodRevoke({
-              //     target: $el,
-              //     args,
-              //   });
-              // }
-
-              removeArrayValue(revokes, actionRevoke);
-              removeArrayValue(getRevokes(el), actionRevoke);
+              clearRevs();
               removeArrayValue(tasks, func);
             };
 
@@ -917,19 +923,7 @@ function render({
             const revokeFunc = func();
 
             actionRevoke = () => {
-              // const { revoke: methodRevoke } = $el[actionName];
-
-              // if (methodRevoke) {
-              //   methodRevoke({
-              //     target: $el,
-              //     args,
-              //   });
-              //   console.log($el, actionName, args);
-              //   debugger;
-              // }
-
-              removeArrayValue(revokes, actionRevoke);
-              removeArrayValue(getRevokes(el), actionRevoke);
+              clearRevs();
 
               if (isFunction(revokeFunc)) {
                 revokeFunc();
@@ -1158,6 +1152,11 @@ defaultData.prop.always = true;
 defaultData.attr.always = true;
 defaultData.class.always = true;
 
+defaultData.prop.revoke = ({ target, args }) => {
+  const propName = args[0];
+  target[propName] = null;
+};
+
 var syncFn = {
   sync(propName, targetName, options) {
     if (!options) {
@@ -1187,7 +1186,7 @@ var syncFn = {
   },
 };
 
-const eventFn = {
+var eventFn = {
   on(name, func, options) {
     if (options && options.isExpr && !/[^\d\w_\$\.]/.test(func)) {
       const oriName = func;
@@ -2836,6 +2835,12 @@ const revokeAll = (target) => {
     Array.from(target.childNodes).forEach((el) => {
       revokeAll(el);
     });
+
+  const revokes = target?.shadowRoot?.__revokes;
+
+  if (revokes) {
+    [...revokes].forEach((f) => f());
+  }
 };
 
 function $(expr) {
