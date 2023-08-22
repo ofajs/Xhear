@@ -59,7 +59,7 @@ const regOptions = {
 
         conditions.forEach((conditionEl) => {
           if (isOK) {
-            // 前面已经有成功的条件，后面的条件元素都应该撤销
+            // A success condition has preceded it, and any subsequent conditional elements should be clear
             conditionEl._clearContent();
             return;
           }

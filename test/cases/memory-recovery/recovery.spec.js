@@ -78,3 +78,29 @@ test("fill data recovery", async ({ page }) => {
 
   expect(afterSize).toBe("1");
 });
+
+test("condition data recovery", async ({ page }) => {
+  await page.goto(
+    "http://localhost:3398/test/cases/memory-recovery/demo4.html"
+  );
+
+  await new Promise((res) => setTimeout(res), 30);
+
+  const { _preview: beforeSize } = await page.waitForFunction(async () => {
+    return outerData.owner.size;
+  });
+
+  expect(beforeSize).toBe("2");
+
+  await page.getByRole("button", { name: "add count" }).click();
+  await page.getByRole("button", { name: "add count" }).click();
+  await page.getByRole("button", { name: "add count" }).click();
+  await new Promise((res) => setTimeout(res), 30);
+
+  await page.getByRole("button", { name: "remove demo" }).click();
+
+  const { _preview: afterSize } = await page.waitForFunction(async () => {
+    return outerData.owner.size;
+  });
+  expect(afterSize).toBe("0");
+});

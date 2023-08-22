@@ -638,8 +638,13 @@
   const { defineProperties: defineProperties$1 } = Object;
 
   const setData = ({ target, key, value, receiver, type, succeed }) => {
+    const oldValue = receiver[key];
+
     let data = value;
     if (isxdata(data)) {
+      if (oldValue === value) {
+        return true;
+      }
       data._owner.push(receiver);
     } else if (isObject(value)) {
       const desc = Object.getOwnPropertyDescriptor(target, key);
@@ -649,7 +654,6 @@
       }
     }
 
-    const oldValue = receiver[key];
     const isSame = oldValue === value;
 
     if (!isSame && isxdata(oldValue)) {
@@ -1822,15 +1826,19 @@ try{
       }
 
       connectedCallback() {
-        defaults.attached &&
-          !isInternal(this) &&
-          defaults.attached.call(eleX(this));
+        if (isInternal(this)) {
+          return;
+        }
+
+        defaults.attached && defaults.attached.call(eleX(this));
       }
 
       disconnectedCallback() {
-        defaults.detached &&
-          !isInternal(this) &&
-          defaults.detached.call(eleX(this));
+        if (isInternal(this)) {
+          return;
+        }
+
+        defaults.detached && defaults.detached.call(eleX(this));
       }
 
       attributeChangedCallback(name, oldValue, newValue) {
@@ -2146,7 +2154,7 @@ try{
 
           conditions.forEach((conditionEl) => {
             if (isOK) {
-              // 前面已经有成功的条件，后面的条件元素都应该撤销
+              // A success condition has preceded it, and any subsequent conditional elements should be clear
               conditionEl._clearContent();
               return;
             }
