@@ -25,6 +25,7 @@
             <div>
               <demo-two :outer="$data"> {{$host.count}} </demo-two>
               <demo-two :outer="$data" :ha="$host"> </demo-two>
+              <button on:click="$host.kaca">kaca</button>
             </div>
           </x-fill>
         </x-if>
@@ -60,7 +61,11 @@
             },
           ],
         },
-        proto: {},
+        proto: {
+          kaca(a) {
+            console.log("kaca => ", a);
+          },
+        },
       });
 
       $.register({

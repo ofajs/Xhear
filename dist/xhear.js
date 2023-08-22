@@ -806,7 +806,7 @@ try{
     return ${expr};
   }
 }catch(error){
-  if(this.ele && !this.ele.isConnectd){
+  if(this.ele && !this.ele.isConnected){
     return;
   }
   console.error(error);
@@ -878,13 +878,23 @@ try{
         arr.forEach((args) => {
           try {
             const { always } = $el[actionName];
+            let afterArgs = [];
 
-            const func = () => {
-              const revoker = $el[actionName](...args, {
-                isExpr: true,
+            const work = () => {
+              const [key, expr] = args;
+
+              const func = convertToFunc(expr, data, {
+                beforeArgs: args,
+              });
+
+              afterArgs = [key, func];
+
+              $el[actionName](...afterArgs, {
+                actionName,
+                target: $el,
                 data,
-                temps,
-                ...otherOpts,
+                beforeArgs: args,
+                args: afterArgs,
               });
 
               renderExtends.render({
@@ -893,55 +903,38 @@ try{
                 name: actionName,
                 target: $el,
               });
-
-              return revoker;
             };
-
-            let actionRevoke;
 
             let clearRevs = () => {
               const { revoke: methodRevoke } = $el[actionName];
 
               if (methodRevoke) {
+                // console.log("revoke => ", actionName, $el, args);
+
                 methodRevoke({
                   actionName,
                   target: $el,
-                  args,
+                  data,
+                  beforeArgs: args,
+                  args: afterArgs,
                 });
               }
 
-              removeArrayValue(revokes, actionRevoke);
-              removeArrayValue(getRevokes(el), actionRevoke);
+              removeArrayValue(revokes, clearRevs);
+              removeArrayValue(getRevokes(el), clearRevs);
               clearRevs = null;
             };
 
             if (always) {
               // Run every data update
-              tasks.push(func);
-
-              actionRevoke = () => {
-                clearRevs();
-                removeArrayValue(tasks, func);
-              };
-
-              // console.log($el, actionName, args);
+              tasks.push(work);
             } else {
-              const revokeFunc = func();
-
-              actionRevoke = () => {
-                clearRevs();
-
-                if (isFunction(revokeFunc)) {
-                  revokeFunc();
-                } else {
-                  console.warn(`${actionName} render method need return revoke`);
-                }
-              };
+              work();
             }
 
-            revokes.push(actionRevoke);
+            revokes.push(clearRevs);
             if (el !== target) {
-              addRevoke(el, actionRevoke);
+              addRevoke(el, clearRevs);
             }
           } catch (error) {
             const err = new Error(
@@ -980,11 +973,11 @@ try{
 
       target.__render_data = data;
 
-      tasks.forEach((func) => func());
+      tasks.forEach((f) => f());
 
       const wid = data.watchTick((e) => {
         if (tasks.length) {
-          tasks.forEach((func) => func());
+          tasks.forEach((f) => f());
         } else {
           data.unwatch(wid);
         }
@@ -1098,36 +1091,25 @@ try{
   };
 
   const defaultData = {
-    _convertExpr(options = {}, expr) {
-      const { isExpr, data } = options;
-
-      if (!isExpr) {
-        return expr;
-      }
-
-      return convertToFunc(expr, data);
-    },
     prop(...args) {
-      let [name, value, options] = args;
+      let [name, value] = args;
 
       if (args.length === 1) {
         return this[name];
       }
 
-      value = this._convertExpr(options, value);
       value = getVal(value);
       name = hyphenToUpperCase(name);
 
       this[name] = value;
     },
     attr(...args) {
-      let [name, value, options] = args;
+      let [name, value] = args;
 
       if (args.length === 1) {
         return this.ele.getAttribute(name);
       }
 
-      value = this._convertExpr(options, value);
       value = getVal(value);
 
       if (value === null) {
@@ -1137,13 +1119,12 @@ try{
       }
     },
     class(...args) {
-      let [name, value, options] = args;
+      let [name, value] = args;
 
       if (args.length === 1) {
         return this.ele.classList.contains(name);
       }
 
-      value = this._convertExpr(options, value);
       value = getVal(value);
 
       if (value) {
@@ -1158,7 +1139,7 @@ try{
   defaultData.attr.always = true;
   defaultData.class.always = true;
 
-  defaultData.prop.revoke = ({ target, args }) => {
+  defaultData.prop.revoke = ({ target, args, $ele, data }) => {
     const propName = args[0];
     target[propName] = null;
   };
@@ -1168,6 +1149,8 @@ try{
       if (!options) {
         throw `Sync is only allowed within the renderer`;
       }
+
+      [propName, targetName] = options.beforeArgs;
 
       const { data } = options;
 
@@ -1192,28 +1175,23 @@ try{
     },
   };
 
-  var eventFn = {
+  const eventFn = {
     on(name, func, options) {
-      if (options && options.isExpr && !/[^\d\w_\$\.]/.test(func)) {
-        const oriName = func;
-        func = options.data.get(func);
+      if (options) {
+        const beforeValue = options.beforeArgs[1];
 
-        if (!func) {
-          throw new Error(`${oriName} method does not exist`);
+        const oldFunc = func;
+
+        const caches = this.__on_caches || (this.__on_caches = new Map());
+
+        if (!/[^\d\w_\$\.]/.test(beforeValue)) {
+          func = options.data.get(beforeValue).bind(options.data);
+
+          caches.set(oldFunc, oldFunc);
         }
-      } else {
-        func = this._convertExpr(options, func);
-      }
-
-      if (options && options.data) {
-        func = func.bind(options.data);
       }
 
       this.ele.addEventListener(name, func);
-
-      if (options) {
-        return () => this.ele.removeEventListener(name, func);
-      }
 
       return this;
     },
@@ -1246,6 +1224,15 @@ try{
 
       return this;
     },
+  };
+
+  eventFn.on.revoke = ({ target, args }) => {
+    const caches = target.__on_caches || (target.__on_caches = new Map());
+
+    const currentFunc = caches.get(args[1]);
+    caches.delete(args[1]);
+
+    target.ele.removeEventListener(args[0], currentFunc);
   };
 
   const originSplice = (ele, start, count, ...items) => {
