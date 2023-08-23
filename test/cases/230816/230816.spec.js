@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("bug: x-fill in x-if", async ({ page }) => {
   await page.goto(
-    "http://localhost:3398/test/histories/230816/fill-in-if.html"
+    "http://localhost:3398/test/cases/230816/fill-in-if.html"
   );
   await new Promise((res) => setTimeout(res), 100);
 
@@ -31,7 +31,7 @@ test("bug: x-fill in x-if", async ({ page }) => {
 
 test("x-if in x-fill", async ({ page }) => {
   await page.goto(
-    "http://localhost:3398/test/histories/230816/if-in-fill.html"
+    "http://localhost:3398/test/cases/230816/if-in-fill.html"
   );
 
   await new Promise((res) => setTimeout(res), 100);
@@ -47,7 +47,7 @@ test("x-if in x-fill", async ({ page }) => {
 });
 
 test("x-if in x-if", async ({ page }) => {
-  await page.goto("http://localhost:3398/test/histories/230816/if-in-if.html");
+  await page.goto("http://localhost:3398/test/cases/230816/if-in-if.html");
 
   await new Promise((res) => setTimeout(res), 100);
 

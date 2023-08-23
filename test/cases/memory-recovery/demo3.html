@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>recovery 3</title>
+  </head>
+  <body>
+    <button onclick="$('#logger').text = outerData.owner.size">
+      refresh length
+    </button>
+    <button onclick="$('temp-demo').remove()">remove demo</button>
+    <div id="logger"></div>
+
+    <temp-demo></temp-demo>
+
+    <template id="temp">
+      <div>
+        <x-fill :value="outer.arr" name="haha"></x-fill>
+      </div>
+
+      <template name="haha">
+        <div style="padding: 5px; margin: 5px; border: #ff0000 solid 1px">
+          {{$index}} <demo-two :outer="$data"></demo-two>
+          <div style="margin-left: 10px">
+            <x-fill :value="$data.childs" name="haha"></x-fill>
+          </div>
+        </div>
+      </template>
+    </template>
+
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      window.outerData = $.stanz({
+        arr: [
+          {
+            value: "I am A",
+          },
+          {
+            value: "I am B",
+            childs: [
+              {
+                value: "I am B sub 1",
+              },
+              {
+                value: "I am B sub 2",
+              },
+            ],
+          },
+          {
+            value: "I am C",
+          },
+        ],
+      });
+
+      $.register({
+        tag: "temp-demo",
+        temp: $("#temp").html,
+        data: {},
+        proto: {},
+        attached() {
+          this.outer = outerData;
+        },
+        detached() {
+          this.outer = null;
+        },
+      });
+
+      $.register({
+        tag: "demo-two",
+        data: {
+          outer: {},
+        },
+        temp: `<div style="display:inline-block;padding:10px;margin:10px;border:#aaa solid 1px;">{{outer.value}}</div>`,
+      });
+
+      // setTimeout(() => {
+      //   outerData.arr.push({
+      //     value: "D",
+      //   });
+
+      //   outerData.arr.reverse();
+      // }, 1000);
+
+      window.$ = $;
+    </script>
+  </body>
+</html>
