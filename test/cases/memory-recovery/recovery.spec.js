@@ -1,4 +1,4 @@
-// npx playwright codegen http://localhost:3398/test/cases/memory-recovery/demo5.html
+// npx playwright codegen http://localhost:3398/test/cases/memory-recovery/demo6.html
 
 import { test, expect } from "@playwright/test";
 
@@ -138,4 +138,73 @@ test("component data owner size", async ({ page }) => {
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
     "[1,1,1]"
   );
+});
+
+test("loop object recovery", async ({ page }) => {
+  await page.goto(
+    "http://localhost:3398/test/cases/memory-recovery/demo1-2.html"
+  );
+
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("3");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("4");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("5");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("6");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("7");
+
+  await page.getByRole("button", { name: "demopp" }).click();
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+});
+
+test("sync data memory recovery", async ({ page }) => {
+  await page.goto(
+    "http://localhost:3398/test/cases/memory-recovery/demo6.html"
+  );
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("2");
+
+  await page.locator('input[type="text"]').fill("");
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
+
+  await page.getByRole("textbox").fill("a");
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("2");
+
+  await page.locator('input[type="text"]').fill("");
+  await page.getByRole("button", { name: "refresh length" }).click();
+  expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
 });

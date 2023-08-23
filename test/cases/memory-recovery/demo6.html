@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>recovery 6</title>
+  </head>
+  <body>
+    <button onclick="$('#logger').text = $('temp-demo').outer.owner.size">
+      refresh length
+    </button>
+    <!-- <button onclick="$('temp-demo').remove()">remove demo</button> -->
+    <div id="logger"></div>
+
+    <temp-demo></temp-demo>
+
+    <template id="temp1">
+      <div style="padding: 5px; margin: 5px; border: #ff0000 solid 1px">
+        {{outer.value}}
+        <input type="text" sync:value="outer.value" />
+        <x-if :value="outer.value">
+          <demo-two :outer="outer"></demo-two>
+          <!-- <demo-two sync:outer="outer"></demo-two> -->
+        </x-if>
+      </div>
+    </template>
+
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      $.register({
+        tag: "temp-demo",
+        temp: $("#temp1").html,
+        data: {
+          outer: {
+            value: "I am outer",
+          },
+        },
+        proto: {},
+      });
+
+      $.register({
+        tag: "demo-two",
+        data: {
+          outer: {},
+        },
+        temp: `<div style="display:inline-block;padding:10px;margin:10px;border:#aaa solid 1px;">
+         <input sync:value="outer.value" />  
+          </div>`,
+      });
+
+      window.$ = $;
+    </script>
+  </body>
+</html>
