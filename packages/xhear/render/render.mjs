@@ -135,8 +135,6 @@ export function render({
             const { revoke: methodRevoke } = $el[actionName];
 
             if (methodRevoke) {
-              // console.log("revoke => ", actionName, $el, args);
-
               methodRevoke({
                 actionName,
                 target: $el,
@@ -166,7 +164,7 @@ export function render({
           }
         } catch (error) {
           const err = new Error(
-            `Execution of the ${actionName} method reports an error :\n ${error.stack}`
+            `Execution of the ${actionName} method reports an error: ${actionName}:${args[0]}="${args[1]}"  \n ${error.stack}`
           );
           err.error = error;
           throw err;

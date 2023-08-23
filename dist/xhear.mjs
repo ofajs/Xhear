@@ -908,8 +908,6 @@ function render({
             const { revoke: methodRevoke } = $el[actionName];
 
             if (methodRevoke) {
-              // console.log("revoke => ", actionName, $el, args);
-
               methodRevoke({
                 actionName,
                 target: $el,
@@ -939,7 +937,7 @@ function render({
           }
         } catch (error) {
           const err = new Error(
-            `Execution of the ${actionName} method reports an error :\n ${error.stack}`
+            `Execution of the ${actionName} method reports an error: ${actionName}:${args[0]}="${args[1]}"  \n ${error.stack}`
           );
           err.error = error;
           throw err;
@@ -1169,39 +1167,39 @@ const syncFn = {
 
     const { data } = options;
 
+    const val = data.get(targetName);
+
+    if (val instanceof Object) {
+      const err = `Object values cannot be synchronized using the sync function : ${targetName}`;
+      console.log(err, data);
+      throw new Error(err);
+    }
+
     this[propName] = data.get(targetName);
 
     const wid1 = this.watch((e) => {
       if (e.hasModified(propName)) {
-        let value;
         try {
-          value = this.get(propName);
+          const value = this.get(propName);
           data.set(targetName, value);
         } catch (err) {
-          debugger;
+          // console.warn(err);
         }
       }
     });
 
     const wid2 = data.watch((e) => {
       if (e.hasModified(targetName)) {
-        let value;
         try {
-          value = data.get(targetName);
+          const value = data.get(targetName);
+          this.set(propName, value);
         } catch (err) {
-          debugger;
+          // console.warn(err);
         }
-        this.set(propName, value);
       }
     });
 
     return () => {
-      try {
-        this.set(propName, null);
-        data.set(targetName, null);
-      } catch (err) {
-        debugger;
-      }
       this.unwatch(wid1);
       data.unwatch(wid2);
     };
@@ -1209,7 +1207,6 @@ const syncFn = {
 };
 
 syncFn.sync.revoke = (e) => {
-  console.log("revoke", e);
   e.result();
 };
 
