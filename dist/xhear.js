@@ -790,9 +790,6 @@
 
   const renderExtends = {
     render() {},
-    renderable(el) {
-      return true;
-    },
   };
 
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
@@ -841,10 +838,6 @@ try{
     const revokes = getRevokes(target);
 
     texts.forEach((el) => {
-      if (!renderExtends.renderable(el)) {
-        return;
-      }
-
       const textEl = document.createTextNode("");
       const { parentNode } = el;
       parentNode.insertBefore(textEl, el);
@@ -874,10 +867,6 @@ try{
     eles.forEach((el) => {
       const bindData = JSON.parse(el.getAttribute("x-bind-data"));
 
-      if (!renderExtends.renderable(el)) {
-        return;
-      }
-
       const $el = eleX(el);
 
       for (let [actionName, arr] of Object.entries(bindData)) {
@@ -885,6 +874,8 @@ try{
           try {
             const { always } = $el[actionName];
             let afterArgs = [];
+
+            let workResult;
 
             const work = () => {
               const [key, expr] = args;
@@ -901,7 +892,7 @@ try{
 
               afterArgs = [key, func];
 
-              $el[actionName](...afterArgs, {
+              const reval = $el[actionName](...afterArgs, {
                 actionName,
                 target: $el,
                 data,
@@ -915,6 +906,8 @@ try{
                 name: actionName,
                 target: $el,
               });
+
+              return reval;
             };
 
             let clearRevs = () => {
@@ -929,11 +922,13 @@ try{
                   data,
                   beforeArgs: args,
                   args: afterArgs,
+                  result: workResult,
                 });
               }
 
               removeArrayValue(revokes, clearRevs);
               removeArrayValue(getRevokes(el), clearRevs);
+              removeArrayValue(tasks, work);
               clearRevs = null;
             };
 
@@ -941,7 +936,7 @@ try{
               // Run every data update
               tasks.push(work);
             } else {
-              work();
+              workResult = work();
             }
 
             revokes.push(clearRevs);
@@ -995,11 +990,9 @@ try{
         }
       });
     }
-
-    renderExtends.render({ step: "init", target });
   }
 
-  const fixSingleXfill = (template) => {
+  const fixFillAndIf = (template) => {
     template.content.querySelectorAll("x-fill:not([name])").forEach((fillEl) => {
       if (fillEl.querySelector("x-fill:not([name])")) {
         throw `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`;
@@ -1013,6 +1006,21 @@ try{
       temp.innerHTML = fillEl.innerHTML;
       fillEl.innerHTML = "";
       fillEl.appendChild(temp);
+    });
+
+    const conditions = Array.from(
+      template.content.querySelectorAll("x-if,x-else-if,x-else")
+    );
+
+    conditions.forEach((condiEl) => {
+      const firstChild = condiEl.children[0];
+      if (!firstChild || firstChild.tagName !== "TEMPLATE") {
+        condiEl.innerHTML = `<template condition>${condiEl.innerHTML}</template>`;
+      }
+    });
+
+    template.content.querySelectorAll("template").forEach((e) => {
+      fixFillAndIf(e);
     });
   };
 
@@ -1049,7 +1057,7 @@ try{
         el.remove();
       } else {
         // The initialized template can be run here
-        fixSingleXfill(el);
+        fixFillAndIf(el);
       }
 
       temps = { ...temps, ...convert(el.content) };
@@ -1113,7 +1121,7 @@ try{
       value = getVal(value);
       name = hyphenToUpperCase(name);
 
-      this[name] = value;
+      this.set(name, value);
     },
     attr(...args) {
       let [name, value] = args;
@@ -1153,10 +1161,11 @@ try{
 
   defaultData.prop.revoke = ({ target, args, $ele, data }) => {
     const propName = args[0];
-    target[propName] = null;
+    // target[propName] = null;
+    target.set(propName, null);
   };
 
-  var syncFn = {
+  const syncFn = {
     sync(propName, targetName, options) {
       if (!options) {
         throw `Sync is only allowed within the renderer`;
@@ -1170,40 +1179,64 @@ try{
 
       const wid1 = this.watch((e) => {
         if (e.hasModified(propName)) {
-          data.set(targetName, this.get(propName));
+          let value;
+          try {
+            value = this.get(propName);
+            data.set(targetName, value);
+          } catch (err) {
+            debugger;
+          }
         }
       });
 
       const wid2 = data.watch((e) => {
         if (e.hasModified(targetName)) {
-          this.set(propName, data.get(targetName));
+          let value;
+          try {
+            value = data.get(targetName);
+          } catch (err) {
+            debugger;
+          }
+          this.set(propName, value);
         }
       });
 
       return () => {
+        try {
+          this.set(propName, null);
+          data.set(targetName, null);
+        } catch (err) {
+          debugger;
+        }
         this.unwatch(wid1);
         data.unwatch(wid2);
       };
     },
   };
 
+  syncFn.sync.revoke = (e) => {
+    console.log("revoke", e);
+    e.result();
+  };
+
   const eventFn = {
     on(name, func, options) {
+      let revoker;
       if (options) {
         const beforeValue = options.beforeArgs[1];
 
-        const oldFunc = func;
-
-        const caches = this.__on_caches || (this.__on_caches = new Map());
-
         if (!/[^\d\w_\$\.]/.test(beforeValue)) {
           func = options.data.get(beforeValue).bind(options.data);
-
-          caches.set(oldFunc, oldFunc);
         }
+
+        revoker = () => this.ele.removeEventListener(name, func);
       }
 
       this.ele.addEventListener(name, func);
+
+      if (revoker) {
+        return revoker;
+      }
 
       return this;
     },
@@ -1238,13 +1271,8 @@ try{
     },
   };
 
-  eventFn.on.revoke = ({ target, args }) => {
-    const caches = target.__on_caches || (target.__on_caches = new Map());
-
-    const currentFunc = caches.get(args[1]);
-    caches.delete(args[1]);
-
-    target.ele.removeEventListener(args[0], currentFunc);
+  eventFn.on.revoke = (e) => {
+    e.result();
   };
 
   const originSplice = (ele, start, count, ...items) => {
@@ -2129,31 +2157,6 @@ try{
    */
 
 
-  const oldRenderable = renderExtends.renderable;
-  renderExtends.renderable = (el) => {
-    const bool = oldRenderable(el);
-
-    if (!bool) {
-      return false;
-    }
-
-    let t = el;
-    while (true) {
-      t = t.parentNode;
-      if (!t) {
-        break;
-      }
-
-      let tag = t.tagName;
-
-      if (tag && (tag === "X-IF" || tag === "X-ELSE-IF" || tag === "X-ELSE")) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const regOptions = {
     data: {
       value: null,
@@ -2259,7 +2262,8 @@ try{
       },
     },
     created() {
-      this.__originHTML = this.html;
+      this.__originHTML = this.$("template[condition]").html;
+      this.html = "";
     },
     ready() {
       if (this.ele._bindingRendered) {

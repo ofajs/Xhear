@@ -57,7 +57,9 @@
       $.register({
         tag: "temp-demo",
         temp: $("#temp").html,
-        data: {},
+        data: {
+          outer: {},
+        },
         proto: {},
         attached() {
           this.outer = outerData;
