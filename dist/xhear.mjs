@@ -157,16 +157,6 @@ const searchEle = (el, expr) => {
   return Array.from(el.querySelectorAll(expr));
 };
 
-function generateFingerprint(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash = hash & hash;
-  }
-  const fingerprint = Math.abs(hash).toString(16).substring(0, 8);
-  return fingerprint;
-}
-
 const { assign: assign$1, freeze } = Object;
 
 class Watcher {
@@ -1079,10 +1069,10 @@ function convert(el) {
           isWarned = 1;
         }
 
-        const wrapName = `wrapper-${generateFingerprint(el.innerHTML)}`;
-        el.innerHTML = `<div class="${wrapName}" style="display:contents">${el.innerHTML}</div>`;
+        const wrapName = `wrapper-${tempName}`;
+        el.innerHTML = `<div ${tempName} style="display:contents">${el.innerHTML}</div>`;
         console.warn(
-          `The template "${tempName}" contains ${el.content.children.length} child elements that have been wrapped in a div element with class "${wrapName}".`
+          `The template "${tempName}" contains ${el.content.children.length} child elements that have been wrapped in a div element with attribute "${wrapName}".`
         );
       }
       temps[tempName] = el;

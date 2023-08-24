@@ -72,13 +72,3 @@ export const searchEle = (el, expr) => {
   }
   return Array.from(el.querySelectorAll(expr));
 };
-
-export function generateFingerprint(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash = hash & hash;
-  }
-  const fingerprint = Math.abs(hash).toString(16).substring(0, 8);
-  return fingerprint;
-}

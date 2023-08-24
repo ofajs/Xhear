@@ -6,7 +6,6 @@ import {
   isEmptyObject,
   searchEle,
   removeArrayValue as remove,
-  generateFingerprint,
 } from "../public.mjs";
 import { eleX } from "../util.mjs";
 
@@ -282,10 +281,10 @@ export function convert(el) {
           isWarned = 1;
         }
 
-        const wrapName = `wrapper-${generateFingerprint(el.innerHTML)}`;
-        el.innerHTML = `<div class="${wrapName}" style="display:contents">${el.innerHTML}</div>`;
+        const wrapName = `wrapper-${tempName}`;
+        el.innerHTML = `<div ${wrapName} style="display:contents">${el.innerHTML}</div>`;
         console.warn(
-          `The template "${tempName}" contains ${el.content.children.length} child elements that have been wrapped in a div element with class "${wrapName}".`
+          `The template "${tempName}" contains ${el.content.children.length} child elements that have been wrapped in a div element with attribute "${wrapName}".`
         );
       }
       temps[tempName] = el;
