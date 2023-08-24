@@ -6,6 +6,7 @@ import {
   isEmptyObject,
   searchEle,
   removeArrayValue as remove,
+  generateFingerprint,
 } from "../public.mjs";
 import { eleX } from "../util.mjs";
 
@@ -249,6 +250,8 @@ const fixFillAndIf = (template) => {
   });
 };
 
+let isWarned;
+
 export function convert(el) {
   let temps = {};
 
@@ -272,11 +275,18 @@ export function convert(el) {
 
     if (tempName) {
       if (el.content.children.length > 1) {
-        console.warn({
-          target: el,
-          content: el.innerHTML,
-          desc: `Only the first child element inside the template will be used`,
-        });
+        if (!isWarned) {
+          console.warn(
+            `Only one child element can be contained within a template element. If multiple child elements appear, the child elements will be rewrapped within a <div> element`
+          );
+          isWarned = 1;
+        }
+
+        const wrapName = `wrapper-${generateFingerprint(el.innerHTML)}`;
+        el.innerHTML = `<div class="${wrapName}" style="display:contents">${el.innerHTML}</div>`;
+        console.warn(
+          `The template "${tempName}" contains ${el.content.children.length} child elements that have been wrapped in a div element with class "${wrapName}".`
+        );
       }
       temps[tempName] = el;
       el.remove();

@@ -16,12 +16,12 @@
   <body>
     <div id="target" style="color: blue; background: gray">render test</div>
     <template>
-      <!-- <x-fill :value="arr" name="haha"> -->
-      <x-fill :value="arr">
-        <div style="margin: 10px; background-color: rgba(0, 0, 255, 0.334)">
+      <x-fill :value="arr" name="haha">
+      <!-- <x-fill :value="arr"> -->
+        <!-- <div style="margin: 10px; background-color: rgba(0, 0, 255, 0.334)">
           {{$data.val}}
           <x-fill :value="$data.childs" name="haha"> </x-fill>
-        </div>
+        </div> -->
       </x-fill>
 
       <template name="haha">
@@ -30,6 +30,7 @@
         >
           {{$data.val}}
         </div>
+        <div>asdasd</div>
       </template>
     </template>
     <script type="module">
