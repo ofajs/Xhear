@@ -1,4 +1,4 @@
-//! xhear - v7.3.4 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.5 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1846,14 +1846,14 @@ try{
       ...opts,
     };
 
-    let template, temps;
+    let template, temps, name;
 
     try {
       validateTagName(defaults.tag);
 
       defaults.data = deepCopyData(defaults.data);
 
-      const name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
+      name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
 
       if (COMPS[name]) {
         throw `Component ${name} already exists`;
