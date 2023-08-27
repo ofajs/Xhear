@@ -1,4 +1,4 @@
-//! xhear - v7.3.4 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.5 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1840,14 +1840,14 @@ const register = (opts = {}) => {
     ...opts,
   };
 
-  let template, temps;
+  let template, temps, name;
 
   try {
     validateTagName(defaults.tag);
 
     defaults.data = deepCopyData(defaults.data);
 
-    const name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
+    name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
 
     if (COMPS[name]) {
       throw `Component ${name} already exists`;
