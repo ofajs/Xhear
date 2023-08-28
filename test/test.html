@@ -14,53 +14,68 @@
     </style>
   </head>
   <body>
-    <div id="target" style="color: blue; background: gray">render test</div>
-    <template>
-      <x-fill :value="arr" name="haha">
-      <!-- <x-fill :value="arr"> -->
-        <!-- <div style="margin: 10px; background-color: rgba(0, 0, 255, 0.334)">
-          {{$data.val}}
-          <x-fill :value="$data.childs" name="haha"> </x-fill>
-        </div> -->
-      </x-fill>
+    <test-demo></test-demo>
 
-      <template name="haha">
+    <template>
+      <button on:click="clearAll">Clear Arr</button>
+      <button on:click="addItem">Add Item</button>
+      <x-fill :value="arr">
         <div
-          style="margin-left: 10px; background-color: rgba(255, 0, 0, 0.316)"
+          style="
+            margin: 5px;
+            padding: 5px;
+            background-color: rgba(255, 0, 0, 0.316);
+          "
         >
           {{$data.val}}
         </div>
-        <div>asdasd</div>
-      </template>
+      </x-fill>
     </template>
     <script type="module">
       import $ from "../../packages/xhear/base.mjs";
 
       window.$ = $;
 
+      const data = $.stanz({
+        arr: [
+          {
+            val: "I am 0",
+          },
+          {
+            val: "I am 1",
+            childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+          },
+          {
+            val: "I am 2",
+          },
+        ],
+      });
+
+      window.data = data;
+
       (async () => {
-        const temps = $.convert($("template").ele);
-
-        const d = (window.d = $.stanz({
-          arr: [
-            {
-              val: "I am 0",
+        $.register({
+          tag: "test-demo",
+          data: {
+            arr: [],
+          },
+          temp: $("template").html,
+          attached() {
+            this.arr = data.arr;
+          },
+          detached() {
+            this.arr = null;
+          },
+          proto: {
+            addItem() {
+              data.arr.push({
+                val: "hhahah",
+              });
             },
-            {
-              val: "I am 1",
-              childs: [{ val: "I am child 1" }, { val: "I am child 2" }],
+            clearAll() {
+              this.arr = [];
             },
-            {
-              val: "I am 2",
-            },
-          ],
-        }));
-
-        $.render({
-          target: $("#target").ele,
-          data: d,
-          temps,
-          template: $("template").ele,
+          },
         });
       })();
     </script>

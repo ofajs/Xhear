@@ -82,7 +82,6 @@ test("emit", async ({ page }) => {
   await expect(logText1).toBe("custom event ok");
 
   await page.waitForFunction(async () => {
-    // $("#target").emit("custom-eve", { data: 100 });
     $("#target-sub").emit("custom-eve", { data: 100 });
   });
 
