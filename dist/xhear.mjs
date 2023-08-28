@@ -1,4 +1,4 @@
-//! xhear - v7.3.5 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.6 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1289,16 +1289,24 @@ const eventFn = {
     this.ele.removeEventListener(name, func);
     return this;
   },
-  emit(name, data, opts) {
+  emit(name, opts) {
+    const options = { ...opts };
+
+    let data;
+    if (options.hasOwnProperty("data")) {
+      data = options.data;
+      delete options.data;
+    }
+
     let event;
 
     if (name instanceof Event) {
       event = name;
     } else if (name) {
-      event = new Event(name, { bubbles: true, ...opts });
+      event = new Event(name, { bubbles: true, ...options });
     }
 
-    data && Object.assign(event, data);
+    data && (event.data = data);
 
     this.ele.dispatchEvent(event);
 
