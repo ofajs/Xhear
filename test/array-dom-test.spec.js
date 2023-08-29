@@ -77,6 +77,26 @@ test("splice", async ({ page }) => {
   expect(data).toBe(["2", "10", "11", "5", "4"].join(","));
 });
 
+test("splice negative", async ({ page }) => {
+  await page.goto("http://localhost:3398/test/statics/array-test.html");
+
+  await expect((await page.$$(".sub")).length).toBe(5);
+
+  await page.waitForFunction(async () => {
+    return $("#target").splice(-2);
+  });
+
+  await expect((await page.$$(".sub")).length).toBe(3);
+
+  const { _preview: data } = await page.waitForFunction(async () => {
+    return $("#target")
+      .map((e) => e.text)
+      .join(",");
+  });
+
+  expect(data).toBe(["2", "3", "1"].join(","));
+});
+
 test("reverse", async ({ page }) => {
   await page.goto("http://localhost:3398/test/statics/array-test.html");
 

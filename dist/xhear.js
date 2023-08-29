@@ -1326,13 +1326,21 @@ try{
 
   const originSplice = (ele, start, count, ...items) => {
     const { children } = ele;
+    if (start < 0) {
+      start += ele.children.length;
+    }
+
+    if (count === undefined) {
+      count = ele.children.length - start;
+    }
+
     const removes = [];
     for (let i = start, len = start + count; i < len; i++) {
       const target = children[i];
       removes.push(target);
     }
 
-    removes.forEach((el) => el.remove());
+    removes.forEach((el) => el && el.remove());
 
     if (items.length) {
       const frag = document.createDocumentFragment();
@@ -2809,7 +2817,9 @@ try{
     }
 
     remove() {
-      this.ele.remove();
+      const { parent } = this;
+      parent.splice(parent.indexOf(this), 1);
+      // this.ele.remove();
     }
 
     clone(bool = true) {
