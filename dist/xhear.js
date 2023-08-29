@@ -1729,13 +1729,24 @@ try{
 
       assign(data, getFormData(this, expr || "input,select,textarea"));
 
-      this.watchTick((e) => {
+      const wid1 = this.watchTick((e) => {
         const newData = getFormData(this, expr || "input,select,textarea");
         mergeObjects(data, newData);
       }, opts.wait);
 
-      data.watchTick((e) => {
+      const wid2 = data.watchTick((e) => {
         resetValue(this, expr || "input,select,textarea", data);
+      });
+
+      const _this = this;
+
+      const oldRevoke = data.revoke;
+      data.extend({
+        revoke() {
+          _this.unwatch(wid1);
+          data.unwatch(wid2);
+          oldRevoke.call(this);
+        },
       });
 
       return data;
