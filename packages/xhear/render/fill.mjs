@@ -99,7 +99,7 @@ register({
             this._fake.appendChild($ele.ele);
           }
         } else {
-          this._fake.insertBefore($ele.ele, currentEl.nextElementSibling);
+          this._fake.insertBefore($ele.ele, currentEl.nextSibling);
         }
         currentEl = $ele.ele;
       }
