@@ -540,7 +540,7 @@ class Stanz extends Array {
     let obj = {};
 
     let isPureArray = true;
-    let maxId = 0;
+    let maxId = -1;
 
     Object.keys(this).forEach((k) => {
       let val = this[k];
@@ -1617,11 +1617,11 @@ const initInput = ($ele) => {
       bindProp($ele, { name: "files", type: "change" });
       break;
     case "checkbox":
-      setKeys(["checked", "multiple"], $ele);
+      setKeys(["checked", "multiple", "value"], $ele);
       bindProp($ele, { name: "checked", type: "change" });
       break;
     case "radio":
-      setKeys(["checked"], $ele);
+      setKeys(["checked", "value"], $ele);
       bindProp($ele, { name: "checked", type: "change" });
       break;
     case "text":
@@ -1691,9 +1691,50 @@ var formFn = {
       assign(data, getFormData(this, expr || "input,select,textarea"));
     }, opts.wait);
 
+    data.watchTick((e) => {
+      resetValue(this, expr || "input,select,textarea", data);
+    });
+
     return data;
   },
 };
+
+function resetValue(el, expr, data) {
+  const eles = el.all(expr);
+
+  Object.keys(data).forEach((name) => {
+    const targets = eles.filter((e) => e.attr("name") === name);
+
+    if (targets.length === 0) {
+      return;
+    }
+
+    const val = data[name];
+
+    if (targets.length === 1) {
+      const target = targets[0];
+      if (target.value !== val) {
+        target.value = val;
+      }
+    } else {
+      // checkbox or radio
+      targets.forEach((e) => {
+        switch (e.attr("type")) {
+          case "radio":
+            if (e.value === val) {
+              e.checked = true;
+            } else {
+              e.checked = false;
+            }
+            break;
+          case "checkbox":
+            e.checked = val.includes(e.value);
+            break;
+        }
+      });
+    }
+  });
+}
 
 const cssHandler = {
   set(target, key, value, receiver) {

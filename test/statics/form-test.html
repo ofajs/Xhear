@@ -5,11 +5,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>form test</title>
-    <script src="../../dist/xhear.js"></script>
-    <!-- <script type="module">
+    <!-- <script src="../../dist/xhear.js"></script> -->
+    <script type="module">
       import $ from "../../packages/xhear/base.mjs";
       window.$ = $;
-    </script> -->
+    </script>
   </head>
   <body>
     <div id="target">
@@ -26,7 +26,7 @@
       <div>
         <label
           >select
-          <select name="Selector">
+          <select name="Selector" id="c-selector">
             <option value="1">One</option>
             <option value="2">Two</option>
             <option value="3">Three</option>
@@ -62,10 +62,12 @@
         </label>
       </div>
       <div>
-        <textarea name="TA" id="" cols="30" rows="10">I am textarea</textarea>
+        <textarea name="TA" id="ctexteara" cols="30" rows="10">
+I am textarea</textarea
+        >
       </div>
       <div>
-        <test-comp name="custom"></test-comp>
+        <test-comp name="custom" id="custom-ele"></test-comp>
       </div>
     </div>
     <template id="test-comp">
@@ -74,7 +76,6 @@
       </div>
     </template>
     <script type="module">
-      window.$ = $;
       $.register({
         tag: "test-comp",
         temp: $("#test-comp").html,
