@@ -1,4 +1,4 @@
-//! xhear - v7.3.7 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.8 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1758,29 +1758,38 @@ function resetValue(el, expr, data) {
     }
 
     const val = data[name];
-
+    const target = targets[0];
+    const type = target.attr("type");
     if (targets.length === 1) {
-      const target = targets[0];
-      if (target.value !== val) {
-        target.value = val;
+      let isUseValue = true;
+
+      if (target.tag === "input" && (type === "radio" || type === "checkbox")) {
+        isUseValue = false;
       }
-    } else {
-      // checkbox or radio
-      targets.forEach((e) => {
-        switch (e.attr("type")) {
-          case "radio":
-            if (e.value === val) {
-              e.checked = true;
-            } else {
-              e.checked = false;
-            }
-            break;
-          case "checkbox":
-            e.checked = val.includes(e.value);
-            break;
+
+      if (isUseValue) {
+        if (target.value !== val) {
+          target.value = val;
         }
-      });
+        return;
+      }
     }
+
+    // checkbox or radio
+    targets.forEach((e) => {
+      switch (e.attr("type")) {
+        case "radio":
+          if (e.value === val) {
+            e.checked = true;
+          } else {
+            e.checked = false;
+          }
+          break;
+        case "checkbox":
+          e.checked = val.includes(e.value);
+          break;
+      }
+    });
   });
 }
 
