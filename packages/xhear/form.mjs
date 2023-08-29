@@ -15,10 +15,15 @@ const setKeys = (keys, $ele) => {
       defineProperty($ele, k, {
         enumerable: true,
         get: () => {
+          let val = ele[k];
           if (isNum) {
-            return Number(ele[k]);
+            if (/\D/.test(val)) {
+              isNum = false;
+            } else {
+              val = Number(val);
+            }
           }
-          return ele[k];
+          return val;
         },
         set: (val) => {
           isNum = typeof val === "number";

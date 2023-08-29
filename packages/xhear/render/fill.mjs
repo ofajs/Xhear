@@ -112,6 +112,8 @@ register({
           revokeAll(e);
         });
       }
+
+      eleX(this._fake.parentNode).refresh();
     },
     init() {
       if (this._bindend) {

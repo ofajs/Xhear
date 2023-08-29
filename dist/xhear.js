@@ -352,6 +352,16 @@
         }, wait || 0)
       );
     },
+    // For manual use of emitUpdate
+    refresh(opts) {
+      const options = {
+        ...opts,
+        type: "refresh",
+        target: this,
+        currentTarget: this,
+      };
+      emitUpdate(options);
+    },
   };
 
   const mutatingMethods$1 = [
@@ -692,6 +702,7 @@
     const reval = succeed(data);
 
     !isSame &&
+      // __unupdate: Let the system not trigger an upgrade, system self-use attribute
       !target.__unupdate &&
       emitUpdate({
         type: type || "set",
@@ -1563,10 +1574,15 @@ try{
         defineProperty($ele, k, {
           enumerable: true,
           get: () => {
+            let val = ele[k];
             if (isNum) {
-              return Number(ele[k]);
+              if (/\D/.test(val)) {
+                isNum = false;
+              } else {
+                val = Number(val);
+              }
             }
-            return ele[k];
+            return val;
           },
           set: (val) => {
             isNum = typeof val === "number";
@@ -2304,6 +2320,8 @@ try{
               conditionEl._clearContent();
             }
           });
+
+          eleX(this._fake.parentNode).refresh();
         }, 0);
       },
       _renderContent() {
@@ -2530,7 +2548,7 @@ try{
               this._fake.appendChild($ele.ele);
             }
           } else {
-            this._fake.insertBefore($ele.ele, currentEl.nextElementSibling);
+            this._fake.insertBefore($ele.ele, currentEl.nextSibling);
           }
           currentEl = $ele.ele;
         }
@@ -2543,6 +2561,8 @@ try{
             revokeAll(e);
           });
         }
+
+        eleX(this._fake.parentNode).refresh();
       },
       init() {
         if (this._bindend) {
