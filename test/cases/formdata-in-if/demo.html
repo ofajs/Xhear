@@ -30,7 +30,7 @@
           <input type="text" attr:name="$data.name" sync:value="$data.val" />
         </div>
       </x-fill>
-      <div>{{fdata}}</div>
+      <div id="target">{{fdata}}</div>
     </template>
 
     <script type="module">
@@ -54,7 +54,7 @@
         },
         proto: {
           addItem() {
-            const num = parseInt(Math.random() * 100);
+            const num = ++count;
             this.arr.push({
               name: `K${num}`,
               val: num,
