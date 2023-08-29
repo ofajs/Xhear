@@ -157,6 +157,18 @@ const searchEle = (el, expr) => {
   return Array.from(el.querySelectorAll(expr));
 };
 
+function mergeObjects(obj1, obj2) {
+  for (let key of Object.keys(obj1)) {
+    if (!obj2.hasOwnProperty(key)) {
+      delete obj1[key];
+    }
+  }
+
+  for (let [key, value] of Object.entries(obj2)) {
+    obj1[key] = value;
+  }
+}
+
 const { assign: assign$1, freeze } = Object;
 
 class Watcher {
@@ -1696,7 +1708,8 @@ var formFn = {
     assign(data, getFormData(this, expr || "input,select,textarea"));
 
     this.watchTick((e) => {
-      assign(data, getFormData(this, expr || "input,select,textarea"));
+      const newData = getFormData(this, expr || "input,select,textarea");
+      mergeObjects(data, newData);
     }, opts.wait);
 
     data.watchTick((e) => {

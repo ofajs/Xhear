@@ -135,22 +135,40 @@ test("set formData", async ({ page }) => {
   ]);
 });
 
-// test("remove form elements", async ({ page }) => {
-//   await page.goto("http://localhost:3398/test/statics/form-test.html");
+test("remove form elements", async ({ page }) => {
+  await page.goto("http://localhost:3398/test/statics/form-test.html");
 
-//   let { _preview: data1 } = await page.waitForFunction(async () => {
-//     return JSON.stringify(data);
-//   });
-//   data1 = JSON.parse(data1);
+  let { _preview: data1 } = await page.waitForFunction(async () => {
+    return JSON.stringify(data);
+  });
+  data1 = JSON.parse(data1);
 
-//   expect(data1).toEqual({
-//     Texter: "",
-//     Filer: {},
-//     Selector: "1",
-//     checker: [],
-//     TA: "I am textarea",
-//     custom: "default value",
-//   });
+  expect(data1).toEqual({
+    Texter: "",
+    Filer: {},
+    Selector: "1",
+    checker: [],
+    TA: "I am textarea",
+    custom: "default value",
+  });
 
-//   $("textarea").parent.remove();
-// });
+  await page.waitForFunction(async () => {
+    $("textarea").parent.remove();
+  });
+
+  await new Promise((res) => setTimeout(res, 300));
+
+  let { _preview: data2 } = await page.waitForFunction(async () => {
+    return JSON.stringify(data);
+  });
+  data2 = JSON.parse(data2);
+
+  expect(data2).toEqual({
+    Texter: "",
+    Filer: {},
+    Selector: "1",
+    checker: [],
+    // TA: "I am textarea",
+    custom: "default value",
+  });
+});

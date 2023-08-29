@@ -1,6 +1,6 @@
 import stanz from "../stanz/base.mjs";
 import { emitUpdate } from "../stanz/watch.mjs";
-import { searchEle } from "./public.mjs";
+import { mergeObjects, searchEle } from "./public.mjs";
 
 const { defineProperty, assign } = Object;
 
@@ -166,7 +166,8 @@ export default {
     assign(data, getFormData(this, expr || "input,select,textarea"));
 
     this.watchTick((e) => {
-      assign(data, getFormData(this, expr || "input,select,textarea"));
+      const newData = getFormData(this, expr || "input,select,textarea");
+      mergeObjects(data, newData);
     }, opts.wait);
 
     data.watchTick((e) => {
