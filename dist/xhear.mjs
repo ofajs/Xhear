@@ -2818,11 +2818,11 @@ class Xhear extends LikeArray {
   }
 
   get width() {
-    return parseInt(getComputedStyle(this.ele).width);
+    return parseInt(getComputedStyle(this.ele).width) || 0;
   }
 
   get height() {
-    return parseInt(getComputedStyle(this.ele).height);
+    return parseInt(getComputedStyle(this.ele).height) || 0;
   }
 
   get clientWidth() {
