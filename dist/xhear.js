@@ -1,4 +1,4 @@
-//! xhear - v7.3.9 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.10 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1109,7 +1109,8 @@ try{
     const tempName = template.getAttribute("name");
 
     if (tempName) {
-      if (template.content.children.length > 1) {
+      const tempChilds = template.content.children;
+      if (tempChilds.length > 1) {
         if (!isWarned) {
           console.warn(
             `Only one child element can be contained within a template element. If multiple child elements appear, the child elements will be rewrapped within a <div> element`
@@ -1120,7 +1121,11 @@ try{
         const wrapName = `wrapper-${tempName}`;
         template.innerHTML = `<div ${wrapName} style="display:contents">${template.innerHTML}</div>`;
         console.warn(
-          `The template "${tempName}" contains ${template.content.children.length} child elements that have been wrapped in a div element with attribute "${wrapName}".`
+          `The template "${tempName}" contains ${tempChilds.length} child elements that have been wrapped in a div element with attribute "${wrapName}".`
+        );
+      } else if (tempChilds.length === 0) {
+        throw new Error(
+          `The template "${tempName}" needs to have at least one child element`
         );
       }
       temps[tempName] = template;
@@ -1150,7 +1155,15 @@ try{
     });
 
     searchTemp(template, "template", (e) => {
-      temps = { ...temps, ...convert(e) };
+      const newTemps = convert(e);
+
+      Object.keys(newTemps).forEach((tempName) => {
+        if (temps[tempName]) {
+          throw new Error(`Template "${tempName}" already exists`);
+        }
+      });
+
+      temps = { ...temps, ...newTemps };
     });
 
     Array.from(template.content.children).forEach((el) => convertEl(el));
@@ -2272,6 +2285,10 @@ try{
     get nextElementSibling() {
       let next = this.nextSibling;
 
+      if (!next) {
+        return null;
+      }
+
       if (next.__fake_end) {
         return next.__fake_end;
       }
@@ -2286,6 +2303,10 @@ try{
     get previousElementSibling() {
       const { _start } = this;
       let prev = _start.previousSibling;
+
+      if (!prev) {
+        return null;
+      }
 
       if (prev instanceof FakeNode) {
         return prev;
@@ -2350,7 +2371,13 @@ try{
         }
         this.__rendered = true;
 
-        const { target, data, temps } = getRenderData(this._fake);
+        const result = getRenderData(this._fake);
+
+        if (!result) {
+          return;
+        }
+
+        const { target, data, temps } = result;
 
         if (dataRevoked(data)) {
           return;
