@@ -1,4 +1,4 @@
-//! xhear - v7.3.11 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.12 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -19,11 +19,28 @@
     return type === "array" || type === "object";
   };
 
+  let asyncsCounter = 0;
+  let afterTimer;
   const tickSets = new Set();
   function nextTick(callback) {
     const tickId = `t-${getRandomId()}`;
+    clearTimeout(afterTimer);
+    afterTimer = setTimeout(() => {
+      asyncsCounter = 0;
+    });
     tickSets.add(tickId);
     Promise.resolve().then(() => {
+      asyncsCounter++;
+      // console.log("asyncsCounter => ", asyncsCounter);
+      if (asyncsCounter > 50000) {
+        tickSets.clear();
+        const desc = `nextTick exceeds thread limit`;
+        console.error({
+          desc,
+          lastCall: callback,
+        });
+        throw new Error(desc);
+      }
       if (tickSets.has(tickId)) {
         callback();
         tickSets.delete(tickId);
@@ -794,9 +811,20 @@
     },
   };
 
+  document.createElement("template");
+
   const handler = {
     set(target, key, value, receiver) {
       if (!/\D/.test(String(key))) {
+        return Reflect.set(target, key, value, receiver);
+      }
+
+      if (key === "html") {
+        // When setting HTML values that contain single quotes, they become double quotes when set, leading to an infinite loop of updates.
+        // tempEl.innerHTML = value;
+        // value = tempEl.innerHTML;
+
+        // If custom elements are stuffed, the html values may remain inconsistent
         return Reflect.set(target, key, value, receiver);
       }
 
@@ -2763,10 +2791,6 @@ try{
     get data() {
       return this.ele.dataset;
     }
-
-    // get css() {
-    //   return getComputedStyle(this.ele);
-    // }
 
     get shadow() {
       return eleX(this.ele.shadowRoot);
