@@ -166,3 +166,30 @@ export class FakeNode extends Comment {
     return _start.previousElementSibling;
   }
 }
+
+class ReplaceTemp extends HTMLTemplateElement {
+  constructor() {
+    super();
+    this.init();
+  }
+
+  init() {
+    const parent = this.parentNode;
+    if (parent) {
+      const parent = this.parentNode;
+      Array.from(this.content.children).forEach((e) => {
+        parent.insertBefore(e, this);
+      });
+
+      this.remove();
+    }
+  }
+
+  connectedCallback() {
+    this.init();
+  }
+}
+
+customElements.define("replace-temp", ReplaceTemp, {
+  extends: "template",
+});
