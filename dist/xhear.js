@@ -2375,7 +2375,7 @@ try{
     }
   };
 
-  if (isSafariBrowser) {
+  if (isSafariBrowser()) {
     renderExtends.beforeRender = ({ target }) => {
       let replaces = [];
       while (true) {
