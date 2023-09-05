@@ -1,4 +1,4 @@
-//! xhear - v7.3.12 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.13 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -185,6 +185,9 @@ function mergeObjects(obj1, obj2) {
     obj1[key] = value;
   }
 }
+
+const isSafariBrowser = () =>
+  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
 const { assign: assign$1, freeze } = Object;
 
@@ -851,6 +854,7 @@ const handler = {
 };
 
 const renderExtends = {
+  beforeRender() {},
   render() {},
 };
 
@@ -899,6 +903,10 @@ function render({
   if (content) {
     target.innerHTML = content;
   }
+
+  renderExtends.beforeRender({
+    target,
+  });
 
   const texts = searchEle(target, "xtext");
 
@@ -1056,6 +1064,8 @@ function render({
       }
     });
   }
+
+  renderExtends.render({ step: "init", target });
 }
 
 const convertEl = (el) => {
@@ -1681,8 +1691,15 @@ const initFormEle = ($ele) => {
       setKeys(["selected", "value"], $ele);
       break;
     case "select":
-      setKeys(["value"], $ele);
-      bindProp($ele, { name: "value", type: "change" });
+      {
+        const { ele } = $ele;
+        $ele.watch(() => {
+          ele.value = $ele.value;
+        });
+        $ele.on("change", () => {
+          $ele.value = ele.value;
+        });
+      }
       break;
   }
 };
@@ -2338,6 +2355,56 @@ class FakeNode extends Comment {
 
     return _start.previousElementSibling;
   }
+}
+
+const replaceTempInit = (_this) => {
+  const parent = _this.parentNode;
+  if (parent) {
+    const parent = _this.parentNode;
+    Array.from(_this.content.children).forEach((e) => {
+      parent.insertBefore(e, _this);
+    });
+
+    _this.remove();
+  }
+};
+
+if (isSafariBrowser()) {
+  renderExtends.beforeRender = ({ target }) => {
+    let replaces = [];
+    while (true) {
+      replaces = Array.from(
+        target.querySelectorAll('template[is="replace-temp"]')
+      );
+
+      if (!replaces.length) {
+        break;
+      }
+
+      replaces.forEach((temp) => {
+        replaceTempInit(temp);
+      });
+    }
+  };
+} else {
+  class ReplaceTemp extends HTMLTemplateElement {
+    constructor() {
+      super();
+      this.init();
+    }
+
+    init() {
+      replaceTempInit(this);
+    }
+
+    connectedCallback() {
+      this.init();
+    }
+  }
+
+  customElements.define("replace-temp", ReplaceTemp, {
+    extends: "template",
+  });
 }
 
 /**
