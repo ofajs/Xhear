@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fill option bug</title>
+  </head>
+  <body>
+    <fill-opt></fill-opt>
+    <template id="temp">
+      select: <span id="comp-val">{{val}}</span>
+      <br />
+      <select sync:value="val">
+        <template is="replace-temp">
+          <option value="a">AA</option>
+          <x-fill :value="arr">
+            <option attr:value="$data.value">{{$data.name}}</option>
+          </x-fill>
+          <x-if :value="val!== 'a'">
+            <option value="b">BB</option>
+          </x-if>
+        </template>
+      </select>
+    </template>
+    <br />
+    <div is="fill-opt"></div>
+  </body>
+
+  <script type="module">
+    import $ from "../../../packages/xhear/base.mjs";
+    window.$ = $;
+
+    $.register({
+      tag: "fill-opt",
+      temp: $("#temp").html,
+      data: {
+        val: "t-cn",
+        arr: [
+          {
+            name: "简体中文",
+            value: "cn",
+          },
+          {
+            name: "繁体中文",
+            value: "t-cn",
+          },
+        ],
+      },
+      ready() {
+        console.log("opt", this);
+      },
+    });
+  </script>
+</html>
