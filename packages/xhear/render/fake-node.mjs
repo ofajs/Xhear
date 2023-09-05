@@ -1,3 +1,6 @@
+import { renderExtends } from "./render.mjs";
+import { isSafariBrowser } from "../public.mjs";
+
 export class FakeNode extends Comment {
   constructor(markname) {
     const tagText = `Fake Node${markname ? ": " + markname : ""}`;
@@ -167,29 +170,52 @@ export class FakeNode extends Comment {
   }
 }
 
-class ReplaceTemp extends HTMLTemplateElement {
-  constructor() {
-    super();
-    this.init();
+const replaceTempInit = (_this) => {
+  const parent = _this.parentNode;
+  if (parent) {
+    const parent = _this.parentNode;
+    Array.from(_this.content.children).forEach((e) => {
+      parent.insertBefore(e, _this);
+    });
+
+    _this.remove();
   }
+};
 
-  init() {
-    const parent = this.parentNode;
-    if (parent) {
-      const parent = this.parentNode;
-      Array.from(this.content.children).forEach((e) => {
-        parent.insertBefore(e, this);
+if (isSafariBrowser) {
+  renderExtends.beforeRender = ({ target }) => {
+    let replaces = [];
+    while (true) {
+      replaces = Array.from(
+        target.querySelectorAll('template[is="replace-temp"]')
+      );
+
+      if (!replaces.length) {
+        break;
+      }
+
+      replaces.forEach((temp) => {
+        replaceTempInit(temp);
       });
+    }
+  };
+} else {
+  class ReplaceTemp extends HTMLTemplateElement {
+    constructor() {
+      super();
+      this.init();
+    }
 
-      this.remove();
+    init() {
+      replaceTempInit(this);
+    }
+
+    connectedCallback() {
+      this.init();
     }
   }
 
-  connectedCallback() {
-    this.init();
-  }
+  customElements.define("replace-temp", ReplaceTemp, {
+    extends: "template",
+  });
 }
-
-customElements.define("replace-temp", ReplaceTemp, {
-  extends: "template",
-});

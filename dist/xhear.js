@@ -192,6 +192,9 @@
     }
   }
 
+  const isSafariBrowser = () =>
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
   const { assign: assign$1, freeze } = Object;
 
   class Watcher {
@@ -857,6 +860,7 @@
   };
 
   const renderExtends = {
+    beforeRender() {},
     render() {},
   };
 
@@ -905,6 +909,10 @@ try{
     if (content) {
       target.innerHTML = content;
     }
+
+    renderExtends.beforeRender({
+      target,
+    });
 
     const texts = searchEle(target, "xtext");
 
@@ -1062,6 +1070,8 @@ try{
         }
       });
     }
+
+    renderExtends.render({ step: "init", target });
   }
 
   const convertEl = (el) => {
@@ -2353,32 +2363,55 @@ try{
     }
   }
 
-  class ReplaceTemp extends HTMLTemplateElement {
-    constructor() {
-      super();
-      this.init();
+  const replaceTempInit = (_this) => {
+    const parent = _this.parentNode;
+    if (parent) {
+      const parent = _this.parentNode;
+      Array.from(_this.content.children).forEach((e) => {
+        parent.insertBefore(e, _this);
+      });
+
+      _this.remove();
     }
+  };
 
-    init() {
-      const parent = this.parentNode;
-      if (parent) {
-        const parent = this.parentNode;
-        Array.from(this.content.children).forEach((e) => {
-          parent.insertBefore(e, this);
+  if (isSafariBrowser) {
+    renderExtends.beforeRender = ({ target }) => {
+      let replaces = [];
+      while (true) {
+        replaces = Array.from(
+          target.querySelectorAll('template[is="replace-temp"]')
+        );
+
+        if (!replaces.length) {
+          break;
+        }
+
+        replaces.forEach((temp) => {
+          replaceTempInit(temp);
         });
+      }
+    };
+  } else {
+    class ReplaceTemp extends HTMLTemplateElement {
+      constructor() {
+        super();
+        this.init();
+      }
 
-        this.remove();
+      init() {
+        replaceTempInit(this);
+      }
+
+      connectedCallback() {
+        this.init();
       }
     }
 
-    connectedCallback() {
-      this.init();
-    }
+    customElements.define("replace-temp", ReplaceTemp, {
+      extends: "template",
+    });
   }
-
-  customElements.define("replace-temp", ReplaceTemp, {
-    extends: "template",
-  });
 
   /**
    * `x-if` first replaces all neighboring conditional elements with token elements and triggers the rendering process once; the rendering process is triggered again after each `value` change.
