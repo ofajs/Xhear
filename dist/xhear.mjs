@@ -1681,8 +1681,15 @@ const initFormEle = ($ele) => {
       setKeys(["selected", "value"], $ele);
       break;
     case "select":
-      setKeys(["value"], $ele);
-      bindProp($ele, { name: "value", type: "change" });
+      {
+        const { ele } = $ele;
+        $ele.watch(() => {
+          ele.value = $ele.value;
+        });
+        $ele.on("change", () => {
+          $ele.value = ele.value;
+        });
+      }
       break;
   }
 };
@@ -2339,6 +2346,33 @@ class FakeNode extends Comment {
     return _start.previousElementSibling;
   }
 }
+
+class ReplaceTemp extends HTMLTemplateElement {
+  constructor() {
+    super();
+    this.init();
+  }
+
+  init() {
+    const parent = this.parentNode;
+    if (parent) {
+      const parent = this.parentNode;
+      Array.from(this.content.children).forEach((e) => {
+        parent.insertBefore(e, this);
+      });
+
+      this.remove();
+    }
+  }
+
+  connectedCallback() {
+    this.init();
+  }
+}
+
+customElements.define("replace-temp", ReplaceTemp, {
+  extends: "template",
+});
 
 /**
  * `x-if` first replaces all neighboring conditional elements with token elements and triggers the rendering process once; the rendering process is triggered again after each `value` change.
