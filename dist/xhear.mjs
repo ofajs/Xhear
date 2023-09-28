@@ -1,4 +1,4 @@
-//! xhear - v7.3.13 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.14 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -2754,7 +2754,7 @@ const createItem = (data, temps, targetTemp, $host, $index) => {
   revokes.push(revoke);
 
   $ele.__item = itemData;
-  $ele.ele._data_xid = data.xid;
+  $ele.ele._data_xid = data.xid || data;
 
   return $ele;
 };
