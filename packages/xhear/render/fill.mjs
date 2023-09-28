@@ -167,7 +167,7 @@ const createItem = (data, temps, targetTemp, $host, $index) => {
   revokes.push(revoke);
 
   $ele.__item = itemData;
-  $ele.ele._data_xid = data.xid;
+  $ele.ele._data_xid = data.xid || data;
 
   return $ele;
 };
