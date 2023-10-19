@@ -20,12 +20,27 @@ const eventFn = {
     return this;
   },
   one(name, func, options) {
-    const callback = (e) => {
+    let revoker;
+    if (options) {
+      const beforeValue = options.beforeArgs[1];
+
+      if (!/[^\d\w_\$\.]/.test(beforeValue)) {
+        func = options.data.get(beforeValue).bind(options.data);
+      }
+
+      revoker = () => this.ele.removeEventListener(name, func);
+    }
+
+    let callback = () => {
       this.off(name, callback);
-      func(e);
+      func();
     };
 
-    this.on(name, callback, options);
+    this.ele.addEventListener(name, callback);
+
+    if (revoker) {
+      return revoker;
+    }
 
     return this;
   },
