@@ -1,4 +1,4 @@
-//! xhear - v7.3.15 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.16 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1157,10 +1157,6 @@ const convert = (template) => {
       console.warn(
         `The template "${tempName}" contains ${tempChilds.length} child elements that have been wrapped in a div element with attribute "${wrapName}".`
       );
-    } else if (tempChilds.length === 0) {
-      throw new Error(
-        `The template "${tempName}" needs to have at least one child element`
-      );
     }
     temps[tempName] = template;
     template.remove();
@@ -1171,14 +1167,16 @@ const convert = (template) => {
       throw `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`;
     }
 
-    const tid = `t${getRandomId()}`;
-    fillEl.setAttribute("name", tid);
+    if (fillEl.innerHTML.trim()) {
+      const tid = `t${getRandomId()}`;
+      fillEl.setAttribute("name", tid);
 
-    const temp = document.createElement("template");
-    temp.setAttribute("name", tid);
-    temp.innerHTML = fillEl.innerHTML;
-    fillEl.innerHTML = "";
-    fillEl.appendChild(temp);
+      const temp = document.createElement("template");
+      temp.setAttribute("name", tid);
+      temp.innerHTML = fillEl.innerHTML;
+      fillEl.innerHTML = "";
+      fillEl.appendChild(temp);
+    }
   });
 
   searchTemp(template, "x-if,x-else-if,x-else", (condiEl) => {
@@ -2733,6 +2731,12 @@ register({
   },
   ready() {
     this._name = this.attr("name");
+
+    if (!this._name) {
+      const desc = "The target element does not have a template name to populate";
+      console.log(desc, this.ele);
+      throw new Error(desc);
+    }
 
     if (this.ele._bindingRendered) {
       this.init();
