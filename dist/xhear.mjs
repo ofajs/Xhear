@@ -1,4 +1,4 @@
-//! xhear - v7.3.17 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.18 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1708,6 +1708,10 @@ const initFormEle = ($ele) => {
     case "select":
       {
         const { ele } = $ele;
+        $ele.__unupdate = 1;
+        $ele.value = ele.value;
+        delete $ele.__unupdate;
+
         $ele.watch(() => {
           ele.value = $ele.value;
         });
