@@ -1,4 +1,4 @@
-//! xhear - v7.3.18 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.19 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -815,12 +815,18 @@
     },
   };
 
-  document.createElement("template");
+  // const tempEl = document.createElement("template");
 
   const handler = {
     set(target, key, value, receiver) {
       if (!/\D/.test(String(key))) {
         return Reflect.set(target, key, value, receiver);
+      }
+
+      if (target[key] === value) {
+        // Optimise performance;
+        // fix focus remapping caused by 'text' being reset
+        return true;
       }
 
       if (key === "html") {
@@ -1308,6 +1314,7 @@ try{
             const value = this.get(propName);
             data.set(targetName, value);
           } catch (err) {
+            // Errors are reported when a proxy is revoked.
             // console.warn(err);
           }
         }
@@ -1319,6 +1326,7 @@ try{
             const value = data.get(targetName);
             this.set(propName, value);
           } catch (err) {
+            // Errors are reported when a proxy is revoked.
             // console.warn(err);
           }
         }
