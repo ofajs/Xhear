@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>condition event</title>
+    <!-- <script src="../../../packages/xhear/main.mjs" type="module"></script> -->
+  </head>
+  <body>
+    <template-demo></template-demo>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      $.register({
+        tag: "template-demo",
+        temp: `
+        <button on:click="addCount">AddCount</button>
+        <div data-testid="r1">renderOneCount:{{renderOneCount}}</div>
+        <div data-testid="c1">clearOneCount:{{clearOneCount}}</div>
+        <div data-testid="r2">renderTwo:{{renderTwoCount}}</div>
+        <div data-testid="c2">clearTwo:{{clearTwoCount}}</div>
+        <br>
+        <br>
+        <div data-testid="count">
+          count:{{count}}
+        </div>
+        <x-if :value="count % 3" on:rendered="renderOne" on:clear="clearOne">
+            <div>ok1</div>
+        </x-if>
+        <x-else on:rendered="renderTwo" on:clear="clearTwo">
+            <div>ok2</div>    
+        </x-else>
+        `,
+        proto: {
+          addCount() {
+            this.count++;
+          },
+          renderOne() {
+            console.log("renderOne");
+            this.renderOneCount++;
+          },
+          clearOne() {
+            console.log("clearOne");
+            this.clearOneCount++;
+          },
+          renderTwo() {
+            console.log("renderTwo");
+            this.renderTwoCount++;
+          },
+          clearTwo() {
+            console.log("clearTwo");
+            this.clearTwoCount++;
+          },
+        },
+        data: {
+          count: 0,
+          renderOneCount: 0,
+          clearOneCount: 0,
+          renderTwoCount: 0,
+          clearTwoCount: 0,
+        },
+      });
+    </script>
+  </body>
+</html>
