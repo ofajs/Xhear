@@ -52,8 +52,9 @@ export const renderElement = ({ defaults, ele, template, temps }) => {
     const wen = Object.entries(defaults.watch);
 
     $ele.watchTick((e) => {
+      const needRender = e.some((item) => item.type === "refresh");
       for (let [name, func] of wen) {
-        if (e.hasModified(name)) {
+        if (e.hasModified(name) || needRender) {
           func.call($ele, $ele[name], {
             watchers: e,
           });
