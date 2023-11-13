@@ -1,4 +1,4 @@
-//! xhear - v7.3.20 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.21 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1955,6 +1955,14 @@ const renderElement = ({ defaults, ele, template, temps }) => {
       ...deepCopyData(defaults.data),
       ...defaults.attrs,
     };
+
+    defaults.attrs &&
+      Object.keys(defaults.attrs).forEach((name) => {
+        const value = ele.getAttribute(name);
+        if (value !== null && value !== undefined) {
+          data[name] = value;
+        }
+      });
 
     $ele = eleX(ele);
 
