@@ -1956,6 +1956,14 @@ const renderElement = ({ defaults, ele, template, temps }) => {
       ...defaults.attrs,
     };
 
+    defaults.attrs &&
+      Object.keys(defaults.attrs).forEach((name) => {
+        const value = ele.getAttribute(name);
+        if (value !== null && value !== undefined) {
+          data[name] = value;
+        }
+      });
+
     $ele = eleX(ele);
 
     defaults.proto && $ele.extend(defaults.proto, { enumerable: false });
