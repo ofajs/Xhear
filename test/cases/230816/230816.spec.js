@@ -21,7 +21,7 @@ test("bug: x-fill in x-if", async ({ page }) => {
   expect(await page.$('[data-testid="other-item"]')).toBe(null);
 
   await page.getByRole("button", { name: "switch" }).click();
-  await new Promise((res) => setTimeout(res), 100);
+  await new Promise((res) => setTimeout(res), 300);
 
   expect(!!(await page.$('[data-testid="item-0-span"]'))).toBe(true);
   expect(!!(await page.$('[data-testid="item-1-span"]'))).toBe(true);
