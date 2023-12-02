@@ -1,4 +1,4 @@
-//! xhear - v7.3.23 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.24 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2107,6 +2107,17 @@ try{
                 }
               }
             });
+          });
+
+          // The data set before initialization needs to be reflected in attrs
+          attrKeys.forEach((key) => {
+            if (
+              $ele[key] !== null &&
+              $ele[key] !== undefined &&
+              $ele[key] !== defaults.attrs[key]
+            ) {
+              this.setAttribute(key, $ele[key]);
+            }
           });
         }
 
