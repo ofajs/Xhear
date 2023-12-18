@@ -1,4 +1,4 @@
-//! xhear - v7.3.24 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.25 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1289,6 +1289,9 @@ const syncFn = {
     }
 
     [propName, targetName] = options.beforeArgs;
+
+    propName = hyphenToUpperCase(propName);
+    targetName = hyphenToUpperCase(targetName);
 
     const { data } = options;
 
