@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>sync test</title>
+    <!-- <script src="../../dist/xhear.js"></script> -->
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      $.register({
+        tag: "t-two",
+        temp: `<div data-testid="t2" style="padding:5px;color:red;border: blue solid 2px;" on:click="testData++">t-two: {{testData}}</div>`,
+        data: {
+          testData: null,
+        },
+      });
+
+      $.register({
+        tag: "t-one",
+        temp: `
+        <button on:click="addCount">AddCount</button>
+        <div data-testid="t1">t-one: {{count}}</div>
+        <t-two sync:test-data="count"></t-two>
+        `,
+        proto: {
+          addCount() {
+            this.count++;
+          },
+        },
+        data: {
+          count: 0,
+        },
+      });
+
+      window.$ = $;
+    </script>
+  </head>
+  <body>
+    <t-one></t-one>
+  </body>
+</html>
