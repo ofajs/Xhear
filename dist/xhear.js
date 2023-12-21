@@ -1,4 +1,4 @@
-//! xhear - v7.3.25 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.26 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2119,7 +2119,7 @@ try{
               $ele[key] !== undefined &&
               $ele[key] !== defaults.attrs[key]
             ) {
-              this.setAttribute(key, $ele[key]);
+              this.setAttribute(toDashCase(key), $ele[key]);
             }
           });
         }
