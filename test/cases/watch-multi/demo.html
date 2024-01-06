@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>watch multi</title>
+    <style>
+      template-demo[num] {
+        color: red;
+      }
+      template-demo[num="100"] {
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <template-demo id="target"></template-demo>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      $.register({
+        tag: "template-demo",
+        temp: `
+        <div>count:{{count1}}</div>
+        <div>num:{{count2}}</div>
+        `,
+        data: {
+          count1: 1,
+          count2: 2,
+          count3: 3,
+        },
+        watch: {
+          count1(val) {
+            console.log("count1", val);
+          },
+          count2(val) {
+            console.log("count2", val);
+          },
+          ["count1,count2"]([count1, count2]) {
+            console.log("count1-2", count1, count2);
+          },
+          //   "count1,count2": function ([count1, count2]) {
+          //     console.log("count1-2", count1, count2);
+          //   },
+          ["count3,count2"]([count3, count2]) {
+            console.log("count3-2", count3, count2);
+          },
+        },
+        ready() {
+          //   setTimeout(() => {
+          //     this.count1 = 10;
+          //     this.count2 = 20;
+          //   }, 100);
+        },
+      });
+    </script>
+  </body>
+</html>
