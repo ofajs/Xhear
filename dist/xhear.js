@@ -1,4 +1,4 @@
-//! xhear - v7.3.26 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.27 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2009,16 +2009,39 @@ try{
 
       $ele.watchTick((e) => {
         for (let [name, func] of wen) {
-          if (e.hasModified(name)) {
-            func.call($ele, $ele[name], {
-              watchers: e,
-            });
+          const names = name.split(",");
+
+          if (names.length >= 2) {
+            if (names.some((name) => e.hasModified(name))) {
+              func.call(
+                $ele,
+                names.map((name) => $ele[name]),
+                {
+                  watchers: e,
+                }
+              );
+            }
+          } else {
+            if (e.hasModified(name)) {
+              func.call($ele, $ele[name], {
+                watchers: e,
+              });
+            }
           }
         }
       });
 
       for (let [name, func] of wen) {
-        func.call($ele, $ele[name], {});
+        const names = name.split(",");
+        if (names.length >= 2) {
+          func.call(
+            $ele,
+            names.map((name) => $ele[name]),
+            {}
+          );
+        } else {
+          func.call($ele, $ele[name], {});
+        }
       }
     }
   };
@@ -3247,6 +3270,7 @@ try{
     nextTick,
     fn: Xhear.prototype,
     all: (expr) => searchEle(document, expr).map(eleX),
+    frag: () => $(document.createDocumentFragment()),
   });
 
   return $;
