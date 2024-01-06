@@ -21,36 +21,47 @@
       $.register({
         tag: "template-demo",
         temp: `
-        <div>count:{{count1}}</div>
-        <div>num:{{count2}}</div>
+        <div data-testid="n1">num1:{{num1}}</div>
+        <div data-testid="n2">num2:{{num2}}</div>
+        <div data-testid="n3">num3:{{num3}}</div>
+        <div data-testid="target1">c1and2:{{c1and2}}</div>
+        <div data-testid="target2">c3and2:{{c3and2}}</div>
         `,
         data: {
-          count1: 1,
-          count2: 2,
-          count3: 3,
+          c1and2: 0,
+          c3and2: 0,
+          num1: 1,
+          num2: 2,
+          num3: 3,
         },
         watch: {
-          count1(val) {
-            console.log("count1", val);
+          num1(val) {
+            console.log("num1", val);
           },
-          count2(val) {
-            console.log("count2", val);
+          num2(val) {
+            console.log("num2", val);
           },
-          ["count1,count2"]([count1, count2]) {
-            console.log("count1-2", count1, count2);
+          ["num1,num2"]([num1, num2]) {
+            console.log("num1-2", num1, num2);
+            this.c1and2++;
           },
-          //   "count1,count2": function ([count1, count2]) {
-          //     console.log("count1-2", count1, count2);
+          //   "num1,num2": function ([num1, num2]) {
+          //     console.log("num1-2", num1, num2);
           //   },
-          ["count3,count2"]([count3, count2]) {
-            console.log("count3-2", count3, count2);
+          ["num3,num2"]([num3, num2]) {
+            console.log("num3-2", num3, num2);
+            this.c3and2++;
           },
         },
+        proto: {},
         ready() {
-          //   setTimeout(() => {
-          //     this.count1 = 10;
-          //     this.count2 = 20;
-          //   }, 100);
+          setTimeout(() => {
+            this.num1 *= 10;
+            this.num2 *= 10;
+            setTimeout(() => {
+              this.num1 *= 10;
+            }, 100);
+          }, 100);
         },
       });
     </script>
