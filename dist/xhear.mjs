@@ -1,4 +1,4 @@
-//! xhear - v7.3.26 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.26 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -3241,6 +3241,7 @@ Object.assign($, {
   nextTick,
   fn: Xhear.prototype,
   all: (expr) => searchEle(document, expr).map(eleX),
+  frag: () => $(document.createDocumentFragment()),
 });
 
 export { $ as default };

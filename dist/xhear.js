@@ -1,4 +1,4 @@
-//! xhear - v7.3.26 https://github.com/kirakiray/Xhear  (c) 2018-2023 YAO
+//! xhear - v7.3.26 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -3247,6 +3247,7 @@ try{
     nextTick,
     fn: Xhear.prototype,
     all: (expr) => searchEle(document, expr).map(eleX),
+    frag: () => $(document.createDocumentFragment()),
   });
 
   return $;
