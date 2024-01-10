@@ -94,6 +94,7 @@ register({
           if (oldIndex > -1) {
             const oldTarget = childs[oldIndex];
             oldTarget.__internal = 1;
+            eleX(oldTarget).__item.$data = e;
             newFake.appendChild(oldTarget);
             delete oldTarget.__internal;
           } else {
