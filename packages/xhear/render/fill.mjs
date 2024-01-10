@@ -93,7 +93,9 @@ register({
 
           if (oldIndex > -1) {
             const oldTarget = childs[oldIndex];
+            oldTarget.__internal = 1;
             newFake.appendChild(oldTarget);
+            delete oldTarget.__internal;
           } else {
             const $ele = createItem(
               e,
