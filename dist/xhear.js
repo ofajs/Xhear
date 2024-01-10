@@ -1556,6 +1556,7 @@ try{
       const frag = document.createDocumentFragment();
 
       childs.forEach((ele) => {
+        // Identify internal operations to prevent detached corrections
         ele.__internal = 1;
         frag.append(ele);
       });
@@ -2292,6 +2293,16 @@ try{
       this._inited = true;
     }
 
+    remove() {
+      this.childNodes.forEach((e) => {
+        e.remove();
+      });
+
+      const { parentNode } = this;
+      parentNode.removeChild(this);
+      parentNode.removeChild(this._start);
+    }
+
     querySelector(expr) {
       return this.__searchEl(expr, "find");
     }
@@ -2739,71 +2750,59 @@ try{
 
         const targetTemp = temps[this._name];
 
+        const keyName = this.attr("fill-key") || "xid";
+
         if (!childs.length) {
           const frag = document.createDocumentFragment();
 
           val.forEach((e, i) => {
-            const $ele = createItem(e, temps, targetTemp, data.$host || data, i);
+            const $ele = createItem(
+              e,
+              temps,
+              targetTemp,
+              data.$host || data,
+              i,
+              keyName
+            );
             frag.appendChild($ele.ele);
           });
 
           this._fake.appendChild(frag);
         } else {
-          const xids = childs.map((e) => e._data_xid || e);
-
-          // Adjustment of elements in order
+          const positionKeys = childs.map((e) => e._data_xid || e);
           const len = val.length;
-          let currentEl;
+
+          const newFake = new FakeNode("x-fill");
+          this._fake.parentNode.insertBefore(newFake, this._fake._start);
+          newFake.init();
+
           for (let i = 0; i < len; i++) {
             const e = val[i];
 
-            const oldIndex = xids.indexOf(e.xid || e);
+            const oldIndex = positionKeys.indexOf(e[keyName]);
 
             if (oldIndex > -1) {
-              if (oldIndex === i) {
-                // No data changes
-                currentEl = childs[i];
-                continue;
-              }
-
-              // position change
-              const target = childs[oldIndex];
-              const $target = eleX(target);
-              // fix data index
-              $target.__item.$index = i;
-              target.__internal = 1;
-              if (i === 0) {
-                this._fake.insertBefore(target, childs[0]);
-              } else {
-                this._fake.insertBefore(target, currentEl.nextElementSibling);
-              }
-              currentEl = target;
-              delete target.__internal;
-              continue;
-            }
-
-            // new data
-            const $ele = createItem(e, temps, targetTemp, data.$host || data, i);
-            if (!currentEl) {
-              if (childs.length) {
-                this._fake.insertBefore($ele.ele, childs[0]);
-              } else {
-                this._fake.appendChild($ele.ele);
-              }
+              const oldTarget = childs[oldIndex];
+              oldTarget.__internal = 1;
+              eleX(oldTarget).__item.$data = e;
+              newFake.appendChild(oldTarget);
+              delete oldTarget.__internal;
             } else {
-              this._fake.insertBefore($ele.ele, currentEl.nextSibling);
+              const $ele = createItem(
+                e,
+                temps,
+                targetTemp,
+                data.$host || data,
+                i,
+                keyName
+              );
+
+              newFake.appendChild($ele.ele);
             }
-            currentEl = $ele.ele;
           }
 
-          const newChilds = this._fake.children;
-
-          if (len < newChilds.length) {
-            newChilds.slice(len).forEach((e) => {
-              e.remove();
-              revokeAll(e);
-            });
-          }
+          this._fake.remove();
+          this._fake = newFake;
         }
 
         if (this._fake.parentNode) {
@@ -2844,7 +2843,7 @@ try{
     },
   });
 
-  const createItem = (data, temps, targetTemp, $host, $index) => {
+  const createItem = (data, temps, targetTemp, $host, $index, keyName) => {
     const $ele = createXEle(targetTemp.innerHTML);
 
     const itemData = new Stanz({
@@ -2872,7 +2871,7 @@ try{
     revokes.push(revoke);
 
     $ele.__item = itemData;
-    $ele.ele._data_xid = data.xid || data;
+    $ele.ele._data_xid = data[keyName] || data;
 
     return $ele;
   };
