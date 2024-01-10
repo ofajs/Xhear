@@ -27,6 +27,16 @@ export class FakeNode extends Comment {
     this._inited = true;
   }
 
+  remove() {
+    this.childNodes.forEach((e) => {
+      e.remove();
+    });
+
+    const { parentNode } = this;
+    parentNode.removeChild(this);
+    parentNode.removeChild(this._start);
+  }
+
   querySelector(expr) {
     return this.__searchEl(expr, "find");
   }
