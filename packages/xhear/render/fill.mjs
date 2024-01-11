@@ -87,6 +87,23 @@ register({
 
         while (target) {
           if (target === this._fake) {
+            if (vals.length) {
+              // 已经走到最后，直接往前面添加所有元素
+              vals.forEach((item) => {
+                const $ele = createItem(
+                  item,
+                  temps,
+                  targetTemp,
+                  data.$host || data,
+                  count,
+                  keyName
+                );
+
+                count++;
+
+                target.parentNode.insertBefore($ele.ele, target);
+              });
+            }
             break;
           }
           if (!(target instanceof Element)) {
@@ -100,7 +117,7 @@ register({
           if (currentVal === undefined) {
             // 后续都没有了，直接删除
             needRemoves.push(target);
-            target = target.nextElementSibling;
+            target = target.nextSibling;
             continue;
           }
 

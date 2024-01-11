@@ -2754,7 +2754,8 @@ try{
 
         const targetTemp = temps[this._name];
 
-        const keyName = this.attr("fill-key") || "xid";
+        // const keyName = this.attr("fill-key") || "xid";
+        const keyName = "xid";
 
         if (!childs.length) {
           const frag = document.createDocumentFragment();
@@ -2783,6 +2784,23 @@ try{
 
           while (target) {
             if (target === this._fake) {
+              if (vals.length) {
+                // 已经走到最后，直接往前面添加所有元素
+                vals.forEach((item) => {
+                  const $ele = createItem(
+                    item,
+                    temps,
+                    targetTemp,
+                    data.$host || data,
+                    count,
+                    keyName
+                  );
+
+                  count++;
+
+                  target.parentNode.insertBefore($ele.ele, target);
+                });
+              }
               break;
             }
             if (!(target instanceof Element)) {
@@ -2796,7 +2814,7 @@ try{
             if (currentVal === undefined) {
               // 后续都没有了，直接删除
               needRemoves.push(target);
-              target = target.nextElementSibling;
+              target = target.nextSibling;
               continue;
             }
 
@@ -2827,8 +2845,6 @@ try{
               );
 
               target.parentNode.insertBefore($ele.ele, target);
-              // 插入后删除旧的
-              // target.remove();
               // 修正游标
               target = $ele.ele;
             }
