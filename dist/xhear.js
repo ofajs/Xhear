@@ -2715,7 +2715,7 @@ try{
     },
     proto: {
       refreshValue() {
-        const val = this.value;
+        const arrayData = this.value;
 
         if (!this._bindend) {
           return;
@@ -2723,16 +2723,16 @@ try{
 
         const childs = this._fake.children;
 
-        if (!val) {
+        if (!arrayData) {
           childs.forEach((e) => revokeAll(e));
           this._fake.innerHTML = "";
           return;
         }
 
-        if (!(val instanceof Array)) {
+        if (!(arrayData instanceof Array)) {
           console.warn(
             `The value of x-fill component must be of type Array, and the type of the current value is ${getType(
-            val
+            arrayData
           )}`
           );
 
@@ -2754,13 +2754,12 @@ try{
 
         const targetTemp = temps[this._name];
 
-        // const keyName = this.attr("fill-key") || "xid";
-        const keyName = "xid";
+        const keyName = this.attr("fill-key") || "xid";
 
         if (!childs.length) {
           const frag = document.createDocumentFragment();
 
-          val.forEach((e, i) => {
+          arrayData.forEach((e, i) => {
             const $ele = createItem(
               e,
               temps,
@@ -2777,7 +2776,7 @@ try{
           const positionKeys = childs.map((e) => e._data_xid || e);
           let target = this._fake._start.nextElementSibling;
 
-          const vals = val.slice();
+          const vals = arrayData.slice();
           const needRemoves = [];
 
           let count = 0;
@@ -2808,31 +2807,38 @@ try{
               continue;
             }
             const currentVal = vals.shift();
+            const isObj = currentVal instanceof Object;
             const $tar = eleX(target);
             const item = $tar.__item;
 
-            if (currentVal === undefined) {
+            if (currentVal === undefined && !vals.length) {
               // 后续都没有了，直接删除
               needRemoves.push(target);
               target = target.nextSibling;
               continue;
             }
 
-            const oldId = positionKeys.indexOf(currentVal[keyName]);
+            const oldId = positionKeys.indexOf(
+              isObj ? currentVal[keyName] : currentVal
+            );
             if (oldId > -1) {
               // 原来就有这个key的情况下，进行key位移
               const oldItem = childs[oldId];
-              const $oldItem = eleX(oldItem);
-              if (currentVal[keyName] !== item.$data[keyName]) {
+              if (
+                isObj
+                  ? currentVal[keyName] !== item.$data[keyName]
+                  : currentVal !== item.$data
+              ) {
                 // 调整位置
-                $oldItem.__internal = 1;
+                oldItem.__internal = 1;
                 target.parentNode.insertBefore(oldItem, target);
-                delete $oldItem.__internal;
-                // $oldItem.__item.$data = currentVal;
+                delete oldItem.__internal;
+                const $old = eleX(oldItem);
+                if ($old.__item.$data !== currentVal) {
+                  $old.__item.$data = currentVal;
+                }
                 target = oldItem;
               }
-              // 合并数据
-              // debugger;
             } else {
               // 新增元素
               const $ele = createItem(
@@ -2845,7 +2851,6 @@ try{
               );
 
               target.parentNode.insertBefore($ele.ele, target);
-              // 修正游标
               target = $ele.ele;
             }
 
@@ -2855,9 +2860,6 @@ try{
 
           if (needRemoves.length) {
             needRemoves.forEach((e) => {
-              if (e.getAttribute("id") === "target") {
-                debugger;
-              }
               revokeAll(e);
               e.remove();
             });
