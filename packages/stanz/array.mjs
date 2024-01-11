@@ -94,8 +94,8 @@ mutatingMethods.forEach((methodName) => {
   }
 });
 
-// ["concat", "filter", "slice", "flatMap", "map"].forEach((methodName) => {
-Object.getOwnPropertyNames(Array.prototype).forEach((methodName) => {
+// Object.getOwnPropertyNames(Array.prototype).forEach((methodName) => {
+["concat", "filter", "slice", "flatMap", "map"].forEach((methodName) => {
   if (methodName === "constructor" || mutatingMethods.includes(methodName)) {
     return;
   }
