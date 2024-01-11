@@ -12,12 +12,12 @@ register({
     value: null,
   },
   watch: {
-    value() {
-      this.refreshValue();
+    value(value, t) {
+      this.refreshValue(t?.watchers);
     },
   },
   proto: {
-    refreshValue() {
+    refreshValue(watchers) {
       const arrayData = this.value;
 
       if (!this._bindend) {
@@ -76,6 +76,16 @@ register({
 
         this._fake.appendChild(frag);
       } else {
+        console.log("watchers:", watchers[0]);
+        if (watchers) {
+          const isReplaced = watchers.some((e) => e.path.length <= 1);
+
+          if (!isReplaced) {
+            // 不是替换，item内部绑定就可以修正
+            return;
+          }
+        }
+
         const positionKeys = childs.map((e) => e._data_xid || e);
         let target = this._fake._start.nextElementSibling;
 
@@ -136,11 +146,13 @@ register({
               oldItem.__internal = 1;
               target.parentNode.insertBefore(oldItem, target);
               delete oldItem.__internal;
-              const $old = eleX(oldItem);
-              if ($old.__item.$data !== currentVal) {
-                $old.__item.$data = currentVal;
-              }
               target = oldItem;
+            }
+
+            // 更新对象
+            const $old = eleX(oldItem);
+            if ($old.__item.$data !== currentVal) {
+              $old.__item.$data = currentVal;
             }
           } else {
             // 新增元素
