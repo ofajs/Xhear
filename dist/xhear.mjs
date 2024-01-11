@@ -2748,69 +2748,96 @@ register({
 
       const targetTemp = temps[this._name];
 
+      const keyName = this.attr("fill-key") || "xid";
+
       if (!childs.length) {
         const frag = document.createDocumentFragment();
 
         val.forEach((e, i) => {
-          const $ele = createItem(e, temps, targetTemp, data.$host || data, i);
+          const $ele = createItem(
+            e,
+            temps,
+            targetTemp,
+            data.$host || data,
+            i,
+            keyName
+          );
           frag.appendChild($ele.ele);
         });
 
         this._fake.appendChild(frag);
       } else {
-        const xids = childs.map((e) => e._data_xid || e);
+        const positionKeys = childs.map((e) => e._data_xid || e);
+        let target = this._fake._start.nextElementSibling;
 
-        // Adjustment of elements in order
-        const len = val.length;
-        let currentEl;
-        for (let i = 0; i < len; i++) {
-          const e = val[i];
+        const vals = val.slice();
+        const needRemoves = [];
 
-          const oldIndex = xids.indexOf(e.xid || e);
+        let count = 0;
 
-          if (oldIndex > -1) {
-            if (oldIndex === i) {
-              // No data changes
-              currentEl = childs[i];
-              continue;
-            }
+        while (target) {
+          if (target === this._fake) {
+            break;
+          }
+          if (!(target instanceof Element)) {
+            target = target.nextSibling;
+            continue;
+          }
+          const currentVal = vals.shift();
+          const $tar = eleX(target);
+          const item = $tar.__item;
 
-            // position change
-            const target = childs[oldIndex];
-            const $target = eleX(target);
-            // fix data index
-            $target.__item.$index = i;
-            target.__internal = 1;
-            if (i === 0) {
-              this._fake.insertBefore(target, childs[0]);
-            } else {
-              this._fake.insertBefore(target, currentEl.nextElementSibling);
-            }
-            currentEl = target;
-            delete target.__internal;
+          if (currentVal === undefined) {
+            // 后续都没有了，直接删除
+            needRemoves.push(target);
+            target = target.nextElementSibling;
             continue;
           }
 
-          // new data
-          const $ele = createItem(e, temps, targetTemp, data.$host || data, i);
-          if (!currentEl) {
-            if (childs.length) {
-              this._fake.insertBefore($ele.ele, childs[0]);
-            } else {
-              this._fake.appendChild($ele.ele);
+          const oldId = positionKeys.indexOf(currentVal[keyName]);
+          if (oldId > -1) {
+            // 原来就有这个key的情况下，进行key位移
+            const oldItem = childs[oldId];
+            const $oldItem = eleX(oldItem);
+            if (currentVal[keyName] !== item.$data[keyName]) {
+              // 调整位置
+              $oldItem.__internal = 1;
+              target.parentNode.insertBefore(oldItem, target);
+              delete $oldItem.__internal;
+              // $oldItem.__item.$data = currentVal;
+              target = oldItem;
             }
+            // 合并数据
+            // debugger;
           } else {
-            this._fake.insertBefore($ele.ele, currentEl.nextSibling);
+            // 新增元素
+            const $ele = createItem(
+              currentVal,
+              temps,
+              targetTemp,
+              data.$host || data,
+              count,
+              keyName
+            );
+
+            target.parentNode.insertBefore($ele.ele, target);
+            // 插入后删除旧的
+            // target.remove();
+            // 修正游标
+            target = $ele.ele;
           }
-          currentEl = $ele.ele;
+
+          count++;
+          target = target.nextSibling;
         }
 
-        const newChilds = this._fake.children;
-
-        if (len < newChilds.length) {
-          newChilds.slice(len).forEach((e) => {
-            e.remove();
+        if (needRemoves.length) {
+          needRemoves.forEach((e) => {
+            if (e.getAttribute("id") === "target") {
+              debugger;
+            }
             revokeAll(e);
+            e.remove();
           });
         }
       }
@@ -2853,11 +2880,11 @@ register({
   },
 });
 
-const createItem = (data, temps, targetTemp, $host, $index) => {
+const createItem = ($data, temps, targetTemp, $host, $index, keyName) => {
   const $ele = createXEle(targetTemp.innerHTML);
 
   const itemData = new Stanz({
-    $data: data,
+    $data,
     $ele,
     $host,
     $index,
@@ -2881,7 +2908,7 @@ const createItem = (data, temps, targetTemp, $host, $index) => {
   revokes.push(revoke);
 
   $ele.__item = itemData;
-  $ele.ele._data_xid = data.xid || data;
+  $ele.ele._data_xid = $data[keyName] || $data;
 
   return $ele;
 };
