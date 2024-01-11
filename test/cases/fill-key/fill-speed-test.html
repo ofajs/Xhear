@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>condition event</title>
+    <!-- <script src="../../../dist/xhear.min.js" type="module"></script>  -->
+  </head>
+  <body>
+    <div>init array time: <span id="init-time"></span>ms</div>
+    <div>set array item time: <span id="reset-item-time"></span>ms</div>
+    <div>
+      splice array item time (insert time): <span id="splice1-time"></span>ms
+    </div>
+    <div>
+      splice array item time (cut time): <span id="splice2-time"></span>ms
+    </div>
+    <div>reset array time: <span id="reset-time"></span>ms</div>
+    <t-one></t-one>
+    <template id="t1">
+      <div>T1</div>
+      <div>
+        <x-fill :value="arr" fill-key="id">
+          <t-two :val="$data.val"></t-two>
+        </x-fill>
+      </div>
+    </template>
+    <template id="t2">
+      <style>
+        .con {
+          border: red solid 0.8px;
+          display: inline-block;
+          padding: 6px;
+          margin: 2px;
+          border-radius: 5px;
+          animation: aaa ease 2s;
+        }
+        @keyframes aaa {
+          0% {
+            opacity: 0;
+            background-color: red;
+          }
+          100% {
+            opacity: 1;
+            background-color: transparent;
+          }
+        }
+      </style>
+      <div class="con">{{val}}</div>
+    </template>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+      window.$ = $;
+
+      const arr = [];
+      for (let i = 1; i <= 2000; i++) {
+        arr.push({
+          id: i,
+          val: i * 10,
+        });
+      }
+
+      $.register({
+        tag: "t-one",
+        temp: $("#t1").html,
+        data: {
+          arr: [],
+        },
+      });
+
+      $.register({
+        tag: "t-two",
+        temp: $("#t2").html,
+        data: {
+          val: "",
+        },
+      });
+
+      Promise.resolve()
+        .then(() => {
+          return new Promise((res) => {
+            setTimeout(() => {
+              let initStartTime = performance.now();
+              $("t-one").arr = arr;
+              console.log(
+                "init data time: ",
+                performance.now() - initStartTime
+              );
+              setTimeout(() => {
+                document.querySelector("#init-time").innerHTML =
+                  performance.now() - initStartTime;
+                res();
+              });
+            }, 100);
+          });
+        })
+        .then(() => {
+          return new Promise((res) => {
+            setTimeout(() => {
+              const arr2 = arr.slice();
+              arr2[2].val = "change val";
+
+              const resetStartTime = performance.now();
+              $("t-one").arr = arr2;
+              console.log(
+                "reset data time: ",
+                performance.now() - resetStartTime
+              );
+              setTimeout(() => {
+                document.querySelector("#reset-item-time").innerHTML =
+                  performance.now() - resetStartTime;
+                res();
+              });
+            }, 100);
+          });
+        })
+        .then(() => {
+          return new Promise((res) => {
+            setTimeout(() => {
+              const arr2 = arr.slice();
+              arr2.splice(2, 0, { id: 2000000, val: "200000+" });
+
+              const resetStartTime = performance.now();
+              $("t-one").arr = arr2;
+              console.log(
+                "reset data time: ",
+                performance.now() - resetStartTime
+              );
+              setTimeout(() => {
+                document.querySelector("#splice1-time").innerHTML =
+                  performance.now() - resetStartTime;
+                res();
+              });
+            }, 1000);
+          });
+        })
+        .then(() => {
+          return new Promise((res) => {
+            setTimeout(() => {
+              const arr2 = arr.slice();
+              arr2.splice(2, 1);
+
+              const resetStartTime = performance.now();
+              $("t-one").arr = arr2;
+              console.log(
+                "reset data time: ",
+                performance.now() - resetStartTime
+              );
+              setTimeout(() => {
+                document.querySelector("#splice2-time").innerHTML =
+                  performance.now() - resetStartTime;
+                res();
+              });
+            }, 1000);
+          });
+        })
+        .then(() => {
+          return new Promise((res) => {
+            setTimeout(() => {
+              const arr2 = arr.slice();
+              arr2.reverse();
+
+              const resetStartTime = performance.now();
+              $("t-one").arr = arr2;
+              console.log(
+                "reset data time: ",
+                performance.now() - resetStartTime
+              );
+              setTimeout(() => {
+                document.querySelector("#reset-time").innerHTML =
+                  performance.now() - resetStartTime;
+                res();
+              });
+            }, 1000);
+          });
+        });
+    </script>
+  </body>
+</html>
