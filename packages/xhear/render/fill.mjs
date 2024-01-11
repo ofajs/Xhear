@@ -76,7 +76,6 @@ register({
 
         this._fake.appendChild(frag);
       } else {
-        console.log("watchers:", watchers[0]);
         if (watchers) {
           const isReplaced = watchers.some((e) => e.path.length <= 1);
 
