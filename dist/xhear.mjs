@@ -2767,7 +2767,6 @@ register({
 
         this._fake.appendChild(frag);
       } else {
-        console.log("watchers:", watchers[0]);
         if (watchers) {
           const isReplaced = watchers.some((e) => e.path.length <= 1);
 
@@ -2777,10 +2776,43 @@ register({
           }
         }
 
-        const positionKeys = childs.map((e) => e._data_xid || e);
+        const vals = arrayData.slice();
+        const valsKeys = new Set(vals.map((e) => e[keyName]));
+
+        const { parentNode } = this._fake;
+
+        if (vals.length !== valsKeys.size) {
+          const errDesc = "fill key duplicates";
+          console.error(errDesc);
+          console.log(
+            errDesc,
+            ",its parent node is:",
+            parentNode,
+            ";host: ",
+            eleX(parentNode)?.host
+          );
+        }
+
+        // const positionKeys = childs.map((e) => e._data_xid || e);
+        // 提前删除不存在的项目（用于提升性能，这一步可以去掉，将上面注释打开）
+        const positionKeys = [];
+        for (let i = 0, len = childs.length; i < len; i++) {
+          const e = childs[i];
+          const key = e._data_xid || e;
+
+          if (!valsKeys.has(key)) {
+            // 已经不存在就提前删除
+            e.remove();
+            childs.splice(i, 1);
+            len--;
+            i--;
+          } else {
+            positionKeys.push(key);
+          }
+        }
+
         let target = this._fake._start.nextElementSibling;
 
-        const vals = arrayData.slice();
         const needRemoves = [];
 
         let count = 0;
@@ -2801,7 +2833,8 @@ register({
 
                 count++;
 
-                target.parentNode.insertBefore($ele.ele, target);
+                // target.parentNode.insertBefore($ele.ele, target);
+                parentNode.insertBefore($ele.ele, target);
               });
             }
             break;
@@ -2835,7 +2868,8 @@ register({
             ) {
               // 调整位置
               oldItem.__internal = 1;
-              target.parentNode.insertBefore(oldItem, target);
+              // target.parentNode.insertBefore(oldItem, target);
+              parentNode.insertBefore(oldItem, target);
               delete oldItem.__internal;
               target = oldItem;
             }
@@ -2856,7 +2890,8 @@ register({
               keyName
             );
 
-            target.parentNode.insertBefore($ele.ele, target);
+            // target.parentNode.insertBefore($ele.ele, target);
+            parentNode.insertBefore($ele.ele, target);
             target = $ele.ele;
           }
 
@@ -2875,6 +2910,7 @@ register({
       if (this._fake.parentNode) {
         eleX(this._fake.parentNode).refresh();
       }
+
       this.emit("rendered", {
         bubbles: false,
       });
