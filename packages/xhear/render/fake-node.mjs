@@ -27,7 +27,7 @@ export class FakeNode extends Comment {
     this._inited = true;
   }
 
-  remove() {
+  removeAll() {
     this.childNodes.forEach((e) => {
       e.remove();
     });

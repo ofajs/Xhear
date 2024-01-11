@@ -116,7 +116,7 @@ test("component data owner size", async ({ page }) => {
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe("10");
   await page.getByRole("button", { name: "refresh arr owner size" }).click();
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
-    "[4,4,4]"
+    "4,4,4"
   );
 
   await page.getByRole("button", { name: "add count" }).click();
@@ -126,7 +126,7 @@ test("component data owner size", async ({ page }) => {
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe("10");
   await page.getByRole("button", { name: "refresh arr owner size" }).click();
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
-    "[4,4,4]"
+    "4,4,4"
   );
 
   await page.getByRole("button", { name: "add count" }).click();
@@ -136,7 +136,7 @@ test("component data owner size", async ({ page }) => {
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe("1");
   await page.getByRole("button", { name: "refresh arr owner size" }).click();
   expect(await page.$eval("#logger", (node) => node.textContent)).toBe(
-    "[1,1,1]"
+    "1,1,1"
   );
 });
 
