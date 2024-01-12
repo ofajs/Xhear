@@ -19,7 +19,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "stanz": "^8.1.23"
+    "stanz": "^8.1.24"
   },
   "devDependencies": {
     "@playwright/test": "^1.34.0",
