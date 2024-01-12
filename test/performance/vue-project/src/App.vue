@@ -28,7 +28,7 @@ Promise.resolve()
             performance.now() - initStartTime;
           res();
         });
-      }, 100);
+      }, 200);
     });
   })
   .then(() => {
@@ -46,7 +46,7 @@ Promise.resolve()
             performance.now() - resetStartTime;
           res();
         });
-      }, 100);
+      }, 200);
     });
   })
   .then(() => {
@@ -64,7 +64,7 @@ Promise.resolve()
             performance.now() - resetStartTime;
           res();
         });
-      }, 1000);
+      }, 200);
     });
   })
   .then(() => {
@@ -82,7 +82,7 @@ Promise.resolve()
             performance.now() - resetStartTime;
           res();
         });
-      }, 1000);
+      }, 200);
     });
   })
   .then(() => {
@@ -100,7 +100,7 @@ Promise.resolve()
             performance.now() - resetStartTime;
           res();
         });
-      }, 1000);
+      }, 200);
     });
   });
 </script>

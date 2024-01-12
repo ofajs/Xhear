@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xhear List Test</title>
-    <script src="../../../dist/xhear.min.js" type="module"></script>
+    <script src="../../../dist/xhear.min.js" type="module"></script> 
   </head>
   <body>
     <div>init array time: <span id="init-time"></span>ms</div>
@@ -89,9 +89,9 @@
               );
               setTimeout(() => {
                 document.querySelector("#init-time").innerHTML =
-                  performance.now() - initStartTime - 50;
+                  performance.now() - initStartTime;
                 res();
-              }, 50);
+              });
             }, 200);
           });
         })
@@ -109,9 +109,9 @@
               );
               setTimeout(() => {
                 document.querySelector("#reset-item-time").innerHTML =
-                  performance.now() - resetStartTime - 50;
+                  performance.now() - resetStartTime;
                 res();
-              }, 50);
+              });
             }, 200);
           });
         })
@@ -129,9 +129,9 @@
               );
               setTimeout(() => {
                 document.querySelector("#splice1-time").innerHTML =
-                  performance.now() - resetStartTime - 50;
+                  performance.now() - resetStartTime;
                 res();
-              }, 50);
+              });
             }, 200);
           });
         })
@@ -149,9 +149,9 @@
               );
               setTimeout(() => {
                 document.querySelector("#splice2-time").innerHTML =
-                  performance.now() - resetStartTime - 50;
+                  performance.now() - resetStartTime;
                 res();
-              }, 50);
+              });
             }, 200);
           });
         })
@@ -169,9 +169,9 @@
               );
               setTimeout(() => {
                 document.querySelector("#reset-time").innerHTML =
-                  performance.now() - resetStartTime - 50;
+                  performance.now() - resetStartTime;
                 res();
-              }, 50);
+              });
             }, 200);
           });
         });

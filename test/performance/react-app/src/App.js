@@ -26,7 +26,7 @@ function App() {
                 performance.now() - initStartTime;
               res();
             });
-          }, 100);
+          }, 200);
         });
       })
       .then(() => {
@@ -47,7 +47,7 @@ function App() {
                 performance.now() - resetStartTime;
               res();
             });
-          }, 100);
+          }, 200);
         });
       })
       .then(() => {
@@ -68,7 +68,7 @@ function App() {
                 performance.now() - resetStartTime;
               res();
             });
-          }, 1000);
+          }, 200);
         });
       })
       .then(() => {
@@ -89,7 +89,7 @@ function App() {
                 performance.now() - resetStartTime;
               res();
             });
-          }, 1000);
+          }, 200);
         });
       })
       .then(() => {
@@ -110,7 +110,7 @@ function App() {
                 performance.now() - resetStartTime;
               res();
             });
-          }, 1000);
+          }, 200);
         });
       });
   }, []);
