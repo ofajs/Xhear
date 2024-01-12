@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xhear List Test</title>
-    <script src="../../../dist/xhear.min.js" type="module"></script> 
+    <script src="../../../dist/xhear.min.js" type="module"></script>
   </head>
   <body>
     <div>init array time: <span id="init-time"></span>ms</div>
@@ -89,10 +89,10 @@
               );
               setTimeout(() => {
                 document.querySelector("#init-time").innerHTML =
-                  performance.now() - initStartTime;
+                  performance.now() - initStartTime - 50;
                 res();
-              });
-            }, 100);
+              }, 50);
+            }, 200);
           });
         })
         .then(() => {
@@ -109,10 +109,10 @@
               );
               setTimeout(() => {
                 document.querySelector("#reset-item-time").innerHTML =
-                  performance.now() - resetStartTime;
+                  performance.now() - resetStartTime - 50;
                 res();
-              });
-            }, 100);
+              }, 50);
+            }, 200);
           });
         })
         .then(() => {
@@ -129,10 +129,10 @@
               );
               setTimeout(() => {
                 document.querySelector("#splice1-time").innerHTML =
-                  performance.now() - resetStartTime;
+                  performance.now() - resetStartTime - 50;
                 res();
-              });
-            }, 1000);
+              }, 50);
+            }, 200);
           });
         })
         .then(() => {
@@ -149,10 +149,10 @@
               );
               setTimeout(() => {
                 document.querySelector("#splice2-time").innerHTML =
-                  performance.now() - resetStartTime;
+                  performance.now() - resetStartTime - 50;
                 res();
-              });
-            }, 1000);
+              }, 50);
+            }, 200);
           });
         })
         .then(() => {
@@ -169,10 +169,10 @@
               );
               setTimeout(() => {
                 document.querySelector("#reset-time").innerHTML =
-                  performance.now() - resetStartTime;
+                  performance.now() - resetStartTime - 50;
                 res();
-              });
-            }, 1000);
+              }, 50);
+            }, 200);
           });
         });
     </script>
