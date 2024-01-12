@@ -9,7 +9,7 @@ test("fill string item", async ({ page }) => {
     "en/index.html"
   );
 
-  await new Promise((res) => setTimeout(res, 600));
+  await new Promise((res) => setTimeout(res, 400));
 
   expect(await page.$eval("li", (node) => node.textContent)).toBe(
     "cn/index.html"

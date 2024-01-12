@@ -2777,11 +2777,16 @@ register({
         }
 
         const vals = arrayData.slice();
-        const valsKeys = new Set(vals.map((e) => e[keyName]));
+        const valsKeys = new Set(
+          vals.map((e) => {
+            const val = e[keyName];
+            return val === undefined ? e : val;
+          })
+        );
 
         const { parentNode } = this._fake;
 
-        if (vals.length !== valsKeys.size) {
+        if (keyName !== "xid" && vals.length !== valsKeys.size) {
           const errDesc = "fill key duplicates";
           console.error(errDesc);
           console.log(
@@ -2793,25 +2798,26 @@ register({
           );
         }
 
-        const positionKeys = childs.map((e) => e._data_xid || e);
-        // 提前删除不存在的项目（用于提升性能，这一步可以去掉，将上面注释打开）
-        // const positionKeys = [];
-        // for (let i = 0, len = childs.length; i < len; i++) {
-        //   const e = childs[i];
-        //   const key = e._data_xid || e;
+        // const positionKeys = childs.map((e) => e._data_xid || e);
+        // Delete non-existing projects in advance (used to improve performance, this step can be removed and the above comment is turned on)
+        const positionKeys = [];
+        for (let i = 0, len = childs.length; i < len; i++) {
+          const e = childs[i];
+          const key = e._data_xid || e;
 
-        //   if (!valsKeys.has(key)) {
-        //     // 已经不存在就提前删除
-        //     e.remove();
-        //     childs.splice(i, 1);
-        //     len--;
-        //     i--;
-        //   } else {
-        //     positionKeys.push(key);
-        //   }
-        // }
+          if (!valsKeys.has(key)) {
+            // If it no longer exists, delete it in advance.
+            revokeAll(e);
+            e.remove();
+            childs.splice(i, 1);
+            len--;
+            i--;
+          } else {
+            positionKeys.push(key);
+          }
+        }
 
-        let target = this._fake._start.nextElementSibling;
+        let target = this._fake._start;
 
         const needRemoves = [];
 
