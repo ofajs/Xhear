@@ -2794,8 +2794,8 @@ try{
               errDesc,
               ",its parent node is:",
               parentNode,
-              ";host: ",
-              eleX(parentNode)?.host
+              "host: ",
+              eleX(parentNode)?.host?.ele
             );
           }
 

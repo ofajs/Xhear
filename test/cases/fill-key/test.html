@@ -3,11 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>condition event</title>
+    <title>x-fill key test</title>
     <!-- <script src="../../../dist/xhear.min.js" type="module"></script>  -->
   </head>
   <body>
-    <div>init array time: <span id="init-time"></span>ms</div>
+    <button id="btn1">Reset First</button>
+    <button id="btn2">Change First</button>
+    <button id="btn3">BTN3</button>
+    <!-- <div>init array time: <span id="init-time"></span>ms</div>
     <div>set array item time: <span id="reset-item-time"></span>ms</div>
     <div>
       splice array item time (insert time): <span id="splice1-time"></span>ms
@@ -15,13 +18,14 @@
     <div>
       splice array item time (cut time): <span id="splice2-time"></span>ms
     </div>
-    <div>reset array time: <span id="reset-time"></span>ms</div>
+    <div>reset array time: <span id="reset-time"></span>ms</div> -->
     <t-one></t-one>
     <template id="t1">
       <div>T1</div>
+      <div data-testid="count">count:{{count}}</div>
       <div>
         <x-fill :value="arr" fill-key="id">
-          <t-two :val="$data.val"></t-two>
+          <t-two :val="$data.val" on:animeend="$host.animeend($event)"></t-two>
         </x-fill>
       </div>
     </template>
@@ -33,7 +37,7 @@
           padding: 6px;
           margin: 2px;
           border-radius: 5px;
-          animation: aaa ease 2s;
+          animation: aaa ease 0.1s;
         }
         @keyframes aaa {
           0% {
@@ -46,14 +50,14 @@
           }
         }
       </style>
-      <div class="con">{{val}}</div>
+      <div class="con" on:animationend="emit('animeend')">{{val}}</div>
     </template>
     <script type="module">
       import $ from "../../../packages/xhear/base.mjs";
       window.$ = $;
 
       const arr = [];
-      for (let i = 1; i <= 2000; i++) {
+      for (let i = 1; i <= 10; i++) {
         arr.push({
           id: i,
           val: i * 10,
@@ -63,8 +67,14 @@
       $.register({
         tag: "t-one",
         temp: $("#t1").html,
+        proto: {
+          animeend() {
+            this.count++;
+          },
+        },
         data: {
-          arr: [],
+          count: 0,
+          arr,
         },
       });
 
@@ -76,104 +86,28 @@
         },
       });
 
-      Promise.resolve()
-        .then(() => {
-          return new Promise((res) => {
-            setTimeout(() => {
-              let initStartTime = performance.now();
-              $("t-one").arr = arr;
-              console.log(
-                "init data time: ",
-                performance.now() - initStartTime
-              );
-              setTimeout(() => {
-                document.querySelector("#init-time").innerHTML =
-                  performance.now() - initStartTime;
-                res();
-              });
-            }, 100);
-          });
-        })
-        .then(() => {
-          return new Promise((res) => {
-            setTimeout(() => {
-              const arr2 = arr.slice();
-              arr2[2].val = "change val";
+      $("#btn1").on("click", () => {
+        const arr2 = arr.slice();
+        arr2[0] = {
+          id: 1,
+          val: "reset val",
+        };
+        $("t-one").arr = arr2;
+      });
 
-              const resetStartTime = performance.now();
-              $("t-one").arr = arr2;
-              console.log(
-                "reset data time: ",
-                performance.now() - resetStartTime
-              );
-              setTimeout(() => {
-                document.querySelector("#reset-item-time").innerHTML =
-                  performance.now() - resetStartTime;
-                res();
-              });
-            }, 100);
-          });
-        })
-        .then(() => {
-          return new Promise((res) => {
-            setTimeout(() => {
-              const arr2 = arr.slice();
-              arr2.splice(2, 0, { id: 2000000, val: "200000+" });
+      $("#btn2").on("click", () => {
+        $("t-one").arr[0].val = "change val";
+      });
 
-              const resetStartTime = performance.now();
-              $("t-one").arr = arr2;
-              console.log(
-                "reset data time: ",
-                performance.now() - resetStartTime
-              );
-              setTimeout(() => {
-                document.querySelector("#splice1-time").innerHTML =
-                  performance.now() - resetStartTime;
-                res();
-              });
-            }, 1000);
-          });
-        })
-        .then(() => {
-          return new Promise((res) => {
-            setTimeout(() => {
-              const arr2 = arr.slice();
-              arr2.splice(2, 1);
-
-              const resetStartTime = performance.now();
-              $("t-one").arr = arr2;
-              console.log(
-                "reset data time: ",
-                performance.now() - resetStartTime
-              );
-              setTimeout(() => {
-                document.querySelector("#splice2-time").innerHTML =
-                  performance.now() - resetStartTime;
-                res();
-              });
-            }, 1000);
-          });
-        })
-        .then(() => {
-          return new Promise((res) => {
-            setTimeout(() => {
-              const arr2 = arr.slice();
-              arr2.reverse();
-
-              const resetStartTime = performance.now();
-              $("t-one").arr = arr2;
-              console.log(
-                "reset data time: ",
-                performance.now() - resetStartTime
-              );
-              setTimeout(() => {
-                document.querySelector("#reset-time").innerHTML =
-                  performance.now() - resetStartTime;
-                res();
-              });
-            }, 1000);
-          });
+      $("#btn3").on("click", () => {
+        const arr2 = arr.slice();
+        arr2.forEach((e) => {
+          e.val += 3;
         });
+        arr2.reverse();
+
+        $("t-one").arr = arr2;
+      });
     </script>
   </body>
 </html>
