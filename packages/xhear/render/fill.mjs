@@ -181,7 +181,7 @@ register({
                 ? currentVal[keyName] !== item.$data[keyName]
                 : currentVal !== item.$data
             ) {
-              // 调整位置
+              // Adjust position
               oldItem.__internal = 1;
               // target.parentNode.insertBefore(oldItem, target);
               parentNode.insertBefore(oldItem, target);
@@ -189,7 +189,7 @@ register({
               target = oldItem;
             }
 
-            // 更新对象
+            // Update object
             const $old = eleX(oldItem);
             if ($old.__item.$data !== currentVal) {
               $old.__item.$data = currentVal;
