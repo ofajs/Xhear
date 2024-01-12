@@ -80,7 +80,7 @@ register({
           const isReplaced = watchers.some((e) => e.path.length <= 1);
 
           if (!isReplaced) {
-            // 不是替换，item内部绑定就可以修正
+            // It is not a replacement, it can be corrected by binding the item internally.
             return;
           }
         }
@@ -129,7 +129,7 @@ register({
         while (target) {
           if (target === this._fake) {
             if (vals.length) {
-              // 已经走到最后，直接往前面添加所有元素
+              // We have reached the end, add all elements directly to the front
               vals.forEach((item) => {
                 const $ele = createItem(
                   item,
@@ -158,7 +158,7 @@ register({
           const item = $tar.__item;
 
           if (currentVal === undefined && !vals.length) {
-            // 后续都没有了，直接删除
+            // There will be no follow-up, just delete it directly
             needRemoves.push(target);
             target = target.nextSibling;
             continue;
@@ -168,7 +168,7 @@ register({
             isObj ? currentVal[keyName] : currentVal
           );
           if (oldId > -1) {
-            // 原来就有这个key的情况下，进行key位移
+            // If the key originally exists, perform key displacement.
             const oldItem = childs[oldId];
             if (
               isObj
@@ -189,7 +189,7 @@ register({
               $old.__item.$data = currentVal;
             }
           } else {
-            // 新增元素
+            // Add new element
             const $ele = createItem(
               currentVal,
               temps,
