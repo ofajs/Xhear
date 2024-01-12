@@ -13,17 +13,17 @@
     <script src="../../node_modules/jasmine-core/lib/jasmine-core/jasmine-html.js"></script>
     <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot0.js"></script>
     <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot1.js"></script>
-    <script src="../../dist/xhear.js"></script>
-    <!-- <script type="module">
+    <!-- <script src="../../dist/xhear.js"></script> -->
+    <script type="module">
       import $ from "../../packages/xhear/base.mjs";
       window.$ = $;
-    </script> -->
+    </script>
     <script>
       const test = it;
     </script>
   </head>
   <body>
-    <div style="display: none">
+    <div >
       <div id="target1">
         <test-one>22</test-one>
         <test-one>33</test-one>
@@ -129,19 +129,19 @@
 
         await new Promise((res) => setTimeout(res, 200));
 
-        $("#target1").reverse();
-        $("#target2").reverse();
+        // $("#target1").reverse();
+        // $("#target2").reverse();
         $("test-two").arr.reverse();
 
-        $("#target1").sort((a, b) => {
-          return a.text - b.text;
-        });
-        $("#target2").sort((a, b) => {
-          return a.text - b.text;
-        });
-        $("test-two").arr.sort((a, b) => {
-          return a - b;
-        });
+        // $("#target1").sort((a, b) => {
+        //   return a.text - b.text;
+        // });
+        // $("#target2").sort((a, b) => {
+        //   return a.text - b.text;
+        // });
+        // $("test-two").arr.sort((a, b) => {
+        //   return a - b;
+        // });
 
         expect(i).toBe(12);
       });

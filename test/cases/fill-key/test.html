@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>x-fill key test</title>
+    <!-- <script src="../../../dist/xhear.min.js" type="module"></script>  -->
+  </head>
+  <body>
+    <button id="btn1">Reset First</button>
+    <button id="btn2">Change First</button>
+    <button id="btn3">BTN3</button>
+    <t-one></t-one>
+    <template id="t1">
+      <div>T1</div>
+      <div data-testid="count">count:{{count}}</div>
+      <div>
+        <x-fill :value="arr" fill-key="id">
+          <t-two :val="$data.val" on:animeend="$host.animeend($event)"></t-two>
+        </x-fill>
+      </div>
+    </template>
+    <template id="t2">
+      <style>
+        .con {
+          border: red solid 0.8px;
+          display: inline-block;
+          padding: 6px;
+          margin: 2px;
+          border-radius: 5px;
+          animation: aaa ease 0.1s;
+        }
+        @keyframes aaa {
+          0% {
+            opacity: 0;
+            background-color: red;
+          }
+          100% {
+            opacity: 1;
+            background-color: transparent;
+          }
+        }
+      </style>
+      <div class="con" on:animationend="emit('animeend')">{{val}}</div>
+    </template>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+      window.$ = $;
+
+      const arr = [];
+      for (let i = 1; i <= 10; i++) {
+        arr.push({
+          id: i,
+          val: i * 10,
+        });
+      }
+
+      $.register({
+        tag: "t-one",
+        temp: $("#t1").html,
+        proto: {
+          animeend() {
+            this.count++;
+          },
+        },
+        data: {
+          count: 0,
+          arr,
+        },
+      });
+
+      $.register({
+        tag: "t-two",
+        temp: $("#t2").html,
+        data: {
+          val: "",
+        },
+      });
+
+      $("#btn1").on("click", () => {
+        const arr2 = arr.slice();
+        arr2[0] = {
+          id: 1,
+          val: "reset val",
+        };
+        $("t-one").arr = arr2;
+      });
+
+      $("#btn2").on("click", () => {
+        $("t-one").arr[0].val = "change val";
+      });
+
+      $("#btn3").on("click", () => {
+        const arr2 = arr.slice();
+        arr2.forEach((e) => {
+          e.val += 3;
+        });
+        arr2.reverse();
+
+        $("t-one").arr = arr2;
+      });
+    </script>
+  </body>
+</html>
