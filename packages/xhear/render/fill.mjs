@@ -102,23 +102,23 @@ register({
           );
         }
 
-        // const positionKeys = childs.map((e) => e._data_xid || e);
+        const positionKeys = childs.map((e) => e._data_xid || e);
         // 提前删除不存在的项目（用于提升性能，这一步可以去掉，将上面注释打开）
-        const positionKeys = [];
-        for (let i = 0, len = childs.length; i < len; i++) {
-          const e = childs[i];
-          const key = e._data_xid || e;
+        // const positionKeys = [];
+        // for (let i = 0, len = childs.length; i < len; i++) {
+        //   const e = childs[i];
+        //   const key = e._data_xid || e;
 
-          if (!valsKeys.has(key)) {
-            // 已经不存在就提前删除
-            e.remove();
-            childs.splice(i, 1);
-            len--;
-            i--;
-          } else {
-            positionKeys.push(key);
-          }
-        }
+        //   if (!valsKeys.has(key)) {
+        //     // 已经不存在就提前删除
+        //     e.remove();
+        //     childs.splice(i, 1);
+        //     len--;
+        //     i--;
+        //   } else {
+        //     positionKeys.push(key);
+        //   }
+        // }
 
         let target = this._fake._start.nextElementSibling;
 
