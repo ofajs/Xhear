@@ -652,10 +652,10 @@ class Stanz extends Array {
           const err = new Error(
             `Failed to get data : ${keys.slice(0, i).join(".")} \n${
               error.stack
-            }`
+            }`,
+            { cause: error }
           );
           Object.assign(err, {
-            error,
             target,
           });
           throw err;
@@ -679,10 +679,10 @@ class Stanz extends Array {
           const err = new Error(
             `Failed to get data : ${keys.slice(0, i).join(".")} \n${
               error.stack
-            }`
+            }`,
+            { cause: error }
           );
           Object.assign(err, {
-            error,
             target,
           });
           throw err;
@@ -793,13 +793,14 @@ const handler$1 = {
         },
       });
     } catch (error) {
-      const err = new Error(`failed to set ${key} \n ${error.stack}`);
+      const err = new Error(`failed to set ${key} \n ${error.stack}`, {
+        cause: error,
+      });
 
       Object.assign(err, {
         key,
         value,
         target: receiver,
-        error,
       });
 
       throw err;
