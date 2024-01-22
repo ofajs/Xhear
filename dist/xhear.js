@@ -1,4 +1,4 @@
-//! xhear - v7.3.28 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.3.29 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1047,9 +1047,11 @@ try{
             }
           } catch (error) {
             const err = new Error(
-              `Execution of the ${actionName} method reports an error: ${actionName}:${args[0]}="${args[1]}"  \n ${error.stack}`
+              `Execution of the ${actionName} method reports an error: ${actionName}:${args[0]}="${args[1]}"  \n ${error.stack}`,
+              {
+                cause: error,
+              }
             );
-            err.error = error;
             throw err;
           }
         });
@@ -2014,9 +2016,11 @@ try{
       defaults.ready && defaults.ready.call($ele);
     } catch (error) {
       const err = new Error(
-        `Render element error: ${ele.tagName} \n  ${error.stack}`
+        `Render element error: ${ele.tagName} \n  ${error.stack}`,
+        {
+          cause: error,
+        }
       );
-      err.error = error;
       throw err;
     }
 
@@ -2107,9 +2111,9 @@ try{
       temps = convert(template);
     } catch (error) {
       const err = new Error(
-        `Register Component Error: ${defaults.tag} \n  ${error.stack}`
+        `Register Component Error: ${defaults.tag} \n  ${error.stack}`,
+        { cause: error }
       );
-      err.error = error;
       throw err;
     }
 
