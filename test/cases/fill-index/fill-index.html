@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>test $index</title>
+    <!-- <script src="../../dist/xhear.js"></script> -->
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      $.register({
+        tag: "temp-demo",
+        temp: `
+        <div>
+            <x-fill :value="arr">
+                <div>
+                    <span attr:data-testid="'t' + $data.val">index:{{$index}} - data:{{$data}}</span> - <button on:click="$host.removeItem($index)">Delete</button>
+                </div>    
+            </x-fill>
+        </div>
+        `,
+        proto: {
+          removeItem(index) {
+            this.arr.splice(index, 1);
+          },
+        },
+        data: {
+          count: 0,
+          arr: [
+            {
+              val: 1,
+            },
+            {
+              val: 2,
+            },
+            {
+              val: 3,
+            },
+            {
+              val: 4,
+            },
+          ],
+        },
+      });
+
+      window.$ = $;
+    </script>
+  </head>
+  <body>
+    <temp-demo></temp-demo>
+  </body>
+</html>
