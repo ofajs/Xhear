@@ -1,4 +1,4 @@
-//! xhear - v7.3.29 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.3.30 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
