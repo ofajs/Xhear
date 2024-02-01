@@ -1,6 +1,6 @@
 {
   "name": "xhear",
-  "version": "7.3.30",
+  "version": "7.3.31",
   "description": "A very simple and easy to use web components library",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "stanz": "^8.1.25"
+    "stanz": "^8.1.26"
   },
   "devDependencies": {
     "@playwright/test": "^1.34.0",

@@ -1,4 +1,4 @@
-//! xhear - v7.3.30 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.3.31 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -382,6 +382,17 @@
         currentTarget: this,
       };
       emitUpdate(options);
+    },
+    watchUntil(func) {
+      return new Promise((resolve) => {
+        const tid = this.watch(() => {
+          const bool = func();
+          if (bool) {
+            this.unwatch(tid);
+            resolve(this);
+          }
+        });
+      });
     },
   };
 
