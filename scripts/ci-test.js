@@ -7,6 +7,6 @@ shell.exec(`npm run playwright`, function (code, stdout, stderr) {
   console.log("Program stderr:", stderr);
   server.close();
   if (code !== 0) {
-    throw "run error";
+    throw new Error("run error");
   }
 });
