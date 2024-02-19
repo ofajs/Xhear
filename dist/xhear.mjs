@@ -1207,7 +1207,9 @@ const convert = (template) => {
 
   searchTemp(template, "x-fill:not([name])", (fillEl) => {
     if (fillEl.querySelector("x-fill:not([name])")) {
-      throw `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`;
+      throw new Error(
+        `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`
+      );
     }
 
     if (fillEl.innerHTML.trim()) {
@@ -1321,7 +1323,7 @@ defaultData.prop.revoke = ({ target, args, $ele, data }) => {
 const syncFn = {
   sync(propName, targetName, options) {
     if (!options) {
-      throw `Sync is only allowed within the renderer`;
+      throw new Error(`Sync is only allowed within the renderer`);
     }
 
     [propName, targetName] = options.beforeArgs;
@@ -2116,7 +2118,7 @@ const register = (opts = {}) => {
     name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
 
     if (COMPS[name]) {
-      throw `Component ${name} already exists`;
+      throw new Error(`Component ${name} already exists`);
     }
 
     template = document.createElement("template");
@@ -2277,11 +2279,15 @@ function validateTagName(str) {
 
 function deepCopyData(obj) {
   if (obj instanceof Set || obj instanceof Map) {
-    throw "The data of the registered component should contain only regular data types such as String, Number, Object and Array. for other data types, please set them after ready.";
+    throw new Error(
+      "The data of the registered component should contain only regular data types such as String, Number, Object and Array. for other data types, please set them after ready."
+    );
   }
 
   if (obj instanceof Function) {
-    throw `Please write the function in the 'proto' property object.`;
+    throw new Error(
+      `Please write the function in the 'proto' property object.`
+    );
   }
 
   if (typeof obj !== "object" || obj === null) {
@@ -2383,7 +2389,7 @@ class FakeNode extends Comment {
           break;
         }
       } else {
-        throw `This is an unclosed FakeNode`;
+        throw new Error(`This is an unclosed FakeNode`);
       }
     }
 
@@ -2403,7 +2409,7 @@ class FakeNode extends Comment {
         }
         childs.unshift(prev);
       } else {
-        throw `This is an unclosed FakeNode`;
+        throw new Error(`This is an unclosed FakeNode`);
       }
     }
 
@@ -3250,7 +3256,9 @@ class Xhear extends LikeArray {
     const { ele } = this;
 
     if (!ele.parentNode) {
-      throw `The target has a sibling element, so you can't use unwrap`;
+      throw new Error(
+        `The target has a sibling element, so you can't use unwrap`
+      );
     }
 
     ele.parentNode.insertBefore($el.ele, ele);
@@ -3270,7 +3278,7 @@ class Xhear extends LikeArray {
     const target = ele.parentNode;
 
     if (target.children.length > 1) {
-      throw `The element itself must have a parent`;
+      throw new Error(`The element itself must have a parent`);
     }
 
     ele.__internal = 1;
