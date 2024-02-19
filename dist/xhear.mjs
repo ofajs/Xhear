@@ -1,4 +1,4 @@
-//! xhear - v7.3.32 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.3.33 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -959,7 +959,10 @@ function render({
 
     const func = convertToFunc(el.getAttribute("expr"), data);
     const renderFunc = () => {
-      textEl.textContent = func();
+      const content = func();
+      if (textEl.textContent !== String(content)) {
+        textEl.textContent = content;
+      }
     };
     tasks.push(renderFunc);
 

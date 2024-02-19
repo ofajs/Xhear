@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>render text bug</title>
+  </head>
+  <body>
+    <render-text></render-text>
+    <template id="temp">
+      {{name}} {{counter}}
+      <button on:click="add">add</button>
+    </template>
+  </body>
+
+  <script type="module">
+    import $ from "../../../packages/xhear/base.mjs";
+    window.$ = $;
+
+    $.register({
+      tag: "render-text",
+      temp: $("#temp").html,
+
+      data: {
+        counter: 0,
+        name: "tom",
+      },
+      proto: {
+        add() {
+          this.counter += 1;
+        },
+      },
+    });
+  </script>
+</html>
