@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>x-fill key test</title>
+    <!-- <script src="../../../dist/xhear.min.js" type="module"></script>  -->
+  </head>
+  <body>
+    <template id="t2">
+      <div>test demo</div>
+      <div style="padding: 8px; border: #aaa solid 1px">
+        <x-fill :value="arr">
+          <t-tab :active-item="$data.active"></t-tab>
+        </x-fill>
+      </div>
+    </template>
+
+    <test-demo></test-demo>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+      window.$ = $;
+
+      $.register({
+        tag: "t-tab",
+        attrs: {
+          activeItem: null,
+        },
+        temp: `<div>tab - {{activeItem}}</div>`,
+      });
+
+      $.register({
+        tag: "test-demo",
+        temp: $("#t2").html,
+        data: {
+          arr: [{ active: "hahaha" }],
+        },
+        attached() {
+          setTimeout(() => {
+            this.arr[0].active = 1;
+          }, 1000);
+        },
+      });
+    </script>
+  </body>
+</html>
