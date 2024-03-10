@@ -1,3 +1,4 @@
+import { isObject } from "../stanz/public.mjs";
 import {
   hyphenToUpperCase,
   capitalizeFirstLetter,
@@ -180,10 +181,19 @@ export const register = (opts = {}) => {
             if (e.hasModified(key)) {
               const val = $ele[key];
               const attrName = toDashCase(key);
+              const oldVal = this.getAttribute(attrName);
               if (val === null || val === undefined) {
                 this.removeAttribute(attrName);
-              } else {
-                this.setAttribute(attrName, val);
+              } else if (oldVal !== val) {
+                let reval = val;
+                if (isObject(val)) {
+                  // Setting the object will cause an infinite loop
+                  reval = JSON.stringify(reval);
+                  if (reval === oldVal) {
+                    return;
+                  }
+                }
+                this.setAttribute(attrName, reval);
               }
             }
           });
