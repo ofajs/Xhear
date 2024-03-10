@@ -2172,13 +2172,21 @@ try{
                   this.removeAttribute(attrName);
                 } else if (oldVal !== val) {
                   let reval = val;
-                  if (isObject(val)) {
+
+                  const valType = getType$1(val);
+
+                  if (valType === "number" && oldVal === String(val)) {
+                    // Setting the number will cause an infinite loop
+                    return;
+                  }
+                  if (valType === "object") {
                     // Setting the object will cause an infinite loop
                     reval = JSON.stringify(reval);
                     if (reval === oldVal) {
                       return;
                     }
                   }
+
                   this.setAttribute(attrName, reval);
                 }
               }

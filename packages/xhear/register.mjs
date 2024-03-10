@@ -1,4 +1,4 @@
-import { isObject } from "../stanz/public.mjs";
+import { getType } from "../stanz/public.mjs";
 import {
   hyphenToUpperCase,
   capitalizeFirstLetter,
@@ -186,13 +186,21 @@ export const register = (opts = {}) => {
                 this.removeAttribute(attrName);
               } else if (oldVal !== val) {
                 let reval = val;
-                if (isObject(val)) {
+
+                const valType = getType(val);
+
+                if (valType === "number" && oldVal === String(val)) {
+                  // Setting the number will cause an infinite loop
+                  return;
+                }
+                if (valType === "object") {
                   // Setting the object will cause an infinite loop
                   reval = JSON.stringify(reval);
                   if (reval === oldVal) {
                     return;
                   }
                 }
+
                 this.setAttribute(attrName, reval);
               }
             }
