@@ -13,7 +13,7 @@
           color: data(tcolor);
         }
 
-        @media screen and (max-width: data(twidth + "px")) {
+        @media screen and (min-width: data(twidth + "px")) {
           #container {
             width: data(twidth);
             font-size: data(tsize + "px");
@@ -44,7 +44,7 @@
       temp: $("#temp").html,
       data: {
         count: 0,
-        tcolor: "red",
+        tcolor: "rgb(255, 0, 0)",
         twidth: 600,
         tsize: 20,
         tweight: 900,
