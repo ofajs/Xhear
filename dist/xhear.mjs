@@ -1,4 +1,4 @@
-//! xhear - v7.4.0 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.4.1 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -3304,7 +3304,9 @@ class Xhear extends LikeArray {
 
   remove() {
     const { parent } = this;
-    parent.splice(parent.indexOf(this), 1);
+    if (parent) {
+      parent.splice(parent.indexOf(this), 1);
+    }
     // this.ele.remove();
   }
 
