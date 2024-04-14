@@ -1,4 +1,4 @@
-//! xhear - v7.4.1 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.4.2 https://github.com/kirakiray/Xhear  (c) 2018-2024 YAO
 const getRandomId = () => Math.random().toString(32).slice(2);
 
 const objectToString = Object.prototype.toString;
@@ -1414,7 +1414,9 @@ const syncFn = {
 
     return () => {
       this.unwatch(wid1);
-      data.unwatch(wid2);
+      if (!dataRevoked(data)) {
+        data.unwatch(wid2);
+      }
     };
   },
 };
