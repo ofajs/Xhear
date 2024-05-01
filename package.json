@@ -1,6 +1,6 @@
 {
   "name": "xhear",
-  "version": "7.4.2",
+  "version": "7.4.3",
   "description": "A very simple and easy to use web components library",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "stanz": "^8.1.27"
+    "stanz": "^8.1.28"
   },
   "devDependencies": {
     "@playwright/test": "^1.34.0",
@@ -40,11 +40,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kirakiray/Xhear.git"
+    "url": "git+https://github.com/ofajs/Xhear.git"
   },
   "bugs": {
-    "url": "https://github.com/kirakiray/Xhear/issues"
+    "url": "https://github.com/ofajs/Xhear/issues"
   },
-  "homepage": "https://github.com/kirakiray/Xhear",
+  "homepage": "https://github.com/ofajs/Xhear",
   "startyear": "2018"
 }
