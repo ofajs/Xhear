@@ -40,11 +40,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kirakiray/Xhear.git"
+    "url": "git+https://github.com/ofajs/Xhear.git"
   },
   "bugs": {
-    "url": "https://github.com/kirakiray/Xhear/issues"
+    "url": "https://github.com/ofajs/Xhear/issues"
   },
-  "homepage": "https://github.com/kirakiray/Xhear",
+  "homepage": "https://github.com/ofajs/Xhear",
   "startyear": "2018"
 }
