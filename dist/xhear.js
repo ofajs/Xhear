@@ -12,7 +12,13 @@
   const errors = {};
 
   if (globalThis.navigator && navigator.language) {
-    fetch(`${error_origin}/${navigator.language.toLowerCase()}.json`)
+    let langFirst = navigator.language.toLowerCase().split("-")[0];
+
+    if (langFirst === "zh" && navigator.language.toLowerCase() !== "zh-cn") {
+      langFirst = "zhft";
+    }
+
+    fetch(`${error_origin}/${langFirst}.json`)
       .catch(() => {
         return fetch(`${error_origin}/default.json`);
       })
@@ -762,16 +768,17 @@
           try {
             target = target[keys[i]];
           } catch (error) {
-            const errArgs = [
+            const err = getErr(
               "failed_to_get_data",
               {
                 key: keys.slice(0, i).join("."),
               },
-            ];
+              error
+            );
 
-            console.log(getErrDesc(...errArgs), ":", key, this, error);
+            console.log(err.message, ":", key, this, error);
 
-            throw getErr(...errArgs, error);
+            throw err;
           }
         }
 
@@ -789,16 +796,17 @@
           try {
             target = target[keys[i]];
           } catch (error) {
-            const errArgs = [
+            const err = getErr(
               "failed_to_get_data",
               {
                 key: keys.slice(0, i).join("."),
               },
-            ];
+              error
+            );
 
-            console.log(getErrDesc(...errArgs), ":", key, this, error);
+            console.log(err.message, ":", key, this, error);
 
-            throw getErr(...errArgs, error);
+            throw err;
           }
         }
 
@@ -906,16 +914,17 @@
           },
         });
       } catch (error) {
-        const errArgs = [
+        const err = getErr(
           "failed_to_set_data",
           {
             key,
           },
-        ];
+          error
+        );
 
-        console.log(getErrDesc(...errArgs), key, target, value);
+        console.log(err.message, key, target, value);
 
-        throw getErr(...errArgs, error);
+        throw err;
       }
     },
     deleteProperty(target, key) {
