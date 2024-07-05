@@ -2,6 +2,7 @@ import { extend, getRandomId } from "./public.mjs";
 import { handler as stanzHandler } from "./accessor.mjs";
 import arrayFn from "./array.mjs";
 import watchFn from "./watch.mjs";
+import { getErr, getErrDesc } from "../ofa-error/main.js";
 const { defineProperties, getOwnPropertyDescriptor, entries } = Object;
 
 export const SELF = Symbol("self");
@@ -167,16 +168,16 @@ export default class Stanz extends Array {
         try {
           target = target[keys[i]];
         } catch (error) {
-          const err = new Error(
-            `Failed to get data : ${keys.slice(0, i).join(".")} \n${
-              error.stack
-            }`,
-            { cause: error }
-          );
-          Object.assign(err, {
-            target,
-          });
-          throw err;
+          const errArgs = [
+            "failed_to_get_data",
+            {
+              key: keys.slice(0, i).join("."),
+            },
+          ];
+
+          console.log(getErrDesc(...errArgs), ":", key, this, error);
+
+          throw getErr(...errArgs, error);
         }
       }
 
@@ -194,16 +195,16 @@ export default class Stanz extends Array {
         try {
           target = target[keys[i]];
         } catch (error) {
-          const err = new Error(
-            `Failed to get data : ${keys.slice(0, i).join(".")} \n${
-              error.stack
-            }`,
-            { cause: error }
-          );
-          Object.assign(err, {
-            target,
-          });
-          throw err;
+          const errArgs = [
+            "failed_to_get_data",
+            {
+              key: keys.slice(0, i).join("."),
+            },
+          ];
+
+          console.log(getErrDesc(...errArgs), ":", key, this, error);
+
+          throw getErr(...errArgs, error);
         }
       }
 

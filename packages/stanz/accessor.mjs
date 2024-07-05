@@ -1,6 +1,7 @@
 import { isObject } from "./public.mjs";
 import Stanz, { PROXY, isxdata } from "./main.mjs";
 import { emitUpdate } from "./watch.mjs";
+import { getErr, getErrDesc } from "../ofa-error/main.js";
 
 const { defineProperties } = Object;
 
@@ -92,17 +93,16 @@ export const handler = {
         },
       });
     } catch (error) {
-      const err = new Error(`failed to set ${key} \n ${error.stack}`, {
-        cause: error,
-      });
+      const errArgs = [
+        "failed_to_set_data",
+        {
+          key,
+        },
+      ];
 
-      Object.assign(err, {
-        key,
-        value,
-        target: receiver,
-      });
+      console.log(getErrDesc(...errArgs), key, target, value);
 
-      throw err;
+      throw getErr(...errArgs, error);
     }
   },
   deleteProperty(target, key) {
