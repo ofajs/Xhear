@@ -1,6 +1,6 @@
-//! xhear - v7.4.3 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
-const error_origin = "http://127.0.0.1:5793/errors";
-// const error_origin = "https://ofajs.github.io/ofa-errors/errors";
+//! xhear - v7.5.0 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+// const error_origin = "http://127.0.0.1:5793/errors";
+const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
 // 存放错误信息的数据对象
 const errors = {};
