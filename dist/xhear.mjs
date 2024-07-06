@@ -15,6 +15,11 @@ if (globalThis.navigator && navigator.language) {
   (async () => {
     let targetLangErrors;
 
+    const errCacheTime = localStorage.getItem("ofa-errors-time");
+    if (errCacheTime && Date.now() > Number(errCacheTime) + 5 * 60 * 1000) {
+      localStorage.removeItem("ofa-errors");
+    }
+
     if (localStorage.getItem("ofa-errors")) {
       targetLangErrors = JSON.parse(localStorage.getItem("ofa-errors"));
     } else {
@@ -24,6 +29,7 @@ if (globalThis.navigator && navigator.language) {
 
       if (targetLangErrors) {
         localStorage.setItem("ofa-errors", JSON.stringify(targetLangErrors));
+        localStorage.setItem("ofa-errors-time", Date.now());
       } else {
         targetLangErrors = await fetch(`${error_origin}/en.json`)
           .then((e) => e.json())
@@ -458,6 +464,10 @@ const emitUpdate = ({
 
 var watchFn = {
   watch(callback) {
+    if (!(callback instanceof Function)) {
+      throw getErr("not_func", { name: "watch" });
+    }
+
     const wid = "w-" + getRandomId();
 
     this[WATCHS].set(wid, callback);
@@ -470,6 +480,10 @@ var watchFn = {
   },
 
   watchTick(callback, wait) {
+    if (!(callback instanceof Function)) {
+      throw getErr("not_func", { name: "watchTick" });
+    }
+
     return this.watch(
       debounce((arr) => {
         if (dataRevoked(this)) {
@@ -1486,9 +1500,27 @@ const defaultData = {
       this.ele.classList.remove(name);
     }
   },
-  // watch(...args) {
-  //   debugger;
-  // },
+  heed(arg0, arg1, options) {
+    const { beforeArgs, data: target } = options;
+    const [selfPropName, targetPropName] = beforeArgs;
+
+    const wid = this.watch((e) => {
+      if (e.hasModified(selfPropName)) {
+        let val = this[selfPropName];
+        if (val instanceof Object) {
+          // If val is Object, deepClone it.
+          val = JSON.parse(JSON.stringify(val));
+          const errDesc = getErrDesc("heed_object");
+          console.log(errDesc, target);
+        }
+        target[targetPropName] = val;
+      }
+    });
+
+    return () => {
+      this.unwatch(wid);
+    };
+  },
 };
 
 defaultData.prop.always = true;
@@ -1497,8 +1529,11 @@ defaultData.class.always = true;
 
 defaultData.prop.revoke = ({ target, args, $ele, data }) => {
   const propName = args[0];
-  // target[propName] = null;
   target.set(propName, null);
+};
+
+defaultData.heed.revoke = (e) => {
+  e.result();
 };
 
 const syncFn = {

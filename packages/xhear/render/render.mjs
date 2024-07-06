@@ -1,4 +1,4 @@
-import { getErr } from "../../ofa-error/main.js";
+import { getErr, getErrDesc } from "../../ofa-error/main.js";
 import { getRandomId, isRevokedErr } from "../../stanz/public.mjs";
 import {
   isFunction,
@@ -453,6 +453,12 @@ const defaultData = {
 
     value = getVal(value);
 
+    if (value === false) {
+      value = null;
+    } else if (value === true) {
+      value = "";
+    }
+
     if (value === null) {
       this.ele.removeAttribute(name);
     } else {
@@ -474,6 +480,27 @@ const defaultData = {
       this.ele.classList.remove(name);
     }
   },
+  heed(arg0, arg1, options) {
+    const { beforeArgs, data: target } = options;
+    const [selfPropName, targetPropName] = beforeArgs;
+
+    const wid = this.watch((e) => {
+      if (e.hasModified(selfPropName)) {
+        let val = this[selfPropName];
+        if (val instanceof Object) {
+          // If val is Object, deepClone it.
+          val = JSON.parse(JSON.stringify(val));
+          const errDesc = getErrDesc("heed_object");
+          console.log(errDesc, target);
+        }
+        target[targetPropName] = val;
+      }
+    });
+
+    return () => {
+      this.unwatch(wid);
+    };
+  },
 };
 
 defaultData.prop.always = true;
@@ -482,8 +509,11 @@ defaultData.class.always = true;
 
 defaultData.prop.revoke = ({ target, args, $ele, data }) => {
   const propName = args[0];
-  // target[propName] = null;
   target.set(propName, null);
+};
+
+defaultData.heed.revoke = (e) => {
+  e.result();
 };
 
 export default defaultData;
