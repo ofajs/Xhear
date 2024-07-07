@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>heed test</title>
+    <title>template watch test</title>
   </head>
   <body>
     <test-demo></test-demo>
@@ -15,7 +15,7 @@
         <button on:click="subCount = 100">Set SubCount 100</button>
         <br />
         <br />
-        <sub-item heed:count="subCount">sub item</sub-item>
+        <sub-item watch:count="subCount">sub item</sub-item>
       </div>
     </template>
     <script type="module">

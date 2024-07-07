@@ -1506,7 +1506,12 @@ try{
         this.ele.classList.remove(name);
       }
     },
-    heed(arg0, arg1, options) {
+    watch(...args) {
+      if (args.length < 3) {
+        return watchFn.watch.apply(this, args);
+      }
+
+      const options = args[2];
       const { beforeArgs, data: target } = options;
       const [selfPropName, targetPropName] = beforeArgs;
 
@@ -1538,7 +1543,7 @@ try{
     target.set(propName, null);
   };
 
-  defaultData.heed.revoke = (e) => {
+  defaultData.watch.revoke = (e) => {
     e.result();
   };
 

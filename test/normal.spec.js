@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-test("heed test", async ({ page }) => {
-  await page.goto("http://localhost:3398/test/statics/heed.html");
+test("template watch test", async ({ page }) => {
+  await page.goto("http://localhost:3398/test/statics/template-watch.html");
   await page.getByRole("heading", { name: "test-demo 0" }).click();
   await page.getByRole("button", { name: "Count+1" }).click();
   await page.getByRole("button", { name: "Count+1" }).click();
