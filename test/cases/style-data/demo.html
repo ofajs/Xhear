@@ -10,20 +10,21 @@
     <template id="temp">
       <style>
         #container {
-          color: data(tcolor);
+          color: var(--tcolor);
+          background-color: rgba(0, 0, 0, 0.1);
         }
 
-        @media screen and (min-width: data(twidth + "px")) {
+        @media screen and (min-width: 600px) {
           #container {
-            width: data(twidth);
-            font-size: data(tsize + "px");
+            width: var(--twidth);
+            font-size: var(--tsizepx);
           }
         }
       </style>
       <x-if :value="tweight > 800">
         <style>
           #container {
-            font-weight: data(tweight);
+            font-weight: var(--tweight);
           }
         </style>
       </x-if>
@@ -45,9 +46,14 @@
       data: {
         count: 0,
         tcolor: "rgb(255, 0, 0)",
-        twidth: 600,
+        twidth: "600px",
         tsize: 20,
         tweight: 900,
+      },
+      proto: {
+        get tsizepx() {
+          return `${this.tsize}px`;
+        },
       },
     });
 
