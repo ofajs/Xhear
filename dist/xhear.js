@@ -1483,7 +1483,7 @@ try{
         value = "";
       }
 
-      if (value === null) {
+      if (value === null || value === undefined) {
         this.ele.removeAttribute(name);
       } else {
         this.ele.setAttribute(name, value);
