@@ -1,13 +1,13 @@
 {
   "name": "xhear",
-  "version": "7.4.3",
+  "version": "7.5.0",
   "description": "A very simple and easy to use web components library",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "bump": "node scripts/bump-version.js && npm run build && npm i",
     "update": "node scripts/update",
     "build": "rollup --c",
-    "static-server": "node scripts/static-server",
+    "static": "node scripts/static-server",
     "playwright": "npx playwright test",
     "test": "node scripts/ci-test",
     "ncu": "ncu -u stanz && npm i"
@@ -19,7 +19,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "stanz": "^8.1.28"
+    "stanz": "^8.1.29"
   },
   "devDependencies": {
     "@playwright/test": "^1.34.0",

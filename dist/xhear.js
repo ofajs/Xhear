@@ -1,9 +1,109 @@
-//! xhear - v7.4.3 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.0 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.$ = factory());
 })(this, (function () { 'use strict';
+
+  // const error_origin = "http://127.0.0.1:5793/errors";
+  const error_origin = "https://ofajs.github.io/ofa-errors/errors";
+
+  // 存放错误信息的数据对象
+  const errors = {};
+
+  if (globalThis.navigator && navigator.language) {
+    let langFirst = navigator.language.toLowerCase().split("-")[0];
+
+    if (langFirst === "zh" && navigator.language.toLowerCase() !== "zh-cn") {
+      langFirst = "zhft";
+    }
+
+    (async () => {
+      if (localStorage["ofa-errors"]) {
+        const targetLangErrors = JSON.parse(localStorage["ofa-errors"]);
+        Object.assign(errors, targetLangErrors);
+      }
+
+      const errCacheTime = localStorage["ofa-errors-time"];
+
+      if (!errCacheTime || Date.now() > Number(errCacheTime) + 5 * 60 * 1000) {
+        const targetLangErrors = await fetch(`${error_origin}/${langFirst}.json`)
+          .then((e) => e.json())
+          .catch(() => null);
+
+        if (targetLangErrors) {
+          localStorage["ofa-errors"] = JSON.stringify(targetLangErrors);
+          localStorage["ofa-errors-time"] = Date.now();
+        } else {
+          targetLangErrors = await fetch(`${error_origin}/en.json`)
+            .then((e) => e.json())
+            .catch((error) => {
+              console.error(error);
+              return null;
+            });
+        }
+
+        Object.assign(errors, targetLangErrors);
+      }
+    })();
+  }
+
+  let isSafari = false;
+  if (globalThis.navigator) {
+    isSafari =
+      navigator.userAgent.includes("Safari") &&
+      !navigator.userAgent.includes("Chrome");
+  }
+
+  /**
+   * 根据键、选项和错误对象生成错误对象。
+   *
+   * @param {string} key - 错误描述的键。
+   * @param {Object} [options] - 映射相关值的选项对象。
+   * @param {Error} [error] - 原始错误对象。
+   * @returns {Error} 生成的错误对象。
+   */
+  const getErr = (key, options, error) => {
+    let desc = getErrDesc(key, options);
+
+    let errObj;
+    if (error) {
+      if (isSafari) {
+        desc += `\nCaused by: ${error.toString()}\n  ${error.stack.replace(
+        /\n/g,
+        "\n    "
+      )}`;
+      }
+      errObj = new Error(desc, { cause: error });
+    } else {
+      errObj = new Error(desc);
+    }
+    return errObj;
+  };
+
+  /**
+   * 根据键、选项生成错误描述
+   *
+   * @param {string} key - 错误描述的键。
+   * @param {Object} [options] - 映射相关值的选项对象。
+   * @returns {string} 生成的错误描述。
+   */
+  const getErrDesc = (key, options) => {
+    if (!errors[key]) {
+      return `Error code: "${key}", please go to https://github.com/ofajs/ofa-errors to view the corresponding error information`;
+    }
+
+    let desc = errors[key];
+
+    // 映射相关值
+    if (options) {
+      for (let k in options) {
+        desc = desc.replace(new RegExp(`{${k}}`, "g"), options[k]);
+      }
+    }
+
+    return desc;
+  };
 
   const getRandomId = () => Math.random().toString(32).slice(2);
 
@@ -31,6 +131,8 @@
     }
   }
 
+  const TICKERR = "nexttick_thread_limit";
+
   let asyncsCounter = 0;
   let afterTimer;
   const tickSets = new Set();
@@ -44,12 +146,8 @@
       Promise.resolve().then(() => {
         asyncsCounter++;
         if (asyncsCounter > 100000) {
-          const desc = `nextTick exceeds thread limit`;
-          console.error({
-            desc,
-            lastCall: callback,
-          });
-          throw new Error(desc);
+          console.log(getErrDesc(TICKERR), "lastCall => ", callback);
+          throw getErr(TICKERR);
         }
 
         callback();
@@ -64,12 +162,9 @@
       // console.log("asyncsCounter => ", asyncsCounter);
       if (asyncsCounter > 50000) {
         tickSets.clear();
-        const desc = `nextTick exceeds thread limit`;
-        console.error({
-          desc,
-          lastCall: callback,
-        });
-        throw new Error(desc);
+
+        console.log(getErrDesc(TICKERR), "lastCall => ", callback);
+        throw getErr(TICKERR);
       }
       if (tickSets.has(tickId)) {
         callback();
@@ -373,6 +468,10 @@
 
   var watchFn = {
     watch(callback) {
+      if (!(callback instanceof Function)) {
+        throw getErr("not_func", { name: "watch" });
+      }
+
       const wid = "w-" + getRandomId();
 
       this[WATCHS].set(wid, callback);
@@ -385,6 +484,10 @@
     },
 
     watchTick(callback, wait) {
+      if (!(callback instanceof Function)) {
+        throw getErr("not_func", { name: "watchTick" });
+      }
+
       return this.watch(
         debounce((arr) => {
           if (dataRevoked(this)) {
@@ -703,15 +806,16 @@
           try {
             target = target[keys[i]];
           } catch (error) {
-            const err = new Error(
-              `Failed to get data : ${keys.slice(0, i).join(".")} \n${
-              error.stack
-            }`,
-              { cause: error }
+            const err = getErr(
+              "failed_to_get_data",
+              {
+                key: keys.slice(0, i).join("."),
+              },
+              error
             );
-            Object.assign(err, {
-              target,
-            });
+
+            console.log(err.message, ":", key, this, error);
+
             throw err;
           }
         }
@@ -730,15 +834,16 @@
           try {
             target = target[keys[i]];
           } catch (error) {
-            const err = new Error(
-              `Failed to get data : ${keys.slice(0, i).join(".")} \n${
-              error.stack
-            }`,
-              { cause: error }
+            const err = getErr(
+              "failed_to_get_data",
+              {
+                key: keys.slice(0, i).join("."),
+              },
+              error
             );
-            Object.assign(err, {
-              target,
-            });
+
+            console.log(err.message, ":", key, this, error);
+
             throw err;
           }
         }
@@ -847,15 +952,15 @@
           },
         });
       } catch (error) {
-        const err = new Error(`failed to set ${key} \n ${error.stack}`, {
-          cause: error,
-        });
+        const err = getErr(
+          "failed_to_set_data",
+          {
+            key,
+          },
+          error
+        );
 
-        Object.assign(err, {
-          key,
-          value,
-          target: receiver,
-        });
+        console.log(err.message, key, target, value);
 
         throw err;
       }
@@ -990,46 +1095,46 @@ try{
     const revokes = getRevokes(target);
 
     // Styles with data() function to monitor and correct rendering
-    searchEle(target, "style").forEach((el) => {
-      const originStyle = el.innerHTML;
+    // searchEle(target, "style").forEach((el) => {
+    //   const originStyle = el.innerHTML;
 
-      if (/data\(.+\)/.test(originStyle)) {
-        const matchs = Array.from(new Set(originStyle.match(/data\(.+?\)/g))).map(
-          (dataExpr) => {
-            const expr = dataExpr.replace(/data\((.+)\)/, "$1");
-            const func = convertToFunc(expr, data);
+    //   if (/data\(.+\)/.test(originStyle)) {
+    //     const matchs = Array.from(new Set(originStyle.match(/data\(.+?\)/g))).map(
+    //       (dataExpr) => {
+    //         const expr = dataExpr.replace(/data\((.+)\)/, "$1");
+    //         const func = convertToFunc(expr, data);
 
-            return {
-              dataExpr,
-              func,
-            };
-          }
-        );
+    //         return {
+    //           dataExpr,
+    //           func,
+    //         };
+    //       }
+    //     );
 
-        const renderStyle = () => {
-          let afterStyle = originStyle;
+    //     const renderStyle = () => {
+    //       let afterStyle = originStyle;
 
-          matchs.forEach(({ dataExpr, func }) => {
-            afterStyle = afterStyle.replace(dataExpr, func());
-          });
+    //       matchs.forEach(({ dataExpr, func }) => {
+    //         afterStyle = afterStyle.replace(dataExpr, func());
+    //       });
 
-          if (el.innerHTML !== afterStyle) {
-            el.innerHTML = afterStyle;
-          }
-        };
-        tasks.push(renderStyle);
+    //       if (el.innerHTML !== afterStyle) {
+    //         el.innerHTML = afterStyle;
+    //       }
+    //     };
+    //     tasks.push(renderStyle);
 
-        const revokeStyle = () => {
-          matchs.length = 0;
-          removeArrayValue(tasks, renderStyle);
-          removeArrayValue(getRevokes(el), revokeStyle);
-          removeArrayValue(revokes, revokeStyle);
-        };
+    //     const revokeStyle = () => {
+    //       matchs.length = 0;
+    //       remove(tasks, renderStyle);
+    //       remove(getRevokes(el), revokeStyle);
+    //       remove(revokes, revokeStyle);
+    //     };
 
-        addRevoke(el, revokeStyle);
-        revokes.push(revokeStyle);
-      }
-    });
+    //     addRevoke(el, revokeStyle);
+    //     revokes.push(revokeStyle);
+    //   }
+    // });
 
     // Render text nodes
     texts.forEach((el) => {
@@ -1141,12 +1246,16 @@ try{
               addRevoke(el, clearRevs);
             }
           } catch (error) {
-            const err = new Error(
-              `Execution of the ${actionName} method reports an error: ${actionName}:${args[0]}="${args[1]}"  \n ${error.stack}`,
+            const err = getErr(
+              "xhear_eval",
               {
-                cause: error,
-              }
+                name: actionName,
+                arg0: args[0],
+                arg1: args[1],
+              },
+              error
             );
+            console.log(err, el);
             throw err;
           }
         });
@@ -1164,17 +1273,15 @@ try{
 
     if (tasks.length) {
       if (target.__render_data && target.__render_data !== data) {
-        const error = new Error(
-          `An old listener already exists and the rendering of this element may be wrong`
-        );
+        const err = getErr("xhear_listen_already");
 
-        Object.assign(error, {
+        console.log(err, {
           element: target,
           old: target.__render_data,
           new: data,
         });
 
-        throw error;
+        throw err;
       }
 
       target.__render_data = data;
@@ -1290,9 +1397,7 @@ try{
 
     searchTemp(template, "x-fill:not([name])", (fillEl) => {
       if (fillEl.querySelector("x-fill:not([name])")) {
-        throw new Error(
-          `Don't fill unnamed x-fills with unnamed x-fill elements!!!\n${fillEl.outerHTML}`
-        );
+        throw getErr("xhear_dbfill_noname");
       }
 
       if (fillEl.innerHTML.trim()) {
@@ -1319,7 +1424,9 @@ try{
 
       Object.keys(newTemps).forEach((tempName) => {
         if (temps[tempName]) {
-          throw new Error(`Template "${tempName}" already exists`);
+          throw getErr("xhear_temp_exist", {
+            name: tempName,
+          });
         }
       });
 
@@ -1370,7 +1477,13 @@ try{
 
       value = getVal(value);
 
-      if (value === null) {
+      if (value === false) {
+        value = null;
+      } else if (value === true) {
+        value = "";
+      }
+
+      if (value === null || value === undefined) {
         this.ele.removeAttribute(name);
       } else {
         this.ele.setAttribute(name, value);
@@ -1391,6 +1504,40 @@ try{
         this.ele.classList.remove(name);
       }
     },
+    watch(...args) {
+      if (args.length < 3) {
+        return watchFn.watch.apply(this, args);
+      }
+
+      const options = args[2];
+      const { beforeArgs, data: target } = options;
+      const [selfPropName, targetPropName] = beforeArgs;
+      const propName = hyphenToUpperCase(selfPropName);
+
+      const setData = () => {
+        let val = this[propName];
+        if (val instanceof Object) {
+          // If val is Object, deepClone it.
+          val = JSON.parse(JSON.stringify(val));
+          const errDesc = getErrDesc("heed_object");
+          console.warn(errDesc, target);
+        }
+        target[targetPropName] = val;
+      };
+
+      const wid = this.watch((e) => {
+        if (e.hasModified(propName)) {
+          setData();
+        }
+      });
+
+      // Initialize once
+      setData();
+
+      return () => {
+        this.unwatch(wid);
+      };
+    },
   };
 
   defaultData.prop.always = true;
@@ -1399,14 +1546,17 @@ try{
 
   defaultData.prop.revoke = ({ target, args, $ele, data }) => {
     const propName = args[0];
-    // target[propName] = null;
     target.set(propName, null);
+  };
+
+  defaultData.watch.revoke = (e) => {
+    e.result();
   };
 
   const syncFn = {
     sync(propName, targetName, options) {
       if (!options) {
-        throw new Error(`Sync is only allowed within the renderer`);
+        throw getErr("xhear_sync_no_options");
       }
 
       [propName, targetName] = options.beforeArgs;
@@ -1419,9 +1569,9 @@ try{
       const val = data.get(targetName);
 
       if (val instanceof Object) {
-        const err = `Object values cannot be synchronized using the sync function : ${targetName}`;
+        const err = getErr("xhear_sync_object_value", { targetName });
         console.log(err, data);
-        throw new Error(err);
+        throw err;
       }
 
       this[propName] = data.get(targetName);
@@ -1469,7 +1619,17 @@ try{
       const beforeValue = options.beforeArgs[1];
 
       if (!/[^\d\w_\$\.]/.test(beforeValue)) {
-        func = options.data.get(beforeValue).bind(options.data);
+        func = options.data.get(beforeValue);
+        if (!func) {
+          const tag = options.data.tag;
+          const err = getErr("not_found_func", {
+            name: beforeValue,
+            tag: tag ? `"${tag}"` : "",
+          });
+          console.log(err, " target =>", options.data);
+          throw err;
+        }
+        func = func.bind(options.data);
       }
 
       revoker = () => this.ele.removeEventListener(name, func);
@@ -2072,6 +2232,23 @@ try{
     },
   };
 
+  function $(expr) {
+    if (getType$1(expr) === "string" && !/<.+>/.test(expr)) {
+      const ele = document.querySelector(expr);
+
+      return eleX(ele);
+    }
+
+    return createXEle(expr);
+  }
+
+  Object.defineProperties($, {
+    // Convenient objects for use as extensions
+    extensions: {
+      value: {},
+    },
+  });
+
   const COMPS = {};
 
   const renderElement = ({ defaults, ele, template, temps }) => {
@@ -2079,7 +2256,7 @@ try{
 
     try {
       const data = {
-        ...deepCopyData(defaults.data),
+        ...deepCopyData(defaults.data, defaults.tag),
         ...defaults.attrs,
       };
 
@@ -2115,13 +2292,13 @@ try{
 
       defaults.ready && defaults.ready.call($ele);
     } catch (error) {
-      const err = new Error(
-        `Render element error: ${ele.tagName} \n  ${error.stack}`,
+      throw getErr(
+        "xhear_reander_err",
         {
-          cause: error,
-        }
+          tag: ele.tagName.toLowerCase(),
+        },
+        error
       );
-      throw err;
     }
 
     if (defaults.watch) {
@@ -2164,6 +2341,62 @@ try{
         }
       }
     }
+
+    {
+      // 将组件上的变量重定义到影子节点内的css变量上
+      const { tag } = $ele;
+
+      if ($ele.__rssWid) {
+        $ele.unwatch($ele.__rssWid);
+      }
+
+      // 排除掉自定义组件
+      if (tag !== "x-if" && tag !== "x-fill" && ele.shadowRoot) {
+        // 需要更新的key
+        const keys = Object.keys({
+          ...defaults.data,
+          ...defaults.attrs,
+        });
+
+        for (let [key, item] of Object.entries(
+          Object.getOwnPropertyDescriptors(defaults.proto)
+        )) {
+          if (item.writable || item.get) {
+            keys.push(key);
+          }
+        }
+
+        const refreshShadowStyleVar = () => {
+          let shadowVarStyle = ele.shadowRoot.querySelector("#shadow-var-style");
+
+          if (!shadowVarStyle) {
+            shadowVarStyle = document.createElement("style");
+            shadowVarStyle.id = "shadow-var-style";
+            ele.shadowRoot.appendChild(shadowVarStyle);
+          }
+
+          // 更新所有变量
+          let content = "";
+          keys.forEach((key) => {
+            const val = $ele[key];
+            const valType = getType$1(val);
+            if (valType === "number" || valType === "string") {
+              content += `--${key}:${val};`;
+            }
+          });
+
+          const styleContent = `:host > *:not(slot){${content}}`;
+
+          if (shadowVarStyle.innerHTML !== styleContent) {
+            shadowVarStyle.innerHTML = styleContent;
+          }
+        };
+
+        $ele.__rssWid = $ele.watchTick(() => refreshShadowStyleVar());
+
+        refreshShadowStyleVar();
+      }
+    }
   };
 
   const register = (opts = {}) => {
@@ -2193,28 +2426,50 @@ try{
       ...opts,
     };
 
+    const { fn } = $;
+    if (fn) {
+      // 检查 proto 和 data 上的key，是否和fn上的key冲突
+      Object.keys(defaults.data).forEach((name) => {
+        if (fn.hasOwnProperty(name)) {
+          throw getErr("invalid_key", {
+            compName: defaults.tag,
+            targetName: "data",
+            name,
+          });
+        }
+      });
+      Object.keys(defaults.proto).forEach((name) => {
+        if (fn.hasOwnProperty(name)) {
+          console.warn(
+            getErrDesc("invalid_key", {
+              compName: defaults.tag,
+              targetName: "proto",
+              name,
+            }),
+            opts
+          );
+        }
+      });
+    }
+
     let template, temps, name;
 
     try {
       validateTagName(defaults.tag);
 
-      defaults.data = deepCopyData(defaults.data);
+      defaults.data = deepCopyData(defaults.data, defaults.tag);
 
       name = capitalizeFirstLetter(hyphenToUpperCase(defaults.tag));
 
       if (COMPS[name]) {
-        throw new Error(`Component ${name} already exists`);
+        throw getErr("xhear_register_exists", { name });
       }
 
       template = document.createElement("template");
       template.innerHTML = defaults.temp;
       temps = convert(template);
     } catch (error) {
-      const err = new Error(
-        `Register Component Error: ${defaults.tag} \n  ${error.stack}`,
-        { cause: error }
-      );
-      throw err;
+      throw getErr("xhear_register_err", { tag: defaults.tag }, error);
     }
 
     const getAttrKeys = (attrs) => {
@@ -2357,39 +2612,33 @@ try{
   }
 
   function validateTagName(str) {
+    // Check if the string has at least one '-' character
+    if (!str.includes("-")) {
+      throw getErr("xhear_tag_noline", { str });
+    }
+
     // Check if the string starts or ends with '-'
     if (str.charAt(0) === "-" || str.charAt(str.length - 1) === "-") {
-      throw new Error(`The string "${str}" cannot start or end with "-"`);
+      throw getErr("xhear_validate_tag", { str });
     }
 
     // Check if the string has consecutive '-' characters
     for (let i = 0; i < str.length - 1; i++) {
       if (str.charAt(i) === "-" && str.charAt(i + 1) === "-") {
-        throw new Error(
-          `The string "${str}" cannot have consecutive "-" characters`
-        );
+        throw getErr("xhear_validate_tag", { str });
       }
-    }
-
-    // Check if the string has at least one '-' character
-    if (!str.includes("-")) {
-      throw new Error(`The string "${str}" must contain at least one "-"`);
     }
 
     return true;
   }
 
-  function deepCopyData(obj) {
+  function deepCopyData(obj, tag = "") {
     if (obj instanceof Set || obj instanceof Map) {
-      throw new Error(
-        "The data of the registered component should contain only regular data types such as String, Number, Object and Array. for other data types, please set them after ready."
-      );
+      throw getErr("xhear_regster_data_noset", { tag });
     }
 
     if (obj instanceof Function) {
-      throw new Error(
-        `Please write the function in the 'proto' property object.`
-      );
+      throw getErr("xhear_regster_data_nofunc", { tag });
     }
 
     if (typeof obj !== "object" || obj === null) {
@@ -2400,7 +2649,7 @@ try{
 
     for (let key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        copy[key] = deepCopyData(obj[key]);
+        copy[key] = deepCopyData(obj[key], tag);
       }
     }
 
@@ -2491,7 +2740,7 @@ try{
             break;
           }
         } else {
-          throw new Error(`This is an unclosed FakeNode`);
+          throw getErr("xhear_fakenode_unclose", { name: "children" });
         }
       }
 
@@ -2511,7 +2760,7 @@ try{
           }
           childs.unshift(prev);
         } else {
-          throw new Error(`This is an unclosed FakeNode`);
+          throw getErr("xhear_fakenode_unclose", { name: "childNodes" });
         }
       }
 
@@ -3071,10 +3320,9 @@ try{
       this._name = this.attr("name");
 
       if (!this._name) {
-        const desc =
-          "The target element does not have a template name to populate";
-        console.log(desc, this.ele);
-        throw new Error(desc);
+        const err = getErr("xhear_fill_tempname", { name: this._name });
+        console.log(err, this.ele);
+        throw err;
       }
 
       if (this.ele._bindingRendered) {
@@ -3241,6 +3489,16 @@ try{
       return parents;
     }
 
+    get hosts() {
+      const hosts = [];
+      let target = this;
+      while (target.host) {
+        target = target.host;
+        hosts.push(target);
+      }
+      return hosts;
+    }
+
     get next() {
       const nextEle = this.ele.nextElementSibling;
       return nextEle ? eleX(nextEle) : null;
@@ -3360,9 +3618,7 @@ try{
       const { ele } = this;
 
       if (!ele.parentNode) {
-        throw new Error(
-          `The target has a sibling element, so you can't use unwrap`
-        );
+        throw getErr("xhear_wrap_no_parent");
       }
 
       ele.parentNode.insertBefore($el.ele, ele);
@@ -3382,7 +3638,7 @@ try{
       const target = ele.parentNode;
 
       if (target.children.length > 1) {
-        throw new Error(`The element itself must have a parent`);
+        throw getErr("xhear_unwrap_has_siblings");
       }
 
       ele.__internal = 1;
@@ -3489,23 +3745,6 @@ try{
       [...revokes].forEach((f) => f());
     }
   };
-
-  function $(expr) {
-    if (getType$1(expr) === "string" && !/<.+>/.test(expr)) {
-      const ele = document.querySelector(expr);
-
-      return eleX(ele);
-    }
-
-    return createXEle(expr);
-  }
-
-  Object.defineProperties($, {
-    // Convenient objects for use as extensions
-    extensions: {
-      value: {},
-    },
-  });
 
   Object.assign($, {
     stanz,

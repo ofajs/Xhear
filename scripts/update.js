@@ -6,6 +6,10 @@ const packs = [
     name: "stanz",
     dirs: ["../stanz/src", "./node_modules/stanz/src"],
   },
+  {
+    name: "ofa-error",
+    dirs: ["../ofa-errors/ofa-error", "./node_modules/ofa-errors/ofa-error"],
+  },
 ];
 
 const cwd = process.cwd();
