@@ -12,7 +12,7 @@
     <template id="temp1">
       <div style="border: #aaa solid 1px; padding: 8px">
         <h4 style="margin: 4px">test-demo {{subCount}}</h4>
-        <sub-item heed:count="subCount">sub item</sub-item>
+        <sub-item watch:count="subCount">sub item</sub-item>
       </div>
     </template>
     <script type="module">
@@ -26,6 +26,13 @@
           temp: $("#temp1").html,
           data: {
             subCount: null,
+            // prev: 111,
+          },
+          proto: {
+            // prev() {},
+            // next() {
+            //   console.log("next:");
+            // },
           },
           ready() {},
         });
@@ -34,7 +41,7 @@
           tag: "sub-item",
           temp: `
           <style>:host{display:block;border:red solid 1px;padding:8px;}</style>
-          <div>count : {{count}}</div> 
+          <div>count : {{count}}</div>
           <button on:click='count++'>Count+1</button>
           <sub-item-two></sub-item-two>
           `,

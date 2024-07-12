@@ -2232,6 +2232,23 @@ try{
     },
   };
 
+  function $(expr) {
+    if (getType$1(expr) === "string" && !/<.+>/.test(expr)) {
+      const ele = document.querySelector(expr);
+
+      return eleX(ele);
+    }
+
+    return createXEle(expr);
+  }
+
+  Object.defineProperties($, {
+    // Convenient objects for use as extensions
+    extensions: {
+      value: {},
+    },
+  });
+
   const COMPS = {};
 
   const renderElement = ({ defaults, ele, template, temps }) => {
@@ -2408,6 +2425,32 @@ try{
       // slotchange() { }
       ...opts,
     };
+
+    const { fn } = $;
+    if (fn) {
+      // 检查 proto 和 data 上的key，是否和fn上的key冲突
+      Object.keys(defaults.data).forEach((name) => {
+        if (fn.hasOwnProperty(name)) {
+          throw getErr("invalid_key", {
+            compName: defaults.tag,
+            targetName: "data",
+            name,
+          });
+        }
+      });
+      Object.keys(defaults.proto).forEach((name) => {
+        if (fn.hasOwnProperty(name)) {
+          console.warn(
+            getErrDesc("invalid_key", {
+              compName: defaults.tag,
+              targetName: "proto",
+              name,
+            }),
+            opts
+          );
+        }
+      });
+    }
 
     let template, temps, name;
 
@@ -3702,23 +3745,6 @@ try{
       [...revokes].forEach((f) => f());
     }
   };
-
-  function $(expr) {
-    if (getType$1(expr) === "string" && !/<.+>/.test(expr)) {
-      const ele = document.querySelector(expr);
-
-      return eleX(ele);
-    }
-
-    return createXEle(expr);
-  }
-
-  Object.defineProperties($, {
-    // Convenient objects for use as extensions
-    extensions: {
-      value: {},
-    },
-  });
 
   Object.assign($, {
     stanz,
