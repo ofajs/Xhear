@@ -10,28 +10,28 @@
     <template id="temp">
       <style>
         #container {
-          color: data(tcolor);
+          color: data(tColor);
         }
 
-        @media screen and (min-width: data(twidth + "px")) {
+        @media screen and (min-width: data(tWidth + "px")) {
           #container {
-            width: data(twidth);
-            font-size: data(tsize + "px");
+            width: data(tWidth);
+            font-size: data(tSize + "px");
           }
         }
       </style>
-      <x-if :value="tweight > 800">
+      <x-if :value="tWeight > 800">
         <style>
           #container {
-            font-weight: data(tweight);
+            font-weight: data(tWeight);
           }
         </style>
       </x-if>
       <div id="container">count:{{count}}</div>
       <div>
-        <button on:click="tweight = 600">weight:600</button>
-        <button on:click="tweight = 850">weight:850</button>
-        <button on:click="tweight = 900">weight:900</button>
+        <button on:click="tWeight = 600">weight:600</button>
+        <button on:click="tWeight = 850">weight:850</button>
+        <button on:click="tWeight = 900">weight:900</button>
       </div>
     </template>
     <template-demo></template-demo>
@@ -44,10 +44,10 @@
       temp: $("#temp").html,
       data: {
         count: 0,
-        tcolor: "rgb(255, 0, 0)",
-        twidth: 600,
-        tsize: 20,
-        tweight: 900,
+        tColor: "rgb(255, 0, 0)",
+        tWidth: 600,
+        tSize: 20,
+        tWeight: 900,
       },
     });
 
