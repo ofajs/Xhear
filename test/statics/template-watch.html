@@ -11,11 +11,19 @@
 
     <template id="temp1">
       <div style="border: #aaa solid 1px; padding: 8px">
-        <h4 style="margin: 4px">test-demo {{subCount}}</h4>
+        <h4 style="margin: 4px">test-demo {{subCount || 'none'}}</h4>
         <button on:click="subCount = 100">Set SubCount 100</button>
+        <button on:click="showSubItem = !showSubItem">toggle sub item</button>
         <br />
         <br />
-        <sub-item watch:count="subCount">sub item</sub-item>
+        <h5>{{subObj1}}</h5>
+        <br />
+        <br />
+        <x-if :value="showSubItem">
+          <sub-item watch:count="subCount" watch:obj1="subObj1">
+            sub item
+          </sub-item>
+        </x-if>
       </div>
     </template>
     <script type="module">
@@ -29,9 +37,13 @@
           temp: $("#temp1").html,
           data: {
             subCount: null,
+            subObj1: null,
+            showSubItem: true,
           },
           ready() {},
         });
+
+        window.xdata1 = null;
 
         $.register({
           tag: "sub-item",
@@ -39,9 +51,16 @@
           <style>:host{display:block;border:red solid 1px;padding:8px;}</style>
           <div>count : {{count}}</div> 
           <button on:click='count++'>Count+1</button>
+          <button on:click='obj1.val++'>obj1.val+1</button>
           `,
           data: {
-            count: 0,
+            count: 1,
+            obj1: {
+              val: 273,
+            },
+          },
+          ready() {
+            xdata1 = this.obj1;
           },
         });
       })();
