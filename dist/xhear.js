@@ -1,4 +1,4 @@
-//! xhear - v7.5.2 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.3 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -78,6 +78,7 @@
     } else {
       errObj = new Error(desc);
     }
+    errObj.code = key;
     return errObj;
   };
 
@@ -146,8 +147,9 @@
       Promise.resolve().then(() => {
         asyncsCounter++;
         if (asyncsCounter > 100000) {
-          console.log(getErrDesc(TICKERR), "lastCall => ", callback);
-          throw getErr(TICKERR);
+          const err = getErr(TICKERR);
+          console.warn(err, "lastCall => ", callback);
+          throw err;
         }
 
         callback();
@@ -163,8 +165,9 @@
       if (asyncsCounter > 50000) {
         tickSets.clear();
 
-        console.log(getErrDesc(TICKERR), "lastCall => ", callback);
-        throw getErr(TICKERR);
+        const err = getErr(TICKERR);
+        console.warn(err, "lastCall => ", callback);
+        throw err;
       }
       if (tickSets.has(tickId)) {
         callback();
@@ -427,7 +430,14 @@
     path = [],
   }) => {
     if (path && path.includes(currentTarget)) {
-      console.warn("Circular references appear");
+      const err = getErr("circular_data");
+
+      console.warn(err, {
+        currentTarget,
+        target,
+        path,
+      });
+
       return;
     }
 
@@ -814,7 +824,10 @@
               error
             );
 
-            console.log(err.message, ":", key, this, error);
+            console.warn(err, {
+              key,
+              self: this,
+            });
 
             throw err;
           }
@@ -842,7 +855,10 @@
               error
             );
 
-            console.log(err.message, ":", key, this, error);
+            console.warn(err, {
+              key,
+              self: this,
+            });
 
             throw err;
           }
@@ -910,11 +926,12 @@
       if (index > -1) {
         val._owner.splice(index, 1);
       } else {
-        console.error({
-          desc: "This data is wrong, the owner has no boarding object at the time of deletion",
+        const err = getErr("error_no_owner");
+        console.warn(err, {
           target,
           mismatch: val,
         });
+        console.error(err);
       }
     }
   };
@@ -960,7 +977,7 @@
           error
         );
 
-        console.log(err.message, key, target, value);
+        console.warn(err, { target, value });
 
         throw err;
       }
@@ -1186,9 +1203,20 @@ try{
 
               const func = convertToFunc(expr, data, {
                 errCall: (error) => {
-                  const stack = `Rendering of target element failed: ${$el.ele.outerHTML} \n  ${error.stack}`;
-                  console.error(stack);
-                  console.error({ stack, element: $el.ele, target, error });
+                  const err = getErr(
+                    "render_el_error",
+                    {
+                      html: $el.ele.outerHTML,
+                    },
+                    error
+                  );
+
+                  console.warn(err, {
+                    stack,
+                    element: $el.ele,
+                    target,
+                  });
+                  console.error(err);
 
                   return false;
                 },
@@ -1255,7 +1283,7 @@ try{
               },
               error
             );
-            console.log(err, el);
+            console.warn(err, el);
             throw err;
           }
         });
@@ -1275,7 +1303,7 @@ try{
       if (target.__render_data && target.__render_data !== data) {
         const err = getErr("xhear_listen_already");
 
-        console.log(err, {
+        console.warn(err, {
           element: target,
           old: target.__render_data,
           new: data,
@@ -1379,16 +1407,21 @@ try{
       const tempChilds = template.content.children;
       if (tempChilds.length > 1) {
         if (!isWarned) {
-          console.warn(
-            `Only one child element can be contained within a template element. If multiple child elements appear, the child elements will be rewrapped within a <div> element`
-          );
+          const err = getErr("temp_multi_child");
+          console.warn(err, {
+            content: template.content,
+          });
           isWarned = 1;
         }
 
         const wrapName = `wrapper-${tempName}`;
         template.innerHTML = `<div ${wrapName} style="display:contents">${template.innerHTML}</div>`;
         console.warn(
-          `The template "${tempName}" contains ${tempChilds.length} child elements that have been wrapped in a div element with attribute "${wrapName}".`
+          getErr("temp_wrap_child", {
+            tempName,
+            len: tempChilds.length,
+            wrapName,
+          })
         );
       }
       temps[tempName] = template;
@@ -1566,7 +1599,7 @@ try{
 
       if (val instanceof Object) {
         const err = getErr("xhear_sync_object_value", { targetName });
-        console.log(err, data);
+        console.warn(err, data);
         throw err;
       }
 
@@ -1622,7 +1655,7 @@ try{
             name: beforeValue,
             tag: tag ? `"${tag}"` : "",
           });
-          console.log(err, " target =>", options.data);
+          console.warn(err, " target =>", options.data);
           throw err;
         }
         func = func.bind(options.data);
@@ -3104,9 +3137,9 @@ try{
 
         if (!(arrayData instanceof Array)) {
           console.warn(
-            `The value of x-fill component must be of type Array, and the type of the current value is ${getType(
-            arrayData
-          )}`
+            getErr("fill_type", {
+              type: getType(arrayData),
+            })
           );
 
           childs &&
@@ -3166,15 +3199,12 @@ try{
           const { parentNode } = this._fake;
 
           if (keyName !== "xid" && vals.length !== valsKeys.size) {
-            const errDesc = "fill key duplicates";
-            console.error(errDesc);
-            console.log(
-              errDesc,
-              ",its parent node is:",
+            const err = getErr("fill_key_duplicates");
+            console.error(err);
+            console.warn(err, {
               parentNode,
-              "host: ",
-              eleX(parentNode)?.host?.ele
-            );
+              host: eleX(parentNode)?.host?.ele,
+            });
           }
 
           // const positionKeys = childs.map((e) => e._data_xid || e);
@@ -3319,7 +3349,7 @@ try{
 
       if (!this._name) {
         const err = getErr("xhear_fill_tempname", { name: this._name });
-        console.log(err, this.ele);
+        console.warn(err, this.ele);
         throw err;
       }
 
