@@ -3390,6 +3390,8 @@ const createItem = ($data, temps, targetTemp, $host, $index, keyName) => {
 
 const { defineProperties } = Object;
 
+const GET_COMPOSE_PATH = `get-${Math.random()}`;
+
 const init = ({ _this, ele, proxySelf }) => {
   const descs = {
     owner: {
@@ -3519,6 +3521,18 @@ class Xhear extends LikeArray {
       hosts.push(target);
     }
     return hosts;
+  }
+
+  composedPath() {
+    let paths = [];
+    this.one(GET_COMPOSE_PATH, (e) => {
+      paths = e.composedPath();
+      e.stopPropagation();
+    });
+    this.emit(GET_COMPOSE_PATH, {
+      composed: true,
+    });
+    return paths;
   }
 
   get next() {
