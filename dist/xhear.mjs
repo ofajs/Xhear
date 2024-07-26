@@ -1197,18 +1197,18 @@ function render({
 
             const func = convertToFunc(expr, data, {
               errCall: (error) => {
+                const errorExpr = `:${key}="${expr}"`;
                 const err = getErr(
                   "render_el_error",
                   {
-                    html: $el.ele.outerHTML,
+                    expr: errorExpr,
                   },
                   error
                 );
 
                 console.warn(err, {
-                  stack,
-                  element: $el.ele,
-                  target,
+                  target: $el.ele,
+                  errorExpr,
                 });
                 console.error(err);
 
