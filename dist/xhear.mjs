@@ -1,4 +1,4 @@
-//! xhear - v7.5.3 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.4 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -2657,13 +2657,13 @@ function validateTagName(str) {
   return true;
 }
 
-function deepCopyData(obj, tag = "") {
+function deepCopyData(obj, tag = "", keyName) {
   if (obj instanceof Set || obj instanceof Map) {
     throw getErr("xhear_regster_data_noset", { tag });
   }
 
   if (obj instanceof Function) {
-    throw getErr("xhear_regster_data_nofunc", { tag });
+    throw getErr("xhear_regster_data_nofunc", { tag, key: keyName });
   }
 
   if (typeof obj !== "object" || obj === null) {
@@ -2674,7 +2674,12 @@ function deepCopyData(obj, tag = "") {
 
   for (let key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      copy[key] = deepCopyData(obj[key], tag);
+      if (/^_/.test(key)) {
+        // 直接赋值私有属性
+        copy[key] = obj[key];
+      } else {
+        copy[key] = deepCopyData(obj[key], tag, key);
+      }
     }
   }
 
