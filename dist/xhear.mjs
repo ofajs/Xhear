@@ -1,4 +1,4 @@
-//! xhear - v7.5.4 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.5 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -3365,9 +3365,18 @@ const createItem = ($data, temps, targetTemp, $host, $index, keyName) => {
 
   const itemData = new Stanz({
     $data,
-    $ele,
+    // $ele,
     $host,
     $index,
+  });
+
+  // tips: 如果$ele被设置为item的子属性，$ele内出现自定义组件，进一步导致改动冒泡，会出现xfill内元素不停渲染的死循环
+  Object.defineProperties(itemData, {
+    $ele: {
+      get() {
+        return $ele;
+      },
+    },
   });
 
   render({

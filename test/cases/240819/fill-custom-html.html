@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fill custom html</title>
+  </head>
+  <body>
+    <fill-link></fill-link>
+    <template id="temp">
+      <div>
+        <x-if :value="pages.length">
+          <div class="nav-item">
+            <div class="nav-title">Pages</div>
+            <ul>
+              <x-fill :value="pages">
+                <li :html="$data.val"></li>
+              </x-fill>
+            </ul>
+          </div>
+        </x-if>
+      </div>
+    </template>
+    <h3 id="diffTime"></h3>
+  </body>
+
+  <script type="module">
+    import $ from "../../../packages/xhear/base.mjs";
+    window.$ = $;
+
+    const startTime = Date.now();
+
+    setTimeout(() => {
+      // 没有死循环会很快
+      $("#diffTime").text = Date.now() - startTime;
+    }, 100);
+
+    const pages = [];
+    for (let i = 0; i < 100; i++) {
+      pages.push({
+        val: `<p-btn>en/${i}.html</p-btn>`,
+      });
+    }
+
+    $.register({
+      tag: "fill-link",
+      temp: $("#temp").html,
+      data: {
+        pages,
+      },
+      ready() {},
+    });
+
+    $.register({
+      tag: "p-btn",
+      attrs: {
+        variant: "contained",
+      },
+      temp: `<div style="color:red;"><slot></slot></div>`,
+    });
+  </script>
+</html>
