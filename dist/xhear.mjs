@@ -1,4 +1,4 @@
-//! xhear - v7.5.5 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.6 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
