@@ -1,4 +1,4 @@
-//! xhear - v7.5.8 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.9 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -2674,7 +2674,7 @@ function deepCopyData(obj, tag = "", keyName) {
 
   for (let key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      if (/^_/.test(key)) {
+      if (/^_/.test(key) && obj[key] instanceof Function) {
         // 直接赋值私有属性
         copy[key] = obj[key];
       } else {
