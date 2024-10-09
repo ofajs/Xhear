@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fill custom html</title>
+  </head>
+  <body>
+    <fill-table></fill-table>
+    <template id="temp">
+      <div>
+        <x-fill :value="list">
+          <div>
+            <h1>{{$data.DbTableName}} {{$data.TableDescription}}</h1>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>列名称</th>
+                  <th>列说明</th>
+                  <th>DataType</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template is="replace-temp">
+                  <x-fill :value="$data.Columns" name="tableDetail"></x-fill>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </x-fill>
+      </div>
+
+      <template name="tableDetail">
+        <tr>
+          <td>{{$data.DbColumnName}}</td>
+          <td>{{$data.ColumnDescription}}</td>
+          <td>{{$data.DataType}}</td>
+        </tr>
+      </template>
+    </template>
+  </body>
+
+  <script type="module">
+    import $ from "../../../packages/xhear/base.mjs";
+    window.$ = $;
+
+    $.register({
+      tag: "fill-table",
+      temp: $("#temp").html,
+      data: {
+        list: [
+          {
+            DbTableName: "表1",
+            TableDescription: "这是表1",
+            Columns: [
+              {
+                DbColumnName: "表1列1",
+                ColumnDescription: "表1列1说明",
+                DataType: "表1列1类型",
+              },
+              {
+                DbColumnName: "表1列2",
+                ColumnDescription: "表1列2说明",
+                DataType: "表1列2类型",
+              },
+            ],
+          },
+          {
+            DbTableName: "表2",
+            TableDescription: "这是表2",
+            Columns: [
+              {
+                DbColumnName: "表2列2",
+                ColumnDescription: "表2列2说明",
+                DataType: "表2列2类型",
+              },
+            ],
+          },
+        ],
+      },
+    });
+  </script>
+</html>
