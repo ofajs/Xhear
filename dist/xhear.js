@@ -1,4 +1,4 @@
-//! xhear - v7.5.10 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.11 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2796,6 +2796,9 @@ try{
           }
           childs.unshift(prev);
         } else {
+          if (!this.isConnected) {
+            break;
+          }
           throw getErr("xhear_fakenode_unclose", { name: "childNodes" });
         }
       }
