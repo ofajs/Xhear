@@ -1,4 +1,4 @@
-//! xhear - v7.5.11 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.12 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1716,7 +1716,7 @@ try{
         event = new Event(name, { bubbles: true, ...options });
       }
 
-      data && (event.data = data);
+      event.data = data;
 
       this.ele.dispatchEvent(event);
 
