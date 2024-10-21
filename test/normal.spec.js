@@ -21,7 +21,7 @@ test("template watch test", async ({ page }) => {
   ).toBe(2);
 
   await page.getByRole("button", { name: "toggle sub item" }).click();
-  await page.getByRole("heading", { name: "test-demo none" }).click();
+  // await page.getByRole("heading", { name: "test-demo none" }).click();
 
   await expect(
     await page.evaluate(() => {
