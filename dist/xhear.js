@@ -1,4 +1,4 @@
-//! xhear - v7.5.13 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.14 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2465,7 +2465,7 @@ try{
       ...opts,
     };
 
-    const { fn } = $;
+    const { fn, extensions } = $;
     if (fn) {
       // 检查 proto 和 data 上的key，是否和fn上的key冲突
       Object.keys(defaults.data).forEach((name) => {
@@ -2592,6 +2592,7 @@ try{
         }
 
         defaults.attached && defaults.attached.call(eleX(this));
+        extensions.afterAttached && extensions.afterAttached(eleX(this));
       }
 
       disconnectedCallback() {
@@ -2600,6 +2601,7 @@ try{
         }
 
         defaults.detached && defaults.detached.call(eleX(this));
+        extensions.afterDetached && extensions.afterDetached(eleX(this));
       }
 
       attributeChangedCallback(name, oldValue, newValue) {
@@ -2632,6 +2634,7 @@ try{
     }
   };
 
+  // 判断元素是否临时脱离节点，防止数组操作导致元素触发detached问题
   function isInternal(ele) {
     let target = ele;
 
