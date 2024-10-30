@@ -1,4 +1,4 @@
-//! xhear - v7.5.14 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.15 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -3056,7 +3056,8 @@ try{
           while (true) {
             next = next.nextElementSibling;
 
-            if (!next) {
+            if (!next || next.tagName == "X-IF") {
+              // 下一个还是if的话，就直接跳过遍历的逻辑，因为下一个if后面可能有它们的else
               break;
             }
 
