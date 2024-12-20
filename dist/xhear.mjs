@@ -1,4 +1,4 @@
-//! xhear - v7.5.15 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
+//! xhear - v7.5.16 https://github.com/ofajs/Xhear  (c) 2018-2024 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -1498,8 +1498,10 @@ const defaultData = {
   attr(...args) {
     let [name, value] = args;
 
+    const { ele } = this;
+
     if (args.length === 1) {
-      return this.ele.getAttribute(name);
+      return ele.getAttribute(name);
     }
 
     value = getVal(value);
@@ -1511,9 +1513,9 @@ const defaultData = {
     }
 
     if (value === null || value === undefined) {
-      this.ele.removeAttribute(name);
-    } else {
-      this.ele.setAttribute(name, value);
+      ele.removeAttribute(name);
+    } else if (ele.getAttribute(name) != value) {
+      ele.setAttribute(name, value);
     }
   },
   class(...args) {
