@@ -1,4 +1,4 @@
-//! xhear - v7.5.19 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.20 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -726,7 +726,8 @@ function constructor(data, handler = handler$1) {
 }
 
 class Stanz extends Array {
-  constructor(data) {
+  constructor(data, options) {
+    // options是被继承的类库使用的参数，当前stanz不需要使用
     super();
 
     return constructor.call(this, data);
@@ -896,7 +897,10 @@ const setData = ({ target, key, value, receiver, type, succeed }) => {
   } else if (isObject(value)) {
     const desc = Object.getOwnPropertyDescriptor(target, key);
     if (!desc || desc.hasOwnProperty("value")) {
-      data = new (target.__OriginStanz || Stanz)(value);
+      data = new (target.__OriginStanz || Stanz)(value, {
+        owner: receiver,
+      });
+
       data._owner.push(receiver);
     }
   }
