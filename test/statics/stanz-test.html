@@ -24,7 +24,9 @@
       const getKey = () => "a_" + Math.random().toString(16).slice(2);
 
       function require() {
-        return $.stanz;
+        return {
+          stanz: $.stanz,
+        };
       }
 
       const test = it;
