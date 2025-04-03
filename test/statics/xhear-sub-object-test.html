@@ -14,7 +14,7 @@
     <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot0.js"></script>
     <script src="../../node_modules/jasmine-core/lib/jasmine-core/boot1.js"></script>
     <script src="../../dist/xhear.js"></script>
-     <!-- <script type="module">
+    <!-- <script type="module">
       import $ from "../../packages/xhear/base.mjs";
       window.$ = $;
     </script> -->
@@ -39,7 +39,7 @@
           return t1[key];
         };
 
-        Object.assign(r, $.stanz);
+        r.stanz = $.stanz;
 
         return r;
       }
