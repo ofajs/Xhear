@@ -1,4 +1,4 @@
-//! xhear - v7.5.21 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.22 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -3242,6 +3242,10 @@ register({
         const vals = arrayData.slice();
         const valsKeys = new Set(
           vals.map((e) => {
+            if (!e) {
+              return;
+            }
+
             const val = e[keyName];
             return val === undefined ? e : val;
           })
@@ -3454,7 +3458,7 @@ const createItem = ($data, temps, targetTemp, $host, $index, keyName) => {
   revokes.push(revoke);
 
   $ele.__item = itemData;
-  $ele.ele._data_xid = $data[keyName] || $data;
+  $ele.ele._data_xid = $data?.[keyName] || $data;
 
   return $ele;
 };
