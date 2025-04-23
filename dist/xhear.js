@@ -1,4 +1,4 @@
-//! xhear - v7.5.21 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.22 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -3248,8 +3248,11 @@ try{
           const vals = arrayData.slice();
           const valsKeys = new Set(
             vals.map((e) => {
-              const val = e[keyName];
-              return val === undefined ? e : val;
+              try {
+                return e[keyName];
+              } catch (err) {
+                return undefined;
+              }
             })
           );
 
@@ -3460,7 +3463,7 @@ try{
     revokes.push(revoke);
 
     $ele.__item = itemData;
-    $ele.ele._data_xid = $data[keyName] || $data;
+    $ele.ele._data_xid = $data?.[keyName] || $data;
 
     return $ele;
   };
