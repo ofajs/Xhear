@@ -3242,11 +3242,12 @@ register({
         const vals = arrayData.slice();
         const valsKeys = new Set(
           vals.map((e) => {
-            try {
-              return e[keyName];
-            } catch (err) {
-              return undefined;
+            if (!e) {
+              return;
             }
+
+            const val = e[keyName];
+            return val === undefined ? e : val;
           })
         );
 
