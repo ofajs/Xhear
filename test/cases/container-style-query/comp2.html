@@ -1,0 +1,31 @@
+<style>
+  :host {
+    display: block;
+  }
+</style>
+<style>
+  .main {
+    color: black;
+  }
+
+  @container style(--count:200) {
+    .main {
+      color: red;
+    }
+  }
+
+  @container style(--count:300) {
+    .main {
+      color: green;
+    }
+  }
+
+  @container style(--count:400) {
+    .main {
+      color: blue;
+    }
+  }
+</style>
+<div class="main">
+  <slot></slot>
+</div>

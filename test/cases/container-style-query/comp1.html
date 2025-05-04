@@ -1,0 +1,17 @@
+<style>
+  :host {
+    display: block;
+  }
+</style>
+<style>
+  .main {
+    --count: data(count);
+  }
+</style>
+<div>count:{{count}}</div>
+<div>
+  <button on:click="count += 100">count += 100</button>
+</div>
+<div class="main">
+  <slot></slot>
+</div>
