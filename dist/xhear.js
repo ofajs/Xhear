@@ -1,4 +1,4 @@
-//! xhear - v7.5.23 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.24 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2232,7 +2232,7 @@ try{
         return 0;
       }
 
-      if (key.startsWith("--")) {
+      if (key.startsWith && key.startsWith("--")) {
         return getComputedStyle(target._ele).getPropertyValue(key);
       }
 
