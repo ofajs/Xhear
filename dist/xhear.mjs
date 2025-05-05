@@ -1,4 +1,4 @@
-//! xhear - v7.5.23 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.24 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -2226,7 +2226,7 @@ const cssHandler = {
       return 0;
     }
 
-    if (key.startsWith("--")) {
+    if (key.startsWith && key.startsWith("--")) {
       return getComputedStyle(target._ele).getPropertyValue(key);
     }
 
