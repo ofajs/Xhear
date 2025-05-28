@@ -1,4 +1,4 @@
-//! xhear - v7.5.26 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.27 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -1176,6 +1176,8 @@ const handler = {
 };
 
 const renderExtends = {
+  beforeConvert() {},
+  afterConvert() {},
   beforeRender() {},
   render() {},
 };
@@ -1510,6 +1512,10 @@ const convert = (template) => {
   let temps = {};
   const codeEls = {};
 
+  renderExtends.beforeConvert({
+    template,
+  });
+
   searchTemp(template, "code", (code) => {
     const cid = getRandomId();
     code.setAttribute("code-id", cid);
@@ -1600,6 +1606,11 @@ const convert = (template) => {
       el.innerHTML = value;
     });
   }
+
+  renderExtends.afterConvert({
+    template,
+    temps,
+  });
 
   return temps;
 };
@@ -2508,64 +2519,6 @@ const renderElement = ({ defaults, ele, template, temps }) => {
       }
     }
   }
-
-  // {
-  //   // 将组件上的变量重定义到影子节点内的css变量上
-  //   const { tag } = $ele;
-
-  //   if ($ele.__rssWid) {
-  //     $ele.unwatch($ele.__rssWid);
-  //   }
-
-  //   // 排除掉自定义组件
-  //   if (tag !== "x-if" && tag !== "x-fill" && ele.shadowRoot) {
-  //     // 需要更新的key
-  //     const keys = Object.keys({
-  //       ...defaults.data,
-  //       ...defaults.attrs,
-  //     });
-
-  //     for (let [key, item] of Object.entries(
-  //       Object.getOwnPropertyDescriptors(defaults.proto)
-  //     )) {
-  //       if (item.writable || item.get) {
-  //         keys.push(key);
-  //       }
-  //     }
-
-  //     const refreshShadowStyleVar = () => {
-  //       let shadowVarStyle = ele.shadowRoot.querySelector("#shadow-var-style");
-
-  //       if (!shadowVarStyle) {
-  //         shadowVarStyle = document.createElement("style");
-  //         shadowVarStyle.id = "shadow-var-style";
-  //         ele.shadowRoot.appendChild(shadowVarStyle);
-  //       }
-
-  //       // 更新所有变量
-  //       let content = "";
-  //       let slotContent = "";
-  //       keys.forEach((key) => {
-  //         const val = $ele[key];
-  //         const valType = getType(val);
-  //         if (valType === "number" || valType === "string") {
-  //           content += `--${key}:${val};`;
-  //           slotContent += `--${key}:;`;
-  //         }
-  //       });
-
-  //       const styleContent = `:host > *:not(slot) {${content}} slot{${slotContent}}`;
-
-  //       if (shadowVarStyle.innerHTML !== styleContent) {
-  //         shadowVarStyle.innerHTML = styleContent;
-  //       }
-  //     };
-
-  //     $ele.__rssWid = $ele.watchTick(() => refreshShadowStyleVar());
-
-  //     refreshShadowStyleVar();
-  //   }
-  // }
 };
 
 const register = (opts = {}) => {
