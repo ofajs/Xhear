@@ -1,4 +1,4 @@
-//! xhear - v7.5.26 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.27 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
