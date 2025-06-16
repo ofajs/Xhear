@@ -1,4 +1,4 @@
-//! xhear - v7.5.27 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.28 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1431,21 +1431,21 @@ try{
       target.__render_temps = temps;
     }
 
+    if (target.__render_data && target.__render_data !== data) {
+      const err = getErr("xhear_listen_already");
+
+      console.warn(err, {
+        element: target,
+        old: target.__render_data,
+        new: data,
+      });
+
+      throw err;
+    }
+
+    target.__render_data = data;
+
     if (tasks.length) {
-      if (target.__render_data && target.__render_data !== data) {
-        const err = getErr("xhear_listen_already");
-
-        console.warn(err, {
-          element: target,
-          old: target.__render_data,
-          new: data,
-        });
-
-        throw err;
-      }
-
-      target.__render_data = data;
-
       tasks.forEach((f) => f());
 
       // After the data changes, traverse the rendering tasks
