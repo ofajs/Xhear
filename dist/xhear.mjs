@@ -1,4 +1,4 @@
-//! xhear - v7.5.29 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.30 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -3796,7 +3796,31 @@ class Xhear extends LikeArray {
   }
 
   is(expr) {
-    return this.ele.matches(expr);
+    if (typeof expr === "string") {
+      return this.ele.matches(expr);
+    }
+
+    if (expr instanceof Xhear) {
+      return this.ele === expr.ele;
+    }
+
+    if (expr instanceof Node) {
+      return this.ele === expr;
+    }
+  }
+
+  contains(expr) {
+    if (typeof expr === "string") {
+      return this.ele.querySelector(expr) !== null;
+    }
+
+    if (expr instanceof Xhear) {
+      return this.ele.contains(expr.ele);
+    }
+
+    if (expr instanceof Node) {
+      return this.ele.contains(expr);
+    }
   }
 
   remove() {

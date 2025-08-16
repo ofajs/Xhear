@@ -1,4 +1,4 @@
-//! xhear - v7.5.29 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.30 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -3802,7 +3802,31 @@ try{
     }
 
     is(expr) {
-      return this.ele.matches(expr);
+      if (typeof expr === "string") {
+        return this.ele.matches(expr);
+      }
+
+      if (expr instanceof Xhear) {
+        return this.ele === expr.ele;
+      }
+
+      if (expr instanceof Node) {
+        return this.ele === expr;
+      }
+    }
+
+    contains(expr) {
+      if (typeof expr === "string") {
+        return this.ele.querySelector(expr) !== null;
+      }
+
+      if (expr instanceof Xhear) {
+        return this.ele.contains(expr.ele);
+      }
+
+      if (expr instanceof Node) {
+        return this.ele.contains(expr);
+      }
     }
 
     remove() {
