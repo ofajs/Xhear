@@ -1,4 +1,4 @@
-//! xhear - v7.5.30 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.31 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -2673,8 +2673,10 @@ try{
           return;
         }
 
-        defaults.attached && defaults.attached.call(eleX(this));
-        extensions.afterAttached && extensions.afterAttached(eleX(this));
+        const $ele = eleX(this);
+        defaults.attached && defaults.attached.call($ele);
+        $ele.emit("attached", { bubbles: false });
+        extensions.afterAttached && extensions.afterAttached($ele);
       }
 
       disconnectedCallback() {
@@ -2682,8 +2684,10 @@ try{
           return;
         }
 
-        defaults.detached && defaults.detached.call(eleX(this));
-        extensions.afterDetached && extensions.afterDetached(eleX(this));
+        const $ele = eleX(this);
+        defaults.detached && defaults.detached.call($ele);
+        $ele.emit("detached", { bubbles: false });
+        extensions.afterDetached && extensions.afterDetached($ele);
       }
 
       attributeChangedCallback(name, oldValue, newValue) {
