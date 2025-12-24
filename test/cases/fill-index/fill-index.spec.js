@@ -5,7 +5,7 @@ test("fill index", async ({ page }) => {
     "http://localhost:3398/test/cases/fill-index/fill-index.html"
   );
 
-  await new Promise((res) => setTimeout(res, 100));
+  await page.waitForTimeout(10);
 
   const { _preview: arrData1 } = await page.waitForFunction(async () => {
     return $("temp-demo")
