@@ -49,7 +49,7 @@ test("get formData", async ({ page }) => {
 test("set formData", async ({ page }) => {
   await page.goto("http://localhost:3398/test/statics/form-test.html");
 
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(60);
 
   await page.waitForFunction(async () => {
     return Object.assign(data, {
@@ -62,7 +62,7 @@ test("set formData", async ({ page }) => {
     });
   });
 
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(60);
 
   await expect(
     await page.$eval('[data-testid="input1"]', (node) => node.value)

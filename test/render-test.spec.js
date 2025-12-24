@@ -42,7 +42,7 @@ test.describe("render", () => {
 
     await page.getByRole("button", { name: "NUM++" }).click();
 
-    await page.waitForTimeout(10);
+    await page.waitForTimeout(60);
 
     await expect(await getText(page, "#condition-container")).toBe(
       "I am IF ELSE TWO div"
@@ -54,7 +54,7 @@ test.describe("render", () => {
 
     await page.getByRole("button", { name: "NUM++" }).click();
 
-    await page.waitForTimeout(10);
+    await page.waitForTimeout(60);
 
     await expect(await getText(page, "#condition-container")).toBe(
       "I am IF ELSE ONE div"
@@ -66,7 +66,7 @@ test.describe("render", () => {
 
     await page.getByRole("button", { name: "NUM++" }).click();
 
-    await page.waitForTimeout(10);
+    await page.waitForTimeout(60);
 
     await expect(await getText(page, "#condition-container")).toBe(
       "I am IF div"

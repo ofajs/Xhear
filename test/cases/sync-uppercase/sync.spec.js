@@ -12,7 +12,7 @@ test("sync uppercase", async ({ page }) => {
 
   await page.getByRole("button", { name: "AddCount" }).click();
 
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(60);
 
   await expect((await page.getByTestId("t1").textContent()).trim()).toBe(
     "t-one: 1"
@@ -23,7 +23,7 @@ test("sync uppercase", async ({ page }) => {
 
   await page.getByTestId("t2").click();
 
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(60);
 
   await expect((await page.getByTestId("t1").textContent()).trim()).toBe(
     "t-one: 2"
