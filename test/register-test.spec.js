@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 const getText = async (page, expr) => {
- await page.waitForTimeout(10);
+ await page.waitForTimeout(60);
   const text = await (await page.$(expr)).textContent();
   return text.replace(/\n/g, "").trim();
 };

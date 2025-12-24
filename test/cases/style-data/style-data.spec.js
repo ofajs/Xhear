@@ -15,7 +15,7 @@ const getData = async ({ page }) => {
 test("style data", async ({ page }) => {
   await page.goto("http://localhost:3398/test/cases/style-data/demo.html");
 
-  await page.waitForTimeout(10); // 增加等待时间以确保 DOM 更新
+  await page.waitForTimeout(60); // 增加等待时间以确保 DOM 更新
 
   const data1 = await getData({ page });
 
@@ -25,7 +25,7 @@ test("style data", async ({ page }) => {
 
   await page.getByRole("button", { name: "weight:600" }).click();
 
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(60);
 
   const data2 = await getData({ page });
   expect(data2.weight).toBe("400"); // default is 400
@@ -33,7 +33,7 @@ test("style data", async ({ page }) => {
 
   await page.getByRole("button", { name: "weight:850" }).click();
 
-  await page.waitForTimeout(10);
+  await page.waitForTimeout(60);
 
   const data3 = await getData({ page });
   expect(data3.weight).toBe("850");
