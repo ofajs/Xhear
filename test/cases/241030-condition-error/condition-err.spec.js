@@ -5,7 +5,7 @@ test("241030-condition-error", async ({ page }) => {
     "http://localhost:3398/test/cases/241030-condition-error/test.html"
   );
 
-  await new Promise((res) => setTimeout(res, 300));
+  await page.waitForTimeout(300);
 
   const hText = await page.evaluate(() =>
     $("template-demo").shadow.$("#ha").text.trim()

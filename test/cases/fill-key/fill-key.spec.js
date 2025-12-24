@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("fill key", async ({ page }) => {
   await page.goto("http://localhost:3398/test/cases/fill-key/test.html");
 
-  await new Promise((res) => setTimeout(res, 200));
+  await page.waitForTimeout(200);
 
   await expect(
     await page.$eval('[data-testid="count"]', (node) => node.textContent.trim())
@@ -17,7 +17,7 @@ test("fill key", async ({ page }) => {
 
   await page.getByRole("button", { name: "Reset First" }).click();
 
-  await new Promise((res) => setTimeout(res, 200));
+  await page.waitForTimeout(200);
 
   const { _preview: d2 } = await page.waitForFunction(async () => {
     return $("t-one").shadow.$("t-two").shadow.$("div").text;
@@ -31,7 +31,7 @@ test("fill key", async ({ page }) => {
   ).toBe("count:10");
 
   await page.getByRole("button", { name: "Change First" }).click();
-  await new Promise((res) => setTimeout(res, 200));
+  await page.waitForTimeout(200);
 
   const { _preview: d3 } = await page.waitForFunction(async () => {
     return $("t-one").shadow.$("t-two").shadow.$("div").text;
@@ -46,7 +46,7 @@ test("fill key", async ({ page }) => {
 
   await page.getByRole("button", { name: "BTN3" }).click();
 
-  await new Promise((res) => setTimeout(res, 200));
+  await page.waitForTimeout(200);
 
   const { _preview: d4 } = await page.waitForFunction(async () => {
     return $("t-one").shadow.$("t-two").shadow.$("div").text;

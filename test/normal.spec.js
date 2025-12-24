@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test("template watch test", async ({ page }) => {
   await page.goto("http://localhost:3398/test/statics/template-watch.html");
+  await page.waitForTimeout(10);
+
   await page.getByRole("heading", { name: "test-demo 1" }).click();
   await page.getByRole("button", { name: "Count+1" }).click();
   await page.getByRole("button", { name: "Count+1" }).click();
@@ -22,6 +24,7 @@ test("template watch test", async ({ page }) => {
 
   await page.getByRole("button", { name: "toggle sub item" }).click();
   // await page.getByRole("heading", { name: "test-demo none" }).click();
+  await page.waitForTimeout(10);
 
   await expect(
     await page.evaluate(() => {

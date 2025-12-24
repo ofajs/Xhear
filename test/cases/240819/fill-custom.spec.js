@@ -5,7 +5,7 @@ test("fill custom component and render html", async ({ page }) => {
     "http://localhost:3398/test/cases/240819/fill-custom-html.html"
   );
 
-  await new Promise((res) => setTimeout(res, 300));
+  await page.waitForTimeout(300);
 
   let time = await page.evaluate(() => $("#diffTime").text);
   time = parseFloat(time);

@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("watch multi", async ({ page }) => {
   await page.goto("http://localhost:3398/test/cases/watch-multi/demo.html");
 
-  await new Promise((res) => setTimeout(res, 500));
+  await page.waitForTimeout(500);
 
   await expect(page.getByTestId("n1")).toHaveText("num1:100");
   await expect(page.getByTestId("n2")).toHaveText("num2:20");

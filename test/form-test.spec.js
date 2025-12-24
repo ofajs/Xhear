@@ -28,7 +28,7 @@ test("get formData", async ({ page }) => {
   await page.getByText("I am textarea").fill("change textarea value");
   await page.getByPlaceholder("custom-inputer").fill("change the value");
 
-  await new Promise((res) => setTimeout(res, 300));
+  await page.waitForTimeout(300);
 
   let { _preview: data2 } = await page.waitForFunction(async () => {
     return JSON.stringify(data);
@@ -49,7 +49,7 @@ test("get formData", async ({ page }) => {
 test("set formData", async ({ page }) => {
   await page.goto("http://localhost:3398/test/statics/form-test.html");
 
-  await new Promise((res) => setTimeout(res, 50));
+  await page.waitForTimeout(10);
 
   await page.waitForFunction(async () => {
     return Object.assign(data, {
@@ -62,7 +62,7 @@ test("set formData", async ({ page }) => {
     });
   });
 
-  await new Promise((res) => setTimeout(res, 50));
+  await page.waitForTimeout(10);
 
   await expect(
     await page.$eval('[data-testid="input1"]', (node) => node.value)
@@ -156,7 +156,7 @@ test("remove form elements", async ({ page }) => {
     $("textarea").parent.remove();
   });
 
-  await new Promise((res) => setTimeout(res, 300));
+  await page.waitForTimeout(300);
 
   let { _preview: data2 } = await page.waitForFunction(async () => {
     return JSON.stringify(data);

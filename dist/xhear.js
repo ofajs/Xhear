@@ -1,4 +1,4 @@
-//! xhear - v7.5.31 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.32 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1221,6 +1221,13 @@ try{
     isRenderSelf, // 是否将当前target元素也渲染处理
     ...otherOpts
   }) {
+    try {
+      data.watchTick;
+    } catch (e) {
+      // data 已经被回收，不需要继续操作
+      return;
+    }
+
     const content = template && template.innerHTML;
 
     if (content) {
