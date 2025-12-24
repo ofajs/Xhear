@@ -1,4 +1,4 @@
-//! xhear - v7.5.31 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
+//! xhear - v7.5.32 https://github.com/ofajs/Xhear  (c) 2018-2025 YAO
 // const error_origin = "http://127.0.0.1:5793/errors";
 const error_origin = "https://ofajs.github.io/ofa-errors/errors";
 
@@ -1215,6 +1215,13 @@ function render({
   isRenderSelf, // 是否将当前target元素也渲染处理
   ...otherOpts
 }) {
+  try {
+    data.watchTick;
+  } catch (e) {
+    // data 已经被回收，不需要继续操作
+    return;
+  }
+
   const content = template && template.innerHTML;
 
   if (content) {
