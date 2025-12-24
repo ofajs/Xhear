@@ -1221,12 +1221,12 @@ try{
     isRenderSelf, // 是否将当前target元素也渲染处理
     ...otherOpts
   }) {
-    try {
-      data.watchTick;
-    } catch (e) {
-      // data 已经被回收，不需要继续操作
-      return;
-    }
+    // try {
+    //   data.watchTick;
+    // } catch (e) {
+    //   // data 已经被回收，不需要继续操作
+    //   return;
+    // }
 
     const content = template && template.innerHTML;
 
@@ -1449,13 +1449,18 @@ try{
       tasks.forEach((f) => f());
 
       // After the data changes, traverse the rendering tasks
-      const wid = data.watchTick((e) => {
-        if (tasks.length) {
-          tasks.forEach((f) => f());
-        } else {
-          data.unwatch(wid);
-        }
-      });
+      try {
+        const wid = data.watchTick((e) => {
+          if (tasks.length) {
+            tasks.forEach((f) => f());
+          } else {
+            data.unwatch(wid);
+          }
+        });
+      } catch (error) {
+        // console.error('watchTick error:', error);
+        return;
+      }
     }
 
     renderExtends.render({ step: "init", target });
