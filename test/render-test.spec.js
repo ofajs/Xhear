@@ -13,9 +13,7 @@ const getData = async (page, func) => {
 test.describe("render", () => {
   test.beforeEach(async ({ page }) => {
     // Go to the starting url before each test.
-    await page.goto(
-      "http://localhost:3398/test/statics/render-test.html"
-    );
+    await page.goto("http://localhost:3398/test/statics/render-test.html");
   });
 
   test("'{{text}}' and 'on'", async ({ page }) => {
@@ -44,6 +42,8 @@ test.describe("render", () => {
 
     await page.getByRole("button", { name: "NUM++" }).click();
 
+    await page.waitForTimeout(10);
+
     await expect(await getText(page, "#condition-container")).toBe(
       "I am IF ELSE TWO div"
     );
@@ -54,6 +54,8 @@ test.describe("render", () => {
 
     await page.getByRole("button", { name: "NUM++" }).click();
 
+    await page.waitForTimeout(10);
+
     await expect(await getText(page, "#condition-container")).toBe(
       "I am IF ELSE ONE div"
     );
@@ -63,6 +65,8 @@ test.describe("render", () => {
     ).toBe("1");
 
     await page.getByRole("button", { name: "NUM++" }).click();
+
+    await page.waitForTimeout(10);
 
     await expect(await getText(page, "#condition-container")).toBe(
       "I am IF div"
@@ -75,7 +79,7 @@ test.describe("render", () => {
 
   test("'fill'", async ({ page }) => {
     await new Promise((res) => setTimeout(res, 500));
-    
+
     await expect((await page.$$(".sub-item")).length).toBe(5);
 
     await expect(await getData(page, async () => data.owner.size)).toBe("5");
