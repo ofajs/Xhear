@@ -53,11 +53,15 @@ test("x-if in x-if", async ({ page }) => {
 
   await page.getByTestId("additem").click();
 
+  await page.waitForTimeout(10);
+
   expect((await page.getByTestId("target").textContent()).trim()).toBe(
     "length ok - 2"
   );
 
   await page.getByTestId("additem").click();
+
+  await page.waitForTimeout(10);
 
   expect((await page.getByTestId("target").textContent()).trim()).toBe(
     "length ok - 3"
