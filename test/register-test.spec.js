@@ -91,7 +91,7 @@ test.describe("register", () => {
   test("'fill'", async ({ page }) => {
     await page.goto("http://localhost:3398/test/statics/register-test.html");
 
-    await new Promise((res) => setTimeout(res, 500));
+    await page.waitForTimeout(500);
 
     await expect((await page.$$(".sub-item")).length).toBe(5);
 

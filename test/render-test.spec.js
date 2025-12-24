@@ -78,7 +78,7 @@ test.describe("render", () => {
   });
 
   test("'fill'", async ({ page }) => {
-    await new Promise((res) => setTimeout(res, 500));
+    await page.waitForTimeout(500);
 
     await expect((await page.$$(".sub-item")).length).toBe(5);
 
@@ -140,7 +140,7 @@ test.describe("render", () => {
   });
 
   test("Memory recovery within fill", async ({ page }) => {
-    await new Promise((res) => setTimeout(res, 500));
+    await page.waitForTimeout(500);
 
     await expect(
       await getData(page, async () => {

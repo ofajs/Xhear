@@ -5,7 +5,7 @@ test("set-data-before-init", async ({ page }) => {
     "http://localhost:3398/test/cases/set-data-before-init/demo.html"
   );
 
-  await new Promise((res) => setTimeout(res, 500));
+  await page.waitForTimeout(500);
 
   const { _preview: data } = await page.waitForFunction(async () => {
     return getComputedStyle(document.getElementById("target")).color;

@@ -156,7 +156,7 @@ test("remove form elements", async ({ page }) => {
     $("textarea").parent.remove();
   });
 
-  await new Promise((res) => setTimeout(res, 300));
+  await page.waitForTimeout(300);
 
   let { _preview: data2 } = await page.waitForFunction(async () => {
     return JSON.stringify(data);
