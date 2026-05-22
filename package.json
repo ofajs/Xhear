@@ -48,6 +48,6 @@
   "homepage": "https://github.com/ofajs/Xhear",
   "startyear": "2018",
   "overrides": {
-    "serialize-javascript": ">=7.0.3"
+    "serialize-javascript": ">=7.0.5"
   }
 }
