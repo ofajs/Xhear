@@ -1,4 +1,4 @@
-//! xhear - v7.5.34 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
+//! xhear - v7.6.0 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -425,6 +425,25 @@
 
   const isSafariBrowser = () =>
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  const getRenderErrorSupplementary = (data) => {
+    if (!data) {
+      return "";
+    }
+
+    let supplementary = "";
+    if (data.$host || data.$data) {
+      supplementary = "Please check the usage of $host or $data, ";
+    }
+
+    const fromSrc = data.$host?.PATH || data.PATH;
+
+    if (fromSrc) {
+      supplementary += `from file: ${fromSrc}, `;
+    }
+
+    return supplementary;
+  };
 
   const { assign: assign$1, freeze } = Object;
 
@@ -1184,25 +1203,6 @@
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
   const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
-  const getRenderErrorSupplementary = (data) => {
-    if (!data) {
-      return "";
-    }
-
-    let supplementary = "";
-    if (data.$host || data.$data) {
-      supplementary = "Please check the usage of $host or $data, ";
-    }
-
-    const fromSrc = data.$host?.PATH || data.PATH;
-
-    if (fromSrc) {
-      supplementary += `from file: ${fromSrc}, `;
-    }
-
-    return supplementary;
-  };
-
   const convertToFunc = (expr, data, opts) => {
     const funcStr = `
 const dataRevoked = ${dataRevoked.toString()};
@@ -1853,15 +1853,20 @@ try{
       if (!/[^\d\w_\$\.]/.test(beforeValue)) {
         func = options.data.get(beforeValue);
         if (!func) {
-          const tag = options.data.tag;
-          const err = getErr("not_found_func", {
-            name: beforeValue,
-            tag: tag ? `"${tag}"` : "",
+          const supplementary = getRenderErrorSupplementary(options.data);
+
+          const err = new Error(
+            `Event binding error: function "${beforeValue}" not found in expression on:${name}="${beforeValue}", ${supplementary}`,
+          );
+
+          console.error(err, {
+            target: options.data,
           });
-          console.warn(err, " target =>", options.data);
-          throw err;
+
+          // throw err;
+        } else {
+          func = func.bind(options.data);
         }
-        func = func.bind(options.data);
       }
 
       revoker = () => this.ele.removeEventListener(name, func);
@@ -3324,7 +3329,7 @@ try{
           console.warn(
             getErr("fill_type", {
               type: getType(arrayData),
-            })
+            }),
           );
 
           childs &&
@@ -3357,7 +3362,7 @@ try{
               targetTemp,
               data.$host || data,
               i,
-              keyName
+              keyName,
             );
             frag.appendChild($ele.ele);
           });
@@ -3382,7 +3387,7 @@ try{
 
               const val = e[keyName];
               return val === undefined ? e : val;
-            })
+            }),
           );
 
           const { parentNode } = this._fake;
@@ -3432,7 +3437,7 @@ try{
                     targetTemp,
                     data.$host || data,
                     count,
-                    keyName
+                    keyName,
                   );
 
                   count++;
@@ -3460,7 +3465,7 @@ try{
             }
 
             const oldId = positionKeys.indexOf(
-              isObj ? currentVal[keyName] : currentVal
+              isObj ? currentVal[keyName] : currentVal,
             );
             if (oldId > -1) {
               // If the key originally exists, perform key displacement.
@@ -3492,7 +3497,7 @@ try{
                 targetTemp,
                 data.$host || data,
                 count,
-                keyName
+                keyName,
               );
 
               // target.parentNode.insertBefore($ele.ele, target);
@@ -3555,12 +3560,30 @@ try{
     },
   });
 
-  const createItem = ($data, temps, targetTemp, $host, $index, keyName) => {
+  /**
+   * 为 x-fill 渲染创建列表项元素
+   * @param {Object} $data - 列表项的数据对象
+   * @param {Object} temps - 包含所有可用模板的模板集合
+   * @param {HTMLTemplateElement} targetTemp - 要渲染的目标模板元素
+   * @param {Object} $host - 包含 x-fill 指令的宿主元素
+   * @param {number} $index - 列表中项的索引
+   * @param {string} keyName - 用于标识列表项的键名
+   * @param {Object} $parent - 父元素的实例对象
+   * @returns {Object} 创建的元素，包含绑定的数据和项属性
+   */
+  const createItem = (
+    $data,
+    temps,
+    targetTemp,
+    $host,
+    $index,
+    keyName,
+    $parent,
+  ) => {
     const $ele = createXEle(targetTemp.innerHTML);
 
     const itemData = new Stanz({
       $data,
-      // $ele,
       $host,
       $index,
     });
