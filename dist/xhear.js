@@ -426,6 +426,25 @@
   const isSafariBrowser = () =>
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+  const getRenderErrorSupplementary = (data) => {
+    if (!data) {
+      return "";
+    }
+
+    let supplementary = "";
+    if (data.$host || data.$data) {
+      supplementary = "Please check the usage of $host or $data, ";
+    }
+
+    const fromSrc = data.$host?.PATH || data.PATH;
+
+    if (fromSrc) {
+      supplementary += `from file: ${fromSrc}, `;
+    }
+
+    return supplementary;
+  };
+
   const { assign: assign$1, freeze } = Object;
 
   class Watcher {
@@ -1184,25 +1203,6 @@
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
   const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
-  const getRenderErrorSupplementary = (data) => {
-    if (!data) {
-      return "";
-    }
-
-    let supplementary = "";
-    if (data.$host || data.$data) {
-      supplementary = "Please check the usage of $host or $data, ";
-    }
-
-    const fromSrc = data.$host?.PATH || data.PATH;
-
-    if (fromSrc) {
-      supplementary += `from file: ${fromSrc}, `;
-    }
-
-    return supplementary;
-  };
-
   const convertToFunc = (expr, data, opts) => {
     const funcStr = `
 const dataRevoked = ${dataRevoked.toString()};
@@ -1853,15 +1853,20 @@ try{
       if (!/[^\d\w_\$\.]/.test(beforeValue)) {
         func = options.data.get(beforeValue);
         if (!func) {
-          const tag = options.data.tag;
-          const err = getErr("not_found_func", {
-            name: beforeValue,
-            tag: tag ? `"${tag}"` : "",
+          const supplementary = getRenderErrorSupplementary(options.data);
+
+          const err = new Error(
+            `Event binding error: function "${beforeValue}" not found in expression on:${name}="${beforeValue}", ${supplementary}`,
+          );
+
+          console.error(err, {
+            target: options.data,
           });
-          console.warn(err, " target =>", options.data);
-          throw err;
+
+          // throw err;
+        } else {
+          func = func.bind(options.data);
         }
-        func = func.bind(options.data);
       }
 
       revoker = () => this.ele.removeEventListener(name, func);
