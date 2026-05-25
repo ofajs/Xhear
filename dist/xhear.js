@@ -1,4 +1,4 @@
-//! xhear - v7.5.33 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
+//! xhear - v7.5.34 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1184,6 +1184,25 @@
   const getRevokes = (target) => target.__revokes || (target.__revokes = []);
   const addRevoke = (target, revoke) => getRevokes(target).push(revoke);
 
+  const getRenderErrorSupplementary = (data) => {
+    if (!data) {
+      return "";
+    }
+
+    let supplementary = "";
+    if (data.$host || data.$data) {
+      supplementary = "Please check the usage of $host or $data, ";
+    }
+
+    const fromSrc = data.$host?.PATH || data.PATH;
+
+    if (fromSrc) {
+      supplementary += `from file: ${fromSrc}, `;
+    }
+
+    return supplementary;
+  };
+
   const convertToFunc = (expr, data, opts) => {
     const funcStr = `
 const dataRevoked = ${dataRevoked.toString()};
@@ -1251,13 +1270,29 @@ try{
         const matchs = Array.from(new Set(originStyle.match(/data\(.+?\)/g))).map(
           (dataExpr) => {
             const expr = dataExpr.replace(/data\((.+)\)/, "$1");
-            const func = convertToFunc(expr, data);
+            const func = convertToFunc(expr, data, {
+              errCall: (error) => {
+                const supplementary = getRenderErrorSupplementary(data);
+
+                const err = new Error(
+                  `Error evaluating data() expression in style: "${expr}", ${supplementary}`,
+                  {
+                    cause: error,
+                  },
+                );
+
+                console.error(err, {
+                  style: originStyle,
+                  target,
+                });
+              },
+            });
 
             return {
               dataExpr,
               func,
             };
-          }
+          },
         );
 
         const renderStyle = () => {
@@ -1292,7 +1327,25 @@ try{
       parentNode.insertBefore(textEl, el);
       parentNode.removeChild(el);
 
-      const func = convertToFunc(el.getAttribute("expr"), data);
+      const func = convertToFunc(el.getAttribute("expr"), data, {
+        errCall: (error) => {
+          const supplementary = getRenderErrorSupplementary(data);
+
+          const err = new Error(
+            `Error evaluating text expression: '${el.getAttribute("expr")}', ${supplementary}`,
+            {
+              cause: error,
+            },
+          );
+
+          console.error(err, {
+            element: textEl,
+            parent: parentNode,
+          });
+
+          return false;
+        },
+      });
       const renderFunc = () => {
         const content = func();
         if (textEl.textContent !== String(content)) {
@@ -1335,20 +1388,19 @@ try{
 
               const func = convertToFunc(expr, data, {
                 errCall: (error) => {
-                  const errorExpr = `:${key}="${expr}"`;
-                  const err = getErr(
-                    "render_el_error",
+                  const errorExpr = `${actionName === "prop" ? "" : actionName}:${key}="${expr}"`;
+                  const supplementary = getRenderErrorSupplementary(data);
+
+                  const err = new Error(
+                    `Error evaluating element expression: '${errorExpr}', ${supplementary}`,
                     {
-                      expr: errorExpr,
+                      cause: error,
                     },
-                    error
                   );
 
-                  console.warn(err, {
-                    target: $el.ele,
-                    errorExpr,
+                  console.error(err, {
+                    element: $el.ele,
                   });
-                  console.error(err);
 
                   return false;
                 },
@@ -1413,7 +1465,7 @@ try{
                 arg0: args[0],
                 arg1: args[1],
               },
-              error
+              error,
             );
             console.warn(err, el);
             throw err;
@@ -1534,7 +1586,7 @@ try{
       /{{(.+?)}}/g,
       (str, match) => {
         return `<xtext expr="${match}"></xtext>`;
-      }
+      },
     );
 
     const tempName = template.getAttribute("name");
@@ -1557,7 +1609,7 @@ try{
             tempName,
             len: tempChilds.length,
             wrapName,
-          })
+          }),
         );
       }
       temps[tempName] = template;
