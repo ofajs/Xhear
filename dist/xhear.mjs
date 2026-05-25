@@ -3562,6 +3562,7 @@ register({
  * @param {Object} $host - 包含 x-fill 指令的宿主元素
  * @param {number} $index - 列表中项的索引
  * @param {string} keyName - 用于标识列表项的键名
+ * @param {Object} $parent - 父元素的实例对象
  * @returns {Object} 创建的元素，包含绑定的数据和项属性
  */
 const createItem = (
@@ -3571,12 +3572,12 @@ const createItem = (
   $host,
   $index,
   keyName,
+  $parent,
 ) => {
   const $ele = createXEle(targetTemp.innerHTML);
 
   const itemData = new Stanz({
     $data,
-    // $ele,
     $host,
     $index,
   });
