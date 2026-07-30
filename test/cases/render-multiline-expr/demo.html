@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>render wrap case</title>
+    <script type="module">
+      import $ from "../../../packages/xhear/base.mjs";
+
+      $.register({
+        tag: "multiline-expr-demo",
+        temp: `
+        <button on:click="toggle">Toggle</button>
+        <div data-testid="multiline">
+          {{ flag ? 
+                 value : 
+                 'default' }}
+        </div>
+        <div data-testid="quote">
+          {{ name + " - " + value }}
+        </div>
+        `,
+        proto: {
+          toggle() {
+            this.flag = !this.flag;
+          },
+        },
+        data: {
+          flag: true,
+          value: "hello",
+          name: "a",
+        },
+      });
+
+      window.$ = $;
+    </script>
+  </head>
+  <body>
+    <multiline-expr-demo></multiline-expr-demo>
+  </body>
+</html>

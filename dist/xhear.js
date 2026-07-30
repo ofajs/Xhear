@@ -1,4 +1,4 @@
-//! xhear - v7.6.0 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
+//! xhear - v7.6.1 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1327,12 +1327,13 @@ try{
       parentNode.insertBefore(textEl, el);
       parentNode.removeChild(el);
 
-      const func = convertToFunc(el.getAttribute("expr"), data, {
+      const expr = decodeURIComponent(el.getAttribute("expr"));
+      const func = convertToFunc(expr, data, {
         errCall: (error) => {
           const supplementary = getRenderErrorSupplementary(data);
 
           const err = new Error(
-            `Error evaluating text expression: '${el.getAttribute("expr")}', ${supplementary}`,
+            `Error evaluating text expression: '${expr}', ${supplementary}`,
             {
               cause: error,
             },
@@ -1583,9 +1584,9 @@ try{
     });
 
     template.innerHTML = template.innerHTML.replace(
-      /{{(.+?)}}/g,
+      /{{([\s\S]+?)}}/g,
       (str, match) => {
-        return `<xtext expr="${match}"></xtext>`;
+        return `<xtext expr="${encodeURIComponent(match)}"></xtext>`;
       },
     );
 
