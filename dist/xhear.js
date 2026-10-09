@@ -1,4 +1,4 @@
-//! xhear - v7.6.1 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
+//! xhear - v7.6.2 https://github.com/ofajs/Xhear  (c) 2018-2026 YAO
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
@@ -1514,6 +1514,10 @@ try{
     renderExtends.render({ step: "init", target });
   }
 
+  // XML reserved namespace prefixes; attributes like xmlns:xlink, xlink:href
+  // and xml:space are namespace declarations, not template directives
+  const nsAttrPrefixes = new Set(["xmlns", "xml", "xlink"]);
+
   const convertEl = (el) => {
     const { tagName } = el;
 
@@ -1533,6 +1537,10 @@ try{
         }
 
         let [, actionName, param0] = matchData;
+
+        if (nsAttrPrefixes.has(actionName)) {
+          return;
+        }
 
         if (!actionName) {
           actionName = "prop";
@@ -3240,7 +3248,10 @@ try{
       },
     },
     created() {
-      this.__originHTML = this.$("template[condition]").html;
+      // 元素可能先于子内容构造（如 createElement 或第三方库 cloneNode），
+      // 此时 template[condition] 不存在，需要回退到自身内容
+      const conditionTemp = this.$("template[condition]");
+      this.__originHTML = conditionTemp ? conditionTemp.html : this.html;
       this.html = "";
     },
     ready() {

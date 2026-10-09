@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>svg render test</title>
+    <script src="../../dist/xhear.js"></script>
+    <style>
+      #svg-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- shared defs referenced by xlink:href in light DOM -->
+    <svg id="svg-defs" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <g id="icon-heart">
+          <path
+            d="M15 27 C 8 20 2 15 2 9 C 2 4 6 1 10 1 C 12 1 14 2 15 4 C 16 2 18 1 20 1 C 24 1 28 4 28 9 C 28 15 22 20 15 27 Z"
+            fill="red"
+          ></path>
+        </g>
+      </defs>
+    </svg>
+
+    <svg-icon-comp></svg-icon-comp>
+
+    <div id="render-target"></div>
+
+    <template id="inline-svg-temp">
+      <svg
+        class="inline-icon"
+        width="30"
+        height="30"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+      >
+        <use class="inline-use" xlink:href="#icon-heart"></use>
+      </svg>
+      <span class="inline-caption">{{caption}}</span>
+    </template>
+
+    <script type="module">
+      window.iconCompReady = 0;
+
+      $.register({
+        tag: "svg-icon-comp",
+        temp: `
+          <style>:host { display: block; }</style>
+          <div class="comp-label">{{val}}</div>
+          <svg class="comp-icon" width="40" height="40" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <defs>
+              <g id="icon-star">
+                <path d="M20 4 L24 16 L36 16 L26 23 L30 35 L20 28 L10 35 L14 23 L4 16 L16 16 Z" fill="gold"></path>
+              </g>
+            </defs>
+            <use class="comp-use" xlink:href="#icon-star"></use>
+          </svg>
+          <svg class="label-icon" width="80" height="24" xmlns="http://www.w3.org/2000/svg">
+            <text class="comp-text" xml:space="preserve" x="2" y="16">{{val}}</text>
+          </svg>
+        `,
+        data: {
+          val: "svg-ok",
+        },
+        ready() {
+          window.iconCompReady++;
+        },
+      });
+
+      (async () => {
+        const template = $("#inline-svg-temp").ele;
+
+        const temps = $.convert(template);
+
+        const data = (window.svgRenderData = $.stanz({
+          caption: "caption-ok",
+        }));
+
+        $.render({
+          target: $("#render-target").ele,
+          data,
+          temps,
+          template,
+        });
+      })();
+    </script>
+  </body>
+</html>
